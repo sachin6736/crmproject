@@ -1,4 +1,5 @@
 import React from 'react'
+import Sales from './Sales'
 import { Home as HomeIcon,Users,Briefcase,LineChart,Headset,Megaphone,LucideShoppingCart,PenTool,User} from "lucide-react"
 
 function Home() {
@@ -62,7 +63,9 @@ function Home() {
      </div>
      <div className="flex-1 h-screen ml-20">
         <div className="w-full h-12 bg-[#066afe]"></div>
-        <div className="p-4">Main Content</div>
+        <div className="">
+            <Sales/>
+        </div>
       </div>
     </div>
   )
