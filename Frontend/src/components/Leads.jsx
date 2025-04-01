@@ -7,7 +7,7 @@ const LeadTableHeader = () => {
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const response = await fetch("http://localhost:3000/Lead/getleads"); // Update with your actual API URL
+        const response = await fetch("http://localhost:3000/Lead/getleads"); 
         const data = await response.json();
         setLeads(data);
       } catch (error) {
@@ -37,7 +37,7 @@ const LeadTableHeader = () => {
         <table className="w-full text-left">
           <thead className="bg-gray-200 text-gray-600 text-sm">
             <tr>
-              {["Client Name", "Phone Number", "Email", "Part Requested", "Status", "Zip", "Created At"].map(
+              {["Client Name  ⬍", "Phone Number  ⬍", "Email  ⬍", "Part Requested  ⬍", "Status  ⬍", "Zip  ⬍", "Created At  ⬍"].map(
                 (header, index) => (
                   <th key={index} className="px-4 py-2 border-b">
                     {header}
@@ -50,7 +50,7 @@ const LeadTableHeader = () => {
             {leads.length > 0 ? (
               leads.map((lead, index) => (
                 <tr key={index} className="border-t hover:bg-gray-100">
-                  <td className="px-4 py-2">{lead.clientName}</td>
+                  <td className="px-4 py-2">{lead.clientName} </td>
                   <td className="px-4 py-2">{lead.phoneNumber}</td>
                   <td className="px-4 py-2">{lead.email}</td>
                   <td className="px-4 py-2">{lead.partRequested}</td>
