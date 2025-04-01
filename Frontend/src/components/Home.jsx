@@ -4,6 +4,7 @@ import { Home as HomeIcon,Users,Briefcase,LineChart,Headset,Megaphone,LucideShop
 
 function Home() {
   return (
+    <>
     <div className='w-screen h-screen bg-white flex'>
      <div className="w-20 h-screen bg-[#002775] fixed left-0 top-0 border-r-[2px] border-r-white flex flex-col items-center pt-3 space-y-3">
         <div className="flex flex-col items-center space-y-1">
@@ -68,6 +69,7 @@ function Home() {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
