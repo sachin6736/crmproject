@@ -3,12 +3,17 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
+//importingroutes
+import leadroutes from './routes/leadroutes.js'
+
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+//using routes
+app.use('/Lead',leadroutes)
 
 const port = process.env.port || 5000
 mongoose
