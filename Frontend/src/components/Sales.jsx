@@ -1,6 +1,7 @@
 import React from 'react'
 import { ChevronDown} from 'lucide-react'
 import LeadTableHeader from './Leads'
+import Lead from './Lead'
 
 const Sales = () => {
   return (
@@ -48,7 +49,8 @@ const Sales = () => {
         </div>
        </div>
        <div className='w-full h-screen bg-slate-300'>
-        <LeadTableHeader />
+        {/* <LeadTableHeader />  */}
+        <Lead/>
        </div>
     </div>
   )

@@ -19,9 +19,10 @@ const LeadTableHeader = () => {
   }, []);
 
   return (
-    <div className="p-6">
+    <div className="p-8">
       {/* Button Group */}
-      <div className="flex justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 w-1/2">
+      <div className=" flex items-end justify-end">
+      <div className="flex justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 w-1/3">
         {["New", "Import", "contacts", "calender", "testing"].map((button, index) => (
           <button
             key={index}
@@ -30,6 +31,7 @@ const LeadTableHeader = () => {
             {button}
           </button>
         ))}
+      </div>
       </div>
 
       {/* Table */}
@@ -50,7 +52,7 @@ const LeadTableHeader = () => {
             {leads.length > 0 ? (
               leads.map((lead, index) => (
                 <tr key={index} className="border-t hover:bg-gray-100">
-                  <td className="px-4 py-2">{lead.clientName} </td>
+                  <td className="px-4 py-2 hover:underline hover:decoration-slate-700 hover:bg-[#749fdf]">{lead.clientName} </td>
                   <td className="px-4 py-2">{lead.phoneNumber}</td>
                   <td className="px-4 py-2">{lead.email}</td>
                   <td className="px-4 py-2">{lead.partRequested}</td>
