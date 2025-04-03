@@ -16,8 +16,7 @@ app.use(express.json());
 app.use('/Lead',leadroutes)
 
 const port = process.env.port || 5000
-mongoose
-  .connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
