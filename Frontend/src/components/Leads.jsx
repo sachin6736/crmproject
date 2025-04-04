@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const LeadTableHeader = () => {
   const [leads, setLeads] = useState([]);
   const [editingLeadId, setEditingLeadId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -84,7 +86,7 @@ const LeadTableHeader = () => {
             {leads.length > 0 ? (
               leads.map((lead, index) => (
                 <tr key={index} className="border-t hover:bg-gray-100">
-                  <td className="px-4 py-2 hover:underline hover:decoration-slate-700 hover:bg-[#749fdf]">{lead.clientName} </td>
+                  <td className="px-4 py-2 hover:underline hover:decoration-slate-700 hover:bg-[#749fdf] cursor-pointer" onClick={() => navigate(`/lead/${lead._id}`)}>{lead.clientName} </td>
                   <td className="px-4 py-2">{lead.phoneNumber}</td>
                   <td className="px-4 py-2">{lead.email}</td>
                   <td className="px-4 py-2">{lead.partRequested}</td>
@@ -113,7 +115,6 @@ const LeadTableHeader = () => {
                       </div>
                     )}
                   </td>
-
                   <td className="px-4 py-2">{lead.zip}</td>
                   <td className="px-4 py-2">{new Date(lead.createdAt).toLocaleString()}</td>
                 </tr>

@@ -44,7 +44,7 @@ export const editstatus = async(req,res,next)=>{
   console.log("editstatus working")
   try {
     const id = req.params.id;
-    console.log("id of the lead",id);
+    console.log("id of the lead:",id);
     const {status}= req.body
     const lead = await Lead.findById(id);
     if (!lead) {
@@ -57,3 +57,18 @@ export const editstatus = async(req,res,next)=>{
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+export const getLeadById = async (req, res ,next) => {
+  try {
+    const id = req.params.id
+    console.log("id of single:",id);
+    
+    const lead = await Lead.findById(id);
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+    res.json(lead);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching lead", error });
+  }
+};
