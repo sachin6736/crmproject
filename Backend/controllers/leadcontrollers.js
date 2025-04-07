@@ -1,4 +1,7 @@
 import Lead from "../models/lead.js";
+import sendEmail from "../sendEmail.js";
+
+const ADMIN_EMAIL = "sachinpradeepan27@gmail.com"; 
 
 // creating leads
 export const createleads = async (req,res,next)=>{
@@ -20,7 +23,26 @@ export const createleads = async (req,res,next)=>{
           });      
           try {
             await newLead.save();
-            res.status(201).json("lead created succesfully")
+            const emailContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
+              <h2 style="color: #333;">New Quotation Request</h2>
+              <p><strong>Name:</strong> ${clientName}</p>
+              <p><strong>Phone:</strong> ${phoneNumber}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Zip Code:</strong> ${zip}</p>
+              <p><strong>Part Requested:</strong> ${partRequested}</p>
+              <p><strong>Make:</strong> ${make}</p>
+              <p><strong>Model:</strong> ${model}</p>
+              <p><strong>Year:</strong> ${year}</p>
+              <p><strong>Trim:</strong> ${trim}</p>
+              <hr>
+              <p style="color: gray;">This is an automated email from your CRM system.</p>
+            </div>
+          `;
+      
+          // Send Email to Admin
+          await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
+          res.status(201).json({ message: "Lead created successfully and email sent" });
           } catch (error) {
             console.log("an error occured",error)
           }

@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import {useNavigate} from 'react-router-dom';
 
 const LeadTableHeader = () => {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [editingLeadId, setEditingLeadId] = useState(null);
+  const dropdownRef = useRef(null); // Ref for dropdown
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -16,6 +19,23 @@ const LeadTableHeader = () => {
     };
 
     fetchLeads();
+  }, []);
+
+  useEffect(() => {
+    // Function to handle clicks outside of the dropdown
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setEditingLeadId(null);
+      }
+    };
+
+    // Attach event listener
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      // Cleanup event listener
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const updateStatus = async (leadId, newStatus) => {
@@ -43,7 +63,6 @@ const LeadTableHeader = () => {
     }
   };
 
-  // Status text colors (only text is colored)
   const statusTextColors = {
     Lead: "text-blue-600",
     Contacted: "text-yellow-500",
@@ -54,11 +73,14 @@ const LeadTableHeader = () => {
 
   return (
     <div className="p-6">
-       <div className="flex justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 w-1/2">
+      <div className="flex justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 w-1/2">
         {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
-          <button
-            key={index}
-            className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300"
+          <button key={index} className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300"
+          onClick={() => {
+            if (button === "New") {
+              navigate("/userform"); 
+            }
+          }}
           >
             {button}
           </button>
@@ -68,7 +90,7 @@ const LeadTableHeader = () => {
         <table className="w-full text-left min-w-[600px]">
           <thead className="bg-gray-200 text-gray-600 text-sm">
             <tr>
-              {["Client Name  ⬍", "Phone Number ⬍", "Email ⬍", "Part Requested  ⬍", "Status  ⬍", "Zip  ⬍", "Created At ⬍"].map(
+              {["Client Name ⬍", "Phone Number ⬍", "Email ⬍", "Part Requested ⬍", "Status ⬍", "Zip ⬍", "Created At ⬍"].map(
                 (header, index) => (
                   <th key={index} className="px-4 py-2 border-b">{header}</th>
                 )
@@ -86,18 +108,18 @@ const LeadTableHeader = () => {
 
                   {/* Status Column */}
                   <td className="px-4 py-2 relative">
-                    <span 
-                      className={`cursor-pointer font-semibold ${[lead.status]}`} 
+                    <span
+                      className={`cursor-pointer font-semibold ${[lead.status]}`}
                       onClick={() => setEditingLeadId(lead._id)}
                     >
-                      {lead.status} 
+                      {lead.status}
                     </span>
 
                     {/* Status Dropdown */}
                     {editingLeadId === lead._id && (
-                      <div className="absolute left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10">
+                      <div ref={dropdownRef} className="absolute left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10">
                         {Object.keys(statusTextColors).map((status) => (
-                          <div 
+                          <div
                             key={status}
                             className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
                             onClick={() => updateStatus(lead._id, status)}
