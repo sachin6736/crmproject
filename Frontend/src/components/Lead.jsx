@@ -56,14 +56,19 @@ const Lead = () => {
       {/* Status Buttons */}
       <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14">
         <div className="bg-[#e5e5e5] p-2 m-2 w-3/4 h-3/4 flex justify-start space-x-2 rounded-full items-center">
-          {['New', 'Contacted', 'Nurturing', 'Qualified', 'Not Qualified'].map((status, index) => (
+          {['Lead', 'Contacted', 'Nurturing', 'Qualified', 'Not Qualified'].map((status, index) => {
+            const isActive=singleLead.status === status;
+            return(
             <button
               key={index}
-              className="flex items-center justify-center w-40 text-white border-r last:border-r-0 border-gray-300 hover:bg-[#032d60]"
+              className={`flex items-center justify-center w-40 border-r last:border-r-0 border-gray-300 transition-colors ${
+                isActive ? 'bg-[#032d60] text-white' : 'bg-transparent text-black'
+              }`}
             >
               {status}
             </button>
-          ))}
+            )
+        })}
         </div>
       </div>
 

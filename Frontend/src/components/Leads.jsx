@@ -20,6 +20,9 @@ const LeadTableHeader = () => {
     fetchLeads();
   }, []);
 
+  console.log("leads",leads);
+  
+
   const updateStatus = async (leadId, newStatus) => {
     try {
       const response = await fetch(`http://localhost:3000/Lead/updatelead/${leadId}`, {
