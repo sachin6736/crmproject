@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import {useNavigate} from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [editingLeadId, setEditingLeadId] = useState(null);
-  const dropdownRef = useRef(null); // Ref for dropdown
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -17,34 +17,25 @@ const LeadTableHeader = () => {
         console.error("Error fetching leads:", error);
       }
     };
-
     fetchLeads();
   }, []);
 
   useEffect(() => {
-    // Function to handle clicks outside of the dropdown
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setEditingLeadId(null);
       }
     };
 
-    // Attach event listener
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      // Cleanup event listener
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const updateStatus = async (leadId, newStatus) => {
     try {
       const response = await fetch(`http://localhost:3000/Lead/updatelead/${leadId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
 
@@ -73,21 +64,22 @@ const LeadTableHeader = () => {
 
   return (
     <div className="p-6">
+      {/* Buttons */}
       <div className="flex justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 w-1/2">
         {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
-          <button key={index} className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300"
-          onClick={() => {
-            if (button === "New") {
-              navigate("/userform"); 
-            }
-          }}
+          <button
+            key={index}
+            className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300"
+            onClick={() => button === "New" && navigate("/userform")}
           >
             {button}
           </button>
         ))}
       </div>
-      <div className="mt-4 bg-white rounded-md shadow-md overflow-x-auto">
-        <table className="w-full text-left min-w-[600px]">
+
+      {/* Table */}
+      <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden">
+        <table className="w-full text-left">
           <thead className="bg-gray-200 text-gray-600 text-sm">
             <tr>
               {["Client Name ⬍", "Phone Number ⬍", "Email ⬍", "Part Requested ⬍", "Status ⬍", "Zip ⬍", "Created At ⬍"].map(
@@ -99,9 +91,14 @@ const LeadTableHeader = () => {
           </thead>
           <tbody>
             {leads.length > 0 ? (
-              leads.map((lead) => (
-                <tr key={lead._id} className="border-t hover:bg-gray-100">
-                  <td className="px-4 py-2">{lead.clientName}</td>
+              leads.map((lead, index) => (
+                <tr key={index} className="border-t hover:bg-gray-100">
+                  <td
+                    className="px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer"
+                    onClick={() => navigate(`/lead/${lead._id}`)}
+                  >
+                    {lead.clientName}
+                  </td>
                   <td className="px-4 py-2">{lead.phoneNumber}</td>
                   <td className="px-4 py-2">{lead.email}</td>
                   <td className="px-4 py-2">{lead.partRequested}</td>
@@ -130,9 +127,8 @@ const LeadTableHeader = () => {
                       </div>
                     )}
                   </td>
-
                   <td className="px-4 py-2">{lead.zip}</td>
-                  <td className="px-4 py-2">{new Date(lead.createdAt).toLocaleString()}</td>
+                  <td className="px-4 py-2">{lead.createdAt ? new Date(lead.createdAt).toLocaleString() : "N/A"}</td>
                 </tr>
               ))
             ) : (
