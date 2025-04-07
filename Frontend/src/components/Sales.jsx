@@ -49,8 +49,7 @@ const Sales = () => {
         </div>
        </div>
        <div className='w-full h-screen bg-slate-300'>
-        {/* <LeadTableHeader />  */}
-        <Lead/>
+        <LeadTableHeader />
        </div>
     </div>
   )

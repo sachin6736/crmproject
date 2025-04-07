@@ -19,6 +19,8 @@ const Lead = () => {
 
     fetchSingleLead();
   }, [id]);
+  console.log("single lead",singleLead);
+  
 
   if (!singleLead) return <div className="p-8">Loading...</div>;
 
@@ -33,7 +35,6 @@ const Lead = () => {
     { label: 'Year', value: singleLead.year },
     { label: 'Trim', value: singleLead.trim },
     { label: 'Status', value: singleLead.status },
-    { label: 'Created At', value: new Date(singleLead.createdAt).toLocaleString() },
   ];
 
   return (
@@ -67,7 +68,7 @@ const Lead = () => {
       </div>
 
       {/* Main Content */}
-      <div className="w-full h-auto p-2 space-x-2 bg-slate-300 flex items-center justify-center flex-row m-2">
+      <div className="w-full h-96 p-2 space-x-2 bg-slate-300 flex items-center justify-center flex-row m-2">
         {/* Left Section - Lead Details */}
         <div className="w-1/3 h-full rounded-2xl bg-slate-50 p-4 overflow-y-auto">
           <h2 className="text-lg font-semibold border-b pb-2">
@@ -97,10 +98,10 @@ const Lead = () => {
           </div>
         </div>
 
-        {/* Middle Section (Optional) */}
+       
         <div className="w-1/3 h-full rounded-2xl bg-slate-50"></div>
 
-        {/* Right Section (Optional) */}
+        
         <div className="w-1/3 h-full rounded-2xl bg-slate-50"></div>
       </div>
     </div>
