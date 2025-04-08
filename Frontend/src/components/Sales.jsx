@@ -2,6 +2,7 @@ import React from 'react'
 import { ChevronDown} from 'lucide-react'
 import LeadTableHeader from './Leads'
 import Lead from './Lead'
+import { Outlet } from 'react-router-dom'
 
 const Sales = () => {
   return (
@@ -49,7 +50,7 @@ const Sales = () => {
         </div>
        </div>
        <div className='w-full h-auto bg-slate-300'>
-        <LeadTableHeader />
+        <Outlet />
        </div>
     </div>
   )

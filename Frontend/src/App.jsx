@@ -1,21 +1,26 @@
-import { useState } from 'react'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import './App.css'
-import Userfrom from './components/Userfrom'
-import Home from './components/Home'
+import './App.css';
+import Userfrom from './components/Userfrom';
+import Home from './components/Home';
+import Sales from './components/Sales';
 import Lead from './components/Lead';
+import LeadTableHeader from './components/Leads';
 
 function App() {
-
   return (
     <Router>
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/userform" element={<Userfrom />} />
-      <Route path="/lead/:id" element={<Lead />} />
-    </Routes>
-  </Router>
-  )
+      <Routes>
+        <Route path="/" element={<Home />}>
+          <Route path="sales" element={<Sales />}>
+            <Route index element={<LeadTableHeader />} />
+            <Route path="lead/:id" element={<Lead />} />
+          </Route> 
+
+          <Route path="userform" element={<Userfrom />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

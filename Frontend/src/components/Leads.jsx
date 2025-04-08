@@ -97,7 +97,7 @@ const LeadTableHeader = () => {
                 <tr key={index} className="border-t hover:bg-gray-100">
                   <td
                     className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
-                    onClick={() => navigate(`/lead/${lead._id}`)}
+                    onClick={() => navigate(`/sales/lead/${lead._id}`)}
                   >
                     {lead.clientName}
                   </td>

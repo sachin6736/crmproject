@@ -201,9 +201,9 @@ const Lead = () => {
     selectedDates.includes(date.toDateString()) ? "react-calendar__tile--active" : ""
   }
 />
-          </div>
-        </div>
-        </div>
+</div>
+</div>
+      </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React from 'react'
 import Sales from './Sales'
+import { Outlet } from 'react-router-dom'
 import { Home as HomeIcon,Users,Briefcase,LineChart,Headset,Megaphone,LucideShoppingCart,PenTool,User} from "lucide-react"
 
 function Home() {
@@ -65,7 +66,7 @@ function Home() {
      <div className="flex-1 h-screen ml-20">
         <div className="w-full h-12 bg-[#066afe]"></div>
         <div className="">
-            <Sales/>
+        <Outlet/>
         </div>
       </div>
     </div>
