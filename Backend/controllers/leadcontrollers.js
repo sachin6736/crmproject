@@ -95,25 +95,22 @@ export const getLeadById = async (req, res ,next) => {
   }
 };
 
+////notes section
 export const createnotes = async(req,res,next)=>{
   try {
-    const { id } = req.params; // Get lead ID from params
+    const { id } = req.params; 
     const { text } = req.body;
     console.log("req.body",req.body)
     console.log("Updating notes for Lead ID:", id);
-
-    // Create new note object without addedBy
     const newNote = {
       text,
       createdAt: new Date(),
     };
     console.log("newnote",newNote)
-
-    // Update the lead by pushing a new note into the notes array
     const updatedLead = await Lead.findByIdAndUpdate(
       id,
-      { $push: { notes: newNote } }, // Push new note object to the array
-      { new: true } // Return the updated document
+      { $push: { notes: newNote } }, 
+      { new: true } 
     );
 
     if (!updatedLead) {
@@ -127,5 +124,29 @@ export const createnotes = async(req,res,next)=>{
   } catch (error) {
     console.log(error)
     res.status(500).json({ error: "Error updating notes" });
+  }
+}///creating notes
+
+export const deletenotes = async(req,res,next)=>{
+  try {
+    const { id, noteid } = req.params;
+    console.log("params",req.params)
+    console.log("leadid",id)
+    console.log("noteid",noteid)
+
+    const updatedLead = await Lead.findByIdAndUpdate(
+      id,
+      { $pull: { notes: { _id: noteid } } }, // Remove note
+      { new: true }
+    );
+
+    if (!updatedLead) {
+      return res.status(404).json({ error: "Lead or note not found" });
+    }
+
+    res.json({ message: "Note deleted successfully", lead: updatedLead });
+  } catch (error) {
+    console.error("Error deleting note:", error);
+    res.status(500).json({ error: "Error deleting note" });
   }
 }
