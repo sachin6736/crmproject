@@ -73,11 +73,11 @@ const Lead = () => {
       </div>
 
       {/* Main Content */}
-      <div className="w-full h-96 p-2 space-x-2 bg-slate-300 flex items-center justify-center flex-row m-2">
+      <div className="w-full h-auto p-2 space-x-2 bg-slate-300 flex items-center justify-center flex-row m-2">
         {/* Left Section - Lead Details */}
         <div className="w-1/3 h-full rounded-2xl bg-slate-50 p-4 overflow-y-auto">
           <h2 className="text-lg font-semibold border-b pb-2">
-            About {singleLead.clientName}
+            About
           </h2>
           <div className="mt-2 space-y-2">
             {leadDetails.map((item, index) => (
@@ -103,11 +103,9 @@ const Lead = () => {
           </div>
         </div>
 
-       
-        <div className="w-1/3 h-full rounded-2xl bg-slate-50"></div>
+      <div className="w-1/3 h-full rounded-2xl bg-slate-50"></div>
 
-        
-        <div className="w-1/3 h-full rounded-2xl bg-slate-50"></div>
+      <div className="w-1/3 h-full rounded-2xl bg-slate-50"></div>
       </div>
     </div>
   );
