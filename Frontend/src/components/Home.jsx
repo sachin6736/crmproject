@@ -2,13 +2,16 @@ import React from 'react'
 import Sales from './Sales'
 import { Outlet } from 'react-router-dom'
 import { Home as HomeIcon,Users,Briefcase,LineChart,Headset,Megaphone,LucideShoppingCart,PenTool,User} from "lucide-react"
+import { useNavigate } from 'react-router-dom'
+
 
 function Home() {
+  const navigate = useNavigate();
   return (
     <>
     <div className='w-screen h-screen bg-white flex'>
      <div className="w-20 h-screen bg-[#002775] fixed left-0 top-0 border-r-[2px] border-r-white flex flex-col items-center pt-3 space-y-3 overflow-y-scroll">
-        <div className="flex flex-col items-center space-y-1">
+        <div className="flex flex-col items-center space-y-1 "onClick={() => navigate('/')}>
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
            <HomeIcon className='h-6 w-6 text-white'/>
           </div>
@@ -26,9 +29,9 @@ function Home() {
           </div>
           <span className="text-white text-[10px] font-bold">Accounts</span>
         </div>
-        <div className="flex flex-col items-center space-y-1">
+        <div className="flex flex-col items-center space-y-1 " onClick={() => navigate('/sales')}>
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
-          <LineChart className='h-6 w-6 text-white' />
+            <LineChart className='h-6 w-6 text-white' />
           </div>
           <span className="text-white text-[10px] font-bold">Sales</span>
         </div>
