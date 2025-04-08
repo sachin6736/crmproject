@@ -25,6 +25,8 @@ const Lead = () => {
 
     fetchSingleLead();
   }, [id]);
+  console.log("notes",notes);
+  
 
   const handleSaveNotes = async () => {
     if (!newNote.trim()) return;
@@ -63,6 +65,26 @@ const Lead = () => {
           ))}
         </div>
       </div>
+      
+      {/* Active status buttons */}
+
+      <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14">
+        <div className="bg-[#e5e5e5] p-2 m-2 w-3/4 h-3/4 flex justify-start space-x-2 rounded-full items-center">
+          {['Lead', 'Contacted', 'Nurturing', 'Qualified', 'Not Qualified'].map((status, index) => {
+            const isActive=singleLead.status === status;
+            return(
+            <button
+              key={index}
+              className={`flex items-center justify-center w-40 border-r last:border-r-0 border-gray-300 transition-colors ${
+                isActive ? 'bg-[#032d60] text-white' : 'bg-transparent text-black'
+              }`}
+            >
+              {status}
+            </button>
+            )
+        })}
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-300 p-4 rounded-xl">
@@ -92,9 +114,9 @@ const Lead = () => {
                   ) : (
                     <span>{item.value}</span>
                   )}
-                  <span className="text-gray-400 cursor-pointer hover:text-gray-600">
+                  {/* <span className="text-gray-400 cursor-pointer hover:text-gray-600">
                     <Pencil size={16} />
-                  </span>
+                  </span> */}
                 </div>
               </div>
             ))}
@@ -151,5 +173,6 @@ const Lead = () => {
     </div>
   );
 };
+
 
 export default Lead;
