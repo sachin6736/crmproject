@@ -94,3 +94,38 @@ export const getLeadById = async (req, res ,next) => {
     res.status(500).json({ message: "Error fetching lead", error });
   }
 };
+
+export const createnotes = async(req,res,next)=>{
+  try {
+    const { id } = req.params; // Get lead ID from params
+    const { text } = req.body;
+    console.log("req.body",req.body)
+    console.log("Updating notes for Lead ID:", id);
+
+    // Create new note object without addedBy
+    const newNote = {
+      text,
+      createdAt: new Date(),
+    };
+    console.log("newnote",newNote)
+
+    // Update the lead by pushing a new note into the notes array
+    const updatedLead = await Lead.findByIdAndUpdate(
+      id,
+      { $push: { notes: newNote } }, // Push new note object to the array
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedLead) {
+      return res.status(404).json({ error: "Lead not found" });
+    }
+
+    res.status(200).json({
+      message: "Note added successfully",
+      lead: updatedLead,
+    });
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ error: "Error updating notes" });
+  }
+}
