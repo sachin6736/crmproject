@@ -15,7 +15,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "mailgun-js": "^0.22.0",
     "mongoose": "^8.13.1",
+    "nodemailer": "^6.10.0",
+    "nodemailer-mailgun-transport": "^2.1.5",
     "nodemon": "^3.1.9"
   }
 }
