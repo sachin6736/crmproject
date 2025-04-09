@@ -5,6 +5,8 @@ const LeadTableHeader = () => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [editingLeadId, setEditingLeadId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -26,7 +28,6 @@ const LeadTableHeader = () => {
         setEditingLeadId(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -62,9 +63,14 @@ const LeadTableHeader = () => {
     "Not Qualified": "text-red-600",
   };
 
+  // Calculate paginated data
+  const totalPages = Math.ceil(leads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentLeads = leads.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="p-4 md:p-6">
-      {/* Buttons */}
+      {/* Top Buttons */}
       <div className="flex flex-wrap justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 w-full md:w-1/2">
         {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
           <button
@@ -77,7 +83,7 @@ const LeadTableHeader = () => {
         ))}
       </div>
 
-      {/* Table Container */}
+      {/* Table */}
       <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden overflow-x-auto">
         <table className="w-full text-left text-sm md:text-base">
           <thead className="bg-gray-200 text-gray-600">
@@ -92,8 +98,8 @@ const LeadTableHeader = () => {
             </tr>
           </thead>
           <tbody>
-            {leads.length > 0 ? (
-              leads.map((lead, index) => (
+            {currentLeads.length > 0 ? (
+              currentLeads.map((lead, index) => (
                 <tr key={index} className="border-t hover:bg-gray-100">
                   <td
                     className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
@@ -104,17 +110,13 @@ const LeadTableHeader = () => {
                   <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.phoneNumber}</td>
                   <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.email}</td>
                   <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.partRequested}</td>
-
-                  {/* Status Column */}
                   <td className="px-3 md:px-4 py-2 relative">
                     <span
-                      className={`cursor-pointer font-semibold ${[lead.status]}`}
+                      className={`cursor-pointer font-semibold ${statusTextColors[lead.status]}`}
                       onClick={() => setEditingLeadId(lead._id)}
                     >
                       {lead.status}
                     </span>
-
-                    {/* Status Dropdown */}
                     {editingLeadId === lead._id && (
                       <div
                         ref={dropdownRef}
@@ -148,6 +150,37 @@ const LeadTableHeader = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center mt-4 space-x-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+            disabled={currentPage === 1}
+          >
+            Prev
+          </button>
+          {[...Array(totalPages)].map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentPage(index + 1)}
+              className={`px-3 py-1 border rounded ${
+                currentPage === index + 1 ? "bg-blue-500 text-white" : "bg-gray-100"
+              } hover:bg-blue-100`}
+            >
+              {index + 1}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };
