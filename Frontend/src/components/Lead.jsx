@@ -139,9 +139,9 @@ const Lead = () => {
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-300 p-4 rounded-xl">
         {/* Left Section - Lead Details */}
-        <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50 p-4 overflow-y-auto">
+        <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50 p-4">
           <h2 className="text-lg font-semibold border-b pb-2">{singleLead.clientName}</h2>
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-2 overflow-y-auto">
             {[
               { label: "Client Name", value: singleLead.clientName },
               { label: "Phone Number", value: singleLead.phoneNumber },
