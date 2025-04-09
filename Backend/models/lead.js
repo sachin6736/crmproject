@@ -22,6 +22,7 @@ const leadSchema = new mongoose.Schema({
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    importantDates: [{ type: String }],
     createdAt: { type: Date, default: Date.now },
   });
 
