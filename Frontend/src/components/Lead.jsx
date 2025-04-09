@@ -21,6 +21,7 @@ const Lead = () => {
         const data = await response.json();
         setSingleLead(data);
         setNotes(data.notes || []);
+        setSelectedDates(data.importantDates || []);
       } catch (error) {
         console.error("Error fetching single lead:", error);
       }
@@ -59,9 +60,7 @@ const Lead = () => {
       const response = await fetch(`http://localhost:3000/Lead/deleteNotes/${id}/${noteid}`, {
         method: "DELETE",
       });
-  
       if (response.ok) {
-        // Remove the deleted note from state
         setNotes(notes.filter((note) => note._id !== noteid));
       } else {
         console.error("Error deleting note");
@@ -71,14 +70,36 @@ const Lead = () => {
     }
   };
 
-  const handleDateClick = (date) => {
-    const dateStr = date.toDateString();
-    setSelectedDates((prevDates) =>
-      prevDates.includes(dateStr)
-        ? prevDates.filter((d) => d !== dateStr)
-        : [...prevDates, dateStr]
-    );
+  const handleDateClick = async (date) => {
+    const dateStr = date.toISOString().split("T")[0]; 
+    const isDateSelected = selectedDates.includes(dateStr);
+    try {
+      const response = await fetch(
+        isDateSelected
+          ? `http://localhost:3000/Lead/updateDates/${id}/${dateStr}` 
+          : `http://localhost:3000/Lead/updateDates/${id}`, 
+        {
+          method: isDateSelected ? "DELETE" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: isDateSelected ? null : JSON.stringify({ selectedDate: dateStr }), 
+        }
+      );
+  
+      if (response.ok) {
+        setSelectedDates((prevDates) =>
+          isDateSelected
+            ? prevDates.filter((d) => d !== dateStr) 
+            : [...prevDates, dateStr] 
+        );
+      } else {
+        console.error("Failed to update date");
+      }
+    } catch (error) {
+      console.error("Error updating date:", error);
+    }
   };
+  
+  
 
   if (!singleLead) return <div className="p-8">Loading...</div>;
 
@@ -198,7 +219,7 @@ const Lead = () => {
           <Calendar
   onClickDay={handleDateClick}
   tileClassName={({ date }) =>
-    selectedDates.includes(date.toDateString()) ? "react-calendar__tile--active" : ""
+    selectedDates.includes(date.toISOString().split("T")[0]) ? "react-calendar__tile--active" : ""
   }
 />
 </div>

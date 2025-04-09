@@ -95,7 +95,8 @@ export const getLeadById = async (req, res ,next) => {
   }
 };
 
-////notes section
+////===================================================================
+//notes
 export const createnotes = async(req,res,next)=>{
   try {
     const { id } = req.params; 
@@ -150,3 +151,51 @@ export const deletenotes = async(req,res,next)=>{
     res.status(500).json({ error: "Error deleting note" });
   }
 }
+
+//==========================================================
+//calendar section
+
+export const adddate = async (req, res, next) => {
+  console.log("Dates controller working");
+  try {
+    const id = req.params.id;
+    const { selectedDate } = req.body; 
+    const lead = await Lead.findById(id);
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    if (req.method === "POST") {
+      if (!lead.importantDates.includes(selectedDate)) {
+        lead.importantDates.push(selectedDate);
+      }
+    }
+
+    await lead.save();
+    res.status(200).json({ message: "Date updated successfully", lead });
+  } catch (error) {
+    console.error("Error updating date:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};///adding date
+
+export const deleteDate = async (req, res, next) => {
+  console.log("Deleting date...");
+  try {
+    const { id, date } = req.params; 
+    const lead = await Lead.findById(id);
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    lead.importantDates = lead.importantDates.filter((d) => d !== date);
+    await lead.save();
+
+    res.status(200).json({ message: "Date removed successfully", lead });
+  } catch (error) {
+    console.error("Error deleting date:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};///removing date
