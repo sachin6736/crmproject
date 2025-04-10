@@ -78,11 +78,11 @@ const LeadTableHeader = () => {
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
     {/* Top Buttons */}
-    <div className="flex flex-wrap justify-start space-x-2 bg-white rounded-full shadow-md p-2 w-full md:w-1/2">
+    <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
       {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
         <button
           key={index}
-          className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300"
+          className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
           onClick={() => button === "New" && navigate("/userform")}
         >
           {button}
