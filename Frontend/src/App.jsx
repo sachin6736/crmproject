@@ -6,6 +6,7 @@ import Sales from './components/Sales';
 import Lead from './components/Lead';
 import LeadTableHeader from './components/Leads';
 import Homepage from './components/Homepage';
+import Dashboard from './components/Dashboard'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route path="lead/:id" element={<Lead />} />
           </Route>
           <Route path="userform" element={<Userfrom />} />
+          <Route path="dashboard" element={<Dashboard />} />
         </Route>
       </Routes>
     </Router>
