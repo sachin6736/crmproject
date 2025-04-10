@@ -8,6 +8,7 @@ const LeadTableHeader = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const dropdownRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -63,25 +64,41 @@ const LeadTableHeader = () => {
     "Not Qualified": "text-red-600",
   };
 
+  const filteredLeads = leads.filter((lead) =>
+    [lead.clientName, lead.email, lead.phoneNumber]
+      .some(field => field.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   // Calculate paginated data
-  const totalPages = Math.ceil(leads.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentLeads = leads.slice(startIndex, startIndex + itemsPerPage);
+  const currentLeads = filteredLeads.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="p-4 md:p-6">
-      {/* Top Buttons */}
-      <div className="flex flex-wrap justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 w-full md:w-1/2">
-        {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
-          <button
-            key={index}
-            className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300"
-            onClick={() => button === "New" && navigate("/userform")}
-          >
-            {button}
-          </button>
-        ))}
-      </div>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+    {/* Top Buttons */}
+    <div className="flex flex-wrap justify-start space-x-2 bg-white rounded-full shadow-md p-2 w-full md:w-1/2">
+      {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
+        <button
+          key={index}
+          className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300"
+          onClick={() => button === "New" && navigate("/userform")}
+        >
+          {button}
+        </button>
+      ))}
+    </div>
+
+    {/* Search Bar */}
+    <input
+      type="text"
+      placeholder="Search by Name, Email, Phone..."
+      className="px-3 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring focus:border-blue-300"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+    />
+  </div>
 
       {/* Table */}
       <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden overflow-x-auto">

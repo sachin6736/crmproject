@@ -9,11 +9,7 @@ const Sales = () => {
     <div>
        <div className="w-full h-24 bg-[#ffffff] flex flex-col">
         <div className='h-1/2 w-full flex items-center justify-center'>
-        <input 
-          type="text" 
-          placeholder="Search..." 
-          className="w-1/3 h-[30px] b-2 border border-gray-400 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-700"
-        />
+        
         </div>
         <div className='w-full h-1/2  flex flex-row items-start space-x-8'>
         <div className='w-auto h-full  flex items-center justify-center'>
