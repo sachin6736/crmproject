@@ -68,24 +68,24 @@ const statusColor = {
 const Dashboard = () => {
   return (
     <div className='w-full min-h-screen bg-[#f9fafb]'>
-      <div className='w-full h-48 bg-slate-500 flex flex-row space-x-16 p-3 pl-20'>
-        <div className='w-96 h-40 rounded-xl bg-[#ffffff]'></div>
-        <div className='w-96 h-40 rounded-xl bg-[#ffffff]'></div>
-        <div className='w-96 h-40 rounded-xl bg-[#ffffff]'></div>
+      <div className='w-full h-48 flex flex-row space-x-16 p-3 pl-20'>
+        <div className='w-96 h-40 rounded-xl bg-[#ffffff] border  border-slate-200 shadow'></div>
+        <div className='w-96 h-40 rounded-xl bg-[#ffffff] border  border-slate-200 shadow'></div>
+        <div className='w-96 h-40 rounded-xl bg-[#ffffff] border  border-slate-200 shadow'></div>
       </div>
 
-      <div className='w-full h-96 bg-slate-400 flex flex-row space-x-16 pl-20'>
-        <div className='w-[830px] h-full bg-[#ffffff] rounded-xl'></div>
-        <div className='w-96 h-96 bg-[#ffffff] rounded-xl'></div>
+      <div className='w-full h-96 flex flex-row space-x-16 pl-20'>
+        <div className='w-[830px] h-full bg-[#ffffff] rounded-xl border  border-slate-200 shadow'></div>
+        <div className='w-96 h-96 bg-[#ffffff] rounded-xl border  border-slate-200 shadow'></div>
       </div>
 
-      <div className='w-full h-[420px] bg-slate-500 flex flex-row space-x-16 pl-20 pt-5'>
-        <div className='w-[606px] h-96 bg-[#ffffff] rounded-xl'></div>
-        <div className='w-[607px] h-96 bg-[#ffffff] rounded-xl'></div>
+      <div className='w-full h-[420px] flex flex-row space-x-16 pl-20 pt-5'>
+        <div className='w-[606px] h-96 bg-[#ffffff] rounded-xl border  border-slate-200 shadow'></div>
+        <div className='w-[607px] h-96 bg-[#ffffff] rounded-xl border  border-slate-200 shadow'></div>
       </div>
 
-      <div className='w-full min-h-fit bg-slate-500 px-6 py-8 pl-20 pr-24'>
-        <div className="p-6 bg-white rounded-xl shadow">
+      <div className='w-full min-h-fit px-6 py-8 pl-20 pr-24'>
+        <div className="p-6 bg-white rounded-xl shadow border  border-slate-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Recent Orders</h2>
             <div className="space-x-2">
