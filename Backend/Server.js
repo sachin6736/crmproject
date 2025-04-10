@@ -4,7 +4,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 
 //importingroutes
-import leadroutes from './routes/leadroutes.js'
+import leadroutes from './routes/leadroutes.js';
+import dashboardrotes from './routes/dashboardroute.js';
 
 dotenv.config();
 
@@ -13,7 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 //using routes
-app.use('/Lead',leadroutes)
+app.use('/Lead',leadroutes);//leadsarea
+app.use('/Admin',dashboardrotes)//dasboard
 
 const port = process.env.port || 5000
 mongoose.connect(process.env.MONGO_URI, {
