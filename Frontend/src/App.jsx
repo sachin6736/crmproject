@@ -17,7 +17,6 @@ function App() {
             <Route index element={<LeadTableHeader />} />
             <Route path="lead/:id" element={<Lead />} />
           </Route>
-
           <Route path="userform" element={<Userfrom />} />
         </Route>
       </Routes>

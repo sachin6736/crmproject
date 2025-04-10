@@ -18,7 +18,7 @@ const leadSchema = new mongoose.Schema({
     notes: [
       {
         text: String,
-        addedBy: String, // Salesperson's name or ID
+        addedBy: String, 
         createdAt: { type: Date, default: Date.now },
       },
     ],

@@ -18,7 +18,6 @@ export default function Homepage() {
           <p className="text-lg font-bold">1,200</p>
           <span className="text-sm">Total Customers</span>
         </div>
-
         <div className="p-4 bg-green-500 text-white rounded-lg shadow-md flex flex-col items-center">
           <Briefcase className="h-8 w-8" />
           <p className="text-lg font-bold">350</p>
@@ -48,7 +47,6 @@ export default function Homepage() {
           <li className="py-2">📢 Marketing campaign "Spring Offer" launched</li>
         </ul>
       </div>
-
       {/* Quick Navigation */}
       <div className="mt-6 flex gap-4">
         <button 
