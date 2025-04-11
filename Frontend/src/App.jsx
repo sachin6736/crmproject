@@ -7,6 +7,7 @@ import Lead from './components/Lead';
 import LeadTableHeader from './components/Leads';
 import Homepage from './components/Homepage';
 import Dashboard from './components/Dashboard'
+import Login from './components/Login';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route index element={<LeadTableHeader />} />
             <Route path="lead/:id" element={<Lead />} />
           </Route>
+          <Route path="/login" element={<Login/>}/>
           <Route path="userform" element={<Userfrom />} />
           <Route path="dashboard" element={<Dashboard />} />
         </Route>
