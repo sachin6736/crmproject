@@ -63,6 +63,7 @@ const LeadTableHeader = () => {
     "Not Interested": "text-red-500",
     "Price too high": "text-orange-500",
     "Part not available": "text-purple-600",
+    Ordered:"text-green-600"
   };
   
 
