@@ -56,13 +56,15 @@ const LeadTableHeader = () => {
     }
   };
 
-  const statusTextColors = {
-    Lead: "text-blue-600",
-    Contacted: "text-yellow-500",
-    Nurturing: "text-purple-600",
-    Qualified: "text-green-600",
-    "Not Qualified": "text-red-600",
+  const statusTextColors = { 
+    Quoted: "text-yellow-600",
+    "No Response": "text-gray-500",
+    "Wrong Number": "text-red-500",
+    "Not Interested": "text-red-500",
+    "Price too high": "text-orange-500",
+    "Part not available": "text-purple-600",
   };
+  
 
   const filteredLeads = leads.filter((lead) =>
     [lead.clientName, lead.email, lead.phoneNumber]
@@ -141,12 +143,15 @@ const LeadTableHeader = () => {
                       >
                         {Object.keys(statusTextColors).map((status) => (
                           <div
-                            key={status}
-                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
-                            onClick={() => updateStatus(lead._id, status)}
-                          >
-                            {status}
-                          </div>
+                          key={status}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent outside click listener from firing
+                            updateStatus(lead._id, status);
+                          }}
+                        >
+                          {status}
+                        </div>                        
                         ))}
                       </div>
                     )}

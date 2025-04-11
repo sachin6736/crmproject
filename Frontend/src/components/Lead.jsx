@@ -120,7 +120,7 @@ const Lead = () => {
 
       <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14">
         <div className="bg-[#e5e5e5] p-2 m-2 w-3/4 h-3/4 flex justify-start space-x-2 rounded-full items-center">
-          {['Lead', 'Contacted', 'Nurturing', 'Qualified', 'Not Qualified'].map((status, index) => {
+          {['Quoted', 'No Response', 'Wrong Number', 'Not Interested', 'Price too high','Part not availble'].map((status, index) => {
             const isActive=singleLead.status === status;
             return(
             <button

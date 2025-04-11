@@ -12,8 +12,8 @@ const leadSchema = new mongoose.Schema({
     trim: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Lead", "Contacted", "Nurturing", "Qualified", "Not Qualified"], 
-      default: "Lead",
+      enum: ["Quoted", "No Response", "Wrong Number", "Not Interested","Price too high","Part not available"], 
+      default: "Quoted",
     },
     notes: [
       {
