@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const SignUp = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,7 +18,7 @@ const SignUp = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const { name, email, password, confirmPassword } = formData;
 
@@ -29,8 +32,27 @@ const SignUp = () => {
       return;
     }
 
-    console.log('Registering user:', formData);
-    // Add API call here
+    try {
+      const response = await fetch('http://localhost:3000/Auth/signup', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || 'Something went wrong');
+        return;
+      }
+      // alert('Signup successful! Redirecting to login...');
+      navigate('/');
+    } catch (error) {
+      console.error('Signup error:', error);
+      alert('Failed to sign up. Please try again.');
+    }
   };
 
   return (

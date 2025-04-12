@@ -6,16 +6,22 @@ import cors from 'cors';
 //importingroutes
 import leadroutes from './routes/leadroutes.js';
 import dashboardrotes from './routes/dashboardroute.js';
+import authroutes from './routes/authroutes.js'
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+const FRONTEND_URL = "http://localhost:5173";
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true, 
+}));
 app.use(express.json());
 
 //using routes
 app.use('/Lead',leadroutes);//leadsarea
-app.use('/Admin',dashboardrotes)//dasboard
+app.use('/Admin',dashboardrotes)//dashboard
+app.use('/Auth',authroutes);//authentication routes
 
 const port = process.env.port || 5000
 mongoose.connect(process.env.MONGO_URI, {
