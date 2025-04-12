@@ -1,4 +1,4 @@
-import React from 'react';
+import React ,{ useState, useEffect }  from 'react';
 import { Trash2 } from 'lucide-react';
 
 const orders = [
@@ -66,12 +66,32 @@ const statusColor = {
 };
 
 const Dashboard = () => {
+
+  const [totalClients, setTotalClients] = useState(0);
+
+  useEffect(() => {
+    const fetchLeadCount = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/Admin/getleadcount'); 
+        const data = await response.json();
+        setTotalClients(data.leadcount);
+      } catch (error) {
+        console.error("Error fetching lead count:", error);
+      }
+    };
+
+    fetchLeadCount();
+  }, []);
+
   return (
     <div className='w-full min-h-screen bg-[#f9fafb]'>
-      <div className='w-full h-48 flex flex-row space-x-16 p-3 pl-20'>
-        <div className='w-96 h-40 rounded-xl bg-[#ffffff] border  border-slate-200 shadow'></div>
-        <div className='w-96 h-40 rounded-xl bg-[#ffffff] border  border-slate-200 shadow'></div>
-        <div className='w-96 h-40 rounded-xl bg-[#ffffff] border  border-slate-200 shadow'></div>
+      <div className='w-full h-48 bg-slate-500 flex flex-row space-x-16 p-3 pl-20'>
+      <div className='w-96 h-40 rounded-xl bg-white flex flex-col items-center justify-center shadow-lg p-4'>
+          <h3 className="text-gray-500 text-lg">Total Clients</h3>
+          <span className="text-4xl font-bold text-blue-600">{totalClients}</span>
+        </div>
+        <div className='w-96 h-40 rounded-xl bg-[#ffffff]'></div>
+        <div className='w-96 h-40 rounded-xl bg-[#ffffff]'></div>
       </div>
 
       <div className='w-full h-96 flex flex-row space-x-16 pl-20'>

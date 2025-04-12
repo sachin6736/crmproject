@@ -9,6 +9,8 @@ const LeadTableHeader = () => {
   const itemsPerPage = 10;
   const dropdownRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -68,10 +70,11 @@ const LeadTableHeader = () => {
   
 
   const filteredLeads = leads.filter((lead) =>
-    [lead.clientName, lead.email, lead.phoneNumber]
-      .some(field => field.toLowerCase().includes(searchQuery.toLowerCase()))
+    [lead.clientName, lead.email, lead.phoneNumber].some(field =>
+      field.toLowerCase().includes(searchQuery.toLowerCase())
+    ) && (statusFilter === "" || lead.status === statusFilter) // Filter by status
   );
-
+  
   // Calculate paginated data
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -79,29 +82,42 @@ const LeadTableHeader = () => {
 
   return (
     <div className="p-4 md:p-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-    {/* Top Buttons */}
-    <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
-      {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
-        <button
-          key={index}
-          className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
-          onClick={() => button === "New" && navigate("/userform")}
-        >
-          {button}
-        </button>
-      ))}
-    </div>
+    <div className="flex items-center justify-between flex-wrap gap-4">
+  {/* Top Buttons */}
+  <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
+    {["New", "Import", "Contacts", "Calendar", "Testing"].map((button, index) => (
+      <button
+        key={index}
+        className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
+        onClick={() => button === "New" && navigate("/userform")}
+      >
+        {button}
+      </button>
+    ))}
+  </div>
 
-    {/* Search Bar */}
+  {/* Search Bar & Status Filter */}
+  <div className="flex items-center space-x-4">
     <input
       type="text"
       placeholder="Search by Name, Email, Phone..."
-      className="px-3 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring focus:border-blue-300"
+      className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300"
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
     />
+
+    <select
+      className="border px-3 py-2 rounded-md"
+      value={statusFilter}
+      onChange={(e) => setStatusFilter(e.target.value)}
+    >
+      <option value="">All</option>
+      {Object.keys(statusTextColors).map((status) => (
+        <option key={status} value={status}>{status}</option>
+      ))}
+    </select>
   </div>
+</div>
 
       {/* Table */}
       <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden overflow-x-auto">
