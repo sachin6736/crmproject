@@ -89,7 +89,7 @@ const LeadTableHeader = () => {
       <button
         key={index}
         className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
-        onClick={() => button === "New" && navigate("/userform")}
+        onClick={() => button === "New" && navigate("/home/userform")}
       >
         {button}
       </button>
@@ -139,7 +139,7 @@ const LeadTableHeader = () => {
                 <tr key={index} className="border-t hover:bg-gray-100">
                   <td
                     className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
-                    onClick={() => navigate(`/sales/lead/${lead._id}`)}
+                    onClick={() => navigate(`/home/sales/lead/${lead._id}`)}
                   >
                     {lead.clientName}
                   </td>

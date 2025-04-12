@@ -6,7 +6,7 @@ import Home from './components/Home';
 import Homepage from './components/Homepage';
 import Sales from './components/Sales';
 import Lead from './components/Lead';
-import LeadTableHeader from './components/Lead'
+import LeadTableHeader from './components/Leads'
 import Userfrom from './components/Userfrom';
 
 function App() {
@@ -20,12 +20,12 @@ function App() {
         {/* Protected routes (after login) under /home */}
         <Route path="/home" element={<Home />}>
           <Route index element={<Homepage />} />
-          <Route path="sales" element={<Sales />}>
+          <Route path="/home/sales" element={<Sales />}>
             <Route index element={<LeadTableHeader />} />
-            <Route path="lead/:id" element={<Lead />} />
+            <Route path="/home/sales/lead/:id" element={<Lead />} />
           </Route>
-          <Route path="userform" element={<Userfrom />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="/home/userform" element={<Userfrom />} />
+          <Route path="/home/dashboard" element={<Dashboard />} />
         </Route>
       </Routes>
     </Router>
