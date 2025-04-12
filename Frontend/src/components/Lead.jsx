@@ -1,8 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Triangle, Pencil, Save, Edit ,Trash2} from 'lucide-react';
+import { Triangle, Pencil, Save, Edit, Trash2, ChevronDown } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+
+const statusOptions = [
+  'Quoted',
+  'No Response',
+  'Wrong Number',
+  'Not Interested',
+  'Price too high',
+  'Part not available',
+  'Ordered',
+];
+
+const statusTextColors = {
+  Quoted: "text-yellow-600",
+  "No Response": "text-gray-500",
+  "Wrong Number": "text-red-500",
+  "Not Interested": "text-red-500",
+  "Price too high": "text-orange-500",
+  "Part not available": "text-purple-600",
+  Ordered: "text-green-600"
+};
 
 const Lead = () => {
   const { id } = useParams();
@@ -11,13 +31,12 @@ const Lead = () => {
   const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   useEffect(() => {
     const fetchSingleLead = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:3000/Lead/getleadbyid/${id}`
-        );
+        const response = await fetch(`http://localhost:3000/Lead/getleadbyid/${id}`);
         const data = await response.json();
         setSingleLead(data);
         setNotes(data.notes || []);
@@ -29,21 +48,16 @@ const Lead = () => {
 
     fetchSingleLead();
   }, [id]);
-  console.log("notes",notes);
-  
 
   const handleSaveNotes = async () => {
     if (!newNote.trim()) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/Lead/updateNotes/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: newNote }),
-        }
-      );
+      const response = await fetch(`http://localhost:3000/Lead/updateNotes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newNote }),
+      });
 
       if (response.ok) {
         setNotes([...notes, { text: newNote, createdAt: new Date() }]);
@@ -71,25 +85,23 @@ const Lead = () => {
   };
 
   const handleDateClick = async (date) => {
-    const dateStr = date.toISOString().split("T")[0]; 
+    const dateStr = date.toISOString().split("T")[0];
     const isDateSelected = selectedDates.includes(dateStr);
     try {
       const response = await fetch(
         isDateSelected
-          ? `http://localhost:3000/Lead/updateDates/${id}/${dateStr}` 
-          : `http://localhost:3000/Lead/updateDates/${id}`, 
+          ? `http://localhost:3000/Lead/updateDates/${id}/${dateStr}`
+          : `http://localhost:3000/Lead/updateDates/${id}`,
         {
           method: isDateSelected ? "DELETE" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: isDateSelected ? null : JSON.stringify({ selectedDate: dateStr }), 
+          body: isDateSelected ? null : JSON.stringify({ selectedDate: dateStr }),
         }
       );
-  
+
       if (response.ok) {
         setSelectedDates((prevDates) =>
-          isDateSelected
-            ? prevDates.filter((d) => d !== dateStr) 
-            : [...prevDates, dateStr] 
+          isDateSelected ? prevDates.filter((d) => d !== dateStr) : [...prevDates, dateStr]
         );
       } else {
         console.error("Failed to update date");
@@ -98,8 +110,25 @@ const Lead = () => {
       console.error("Error updating date:", error);
     }
   };
-  
-  
+
+  const updateStatus = async (leadId, newStatus) => {
+    try {
+      const response = await fetch(`http://localhost:3000/Lead/updatelead/${leadId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setSingleLead((prev) => ({ ...prev, status: newStatus }));
+        setShowStatusDropdown(false);
+      } else {
+        console.error("Failed to update status");
+      }
+    } catch (error) {
+      console.error("Error updating lead status:", error);
+    }
+  };
 
   if (!singleLead) return <div className="p-8">Loading...</div>;
 
@@ -115,30 +144,39 @@ const Lead = () => {
           ))}
         </div>
       </div>
-      
-      {/* Active status buttons */}
 
-      <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14">
-        <div className="bg-[#e5e5e5] p-2 m-2 w-3/4 h-3/4 flex justify-start space-x-2 rounded-full items-center">
-          {['Quoted', 'No Response', 'Wrong Number', 'Not Interested', 'Price too high','Part not availble','Ordered'].map((status, index) => {
-            const isActive=singleLead.status === status;
-            return(
-            <button
-              key={index}
-              className={`flex items-center justify-center w-40 border-r last:border-r-0 border-gray-300 transition-colors ${
-                isActive ? 'bg-[#032d60] text-white' : 'bg-transparent text-black'
-              }`}
-            >
-              {status}
-            </button>
-            )
-        })}
+      {/* Active status dropdown */}
+      <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14 space-x-8">
+        <div className="bg-white p-2 m-2 w-3/4 h-3/4 flex justify-start space-x-6 rounded-full items-center relative">
+          <button
+            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+            className={`flex items-center justify-between px-4 py-2 w-40 rounded-full bg-[#032d60] text-white text-sm font-medium`}
+          >
+            <span className={`${singleLead.status}`}>
+              {singleLead.status}
+            </span>
+            <ChevronDown size={16} />
+          </button>
+
+          {showStatusDropdown && (
+            <div className="absolute top-14 left-2 z-10 bg-white border rounded shadow-md w-40">
+              {statusOptions.map((status, index) => (
+                <div
+                  key={index}
+                  onClick={() => updateStatus(singleLead._id, status)}
+                  className={`px-4 py-2 text-sm cursor-pointer hover:bg-blue-100 ${statusTextColors[status]}`}
+                >
+                  {status}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-300 p-4 rounded-xl">
-        {/* Left Section - Lead Details */}
+        {/* Lead Details */}
         <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50 p-4">
           <h2 className="text-lg font-semibold border-b pb-2">{singleLead.clientName}</h2>
           <div className="mt-2 space-y-2 overflow-y-auto">
@@ -158,22 +196,17 @@ const Lead = () => {
                 <span className="text-gray-600 font-medium">{item.label}</span>
                 <div className="flex items-center gap-2">
                   {item.isLink ? (
-                    <a href={`mailto:${item.value}`} className="text-blue-500 hover:underline">
-                      {item.value}
-                    </a>
+                    <a href={`mailto:${item.value}`} className="text-blue-500 hover:underline">{item.value}</a>
                   ) : (
                     <span>{item.value}</span>
                   )}
-                  {/* <span className="text-gray-400 cursor-pointer hover:text-gray-600">
-                    <Pencil size={16} />
-                  </span> */}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Center Section - Notes */}
+        {/* Notes Section */}
         <div className="w-full h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md flex flex-col">
           <h2 className="text-lg font-semibold border-b pb-2">Notes</h2>
           <div className="p-2 mt-2 text-gray-700 whitespace-pre-wrap overflow-y-auto flex-1">
@@ -184,9 +217,7 @@ const Lead = () => {
                     <p>{note.text}</p>
                     <small className="text-gray-500">{new Date(note.createdAt).toLocaleString()}</small>
                   </div>
-                  <div className="flex space-x-3">
-                    <button onClick={() => handleDeleteNote(note._id)} ><Trash2 size={16} /></button>
-                  </div>
+                  <button onClick={() => handleDeleteNote(note._id)}><Trash2 size={16} /></button>
                 </div>
               ))
             ) : (
@@ -211,24 +242,21 @@ const Lead = () => {
           )}
         </div>
 
-        {/* Right Section - Empty for Future Use */}
-        <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50">
+        {/* Calendar Section */}
         <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md flex flex-col">
           <h2 className="text-lg font-semibold border-b pb-2">Important Dates</h2>
           <div className="flex justify-center items-center">
-          <Calendar
-  onClickDay={handleDateClick}
-  tileClassName={({ date }) =>
-    selectedDates.includes(date.toISOString().split("T")[0]) ? "react-calendar__tile--active" : ""
-  }
-/>
-</div>
-</div>
-      </div>
+            <Calendar
+              onClickDay={handleDateClick}
+              tileClassName={({ date }) =>
+                selectedDates.includes(date.toISOString().split("T")[0]) ? "react-calendar__tile--active" : ""
+              }
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 };
-
 
 export default Lead;
