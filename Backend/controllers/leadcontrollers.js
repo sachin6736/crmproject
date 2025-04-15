@@ -50,16 +50,48 @@ export const createleads = async (req,res,next)=>{
 }
 
 //getting leads
-export const getleads = async(req,res,next)=>{
-  console.log("getlist controller working")
-  try {
-    const leads = await Lead.find();
-    res.status(200).json(leads)
-  } catch (error) {
-    console.log(error) 
-    res.status(500).json('error while fetching leads.')
+export const getleads = async (req, res, next) => {
+  console.log("getlist controller working");
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const search = req.query.search || "";
+  const status = req.query.status || "";
+
+  const query = {};
+
+  // Search logic (on clientName, email, phoneNumber)
+  if (search) {
+    query.$or = [
+      { clientName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { phoneNumber: { $regex: search, $options: "i" } }
+    ];
   }
-}
+
+  // Status filter logic
+  if (status) {
+    query.status = status;
+  }
+
+  try {
+    const totalLeads = await Lead.countDocuments(query);
+    const leads = await Lead.find(query)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      leads,
+      totalPages: Math.ceil(totalLeads / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Error while fetching leads.");
+  }
+};
+
+
 
 //editing lead status
 export const editstatus = async(req,res,next)=>{

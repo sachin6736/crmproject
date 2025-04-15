@@ -2,35 +2,44 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import cookieParser from 'cookie-parser'; 
 
-//importingroutes
+// Importing routes
 import leadroutes from './routes/leadroutes.js';
 import dashboardrotes from './routes/dashboardroute.js';
-import authroutes from './routes/authroutes.js'
+import authroutes from './routes/authroutes.js';
 
 dotenv.config();
 
 const app = express();
 const FRONTEND_URL = "http://localhost:5173";
+
+// CORS Configuration
 app.use(cors({
   origin: FRONTEND_URL,
-  credentials: true, 
+  credentials: true,
 }));
+
+// Middleware to parse JSON and cookies
 app.use(express.json());
+app.use(cookieParser()); // <-- Add this line to parse cookies
 
-//using routes
-app.use('/Lead',leadroutes);//leadsarea
-app.use('/Admin',dashboardrotes)//dashboard
-app.use('/Auth',authroutes);//authentication routes
+// Using routes
+app.use('/Lead', leadroutes); // Leads area
+app.use('/Admin', dashboardrotes); // Dashboard
+app.use('/Auth', authroutes); // Authentication routes
 
-const port = process.env.port || 5000
+const port = process.env.PORT || 5000;
+
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .then(() => console.log('mongodb connected'))
-  .catch(err => console.log('error occured', err))
-
-app.listen(port, () => {
-  console.log(`server running on port ${port}`)
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 })
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.log('Error occurred', err));
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
