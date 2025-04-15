@@ -9,6 +9,23 @@ import { useState } from 'react'
 function Home() {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+
+  const handlelogout = async()=>{
+    try {
+      console.log("logout controller working")
+      const res = await fetch("http://localhost:3000/Auth/logout",{
+        method:'POST',
+        credentials:"include",
+      });
+      if(res.ok){
+        navigate("/")
+      }else{
+        console.log("logout  failed")
+      }
+    } catch (error) {
+      console.log("error during logout ",error)
+    }
+  }
   return (
     <>
     <div className='w-screen h-screen bg-white flex'>
@@ -76,9 +93,9 @@ function Home() {
         {showDropdown && (
         <div className="absolute right-0 mt-40 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
           <ul className="py-1 text-sm text-gray-700">
-          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Profile</li>
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer"  >Profile</li>
           <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Settings</li>
-          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</li>
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={handlelogout} >Logout</li>
           </ul>
         </div>
       )}
