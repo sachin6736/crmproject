@@ -1,54 +1,73 @@
 import Lead from "../models/lead.js";
+import User from '../models/user.js';
+import RoundRobinState from '../models/RoundRobinState.js';
 import sendEmail from "../sendEmail.js";
 
 const ADMIN_EMAIL = "sachinpradeepan27@gmail.com"; 
 
 // creating leads
-export const createleads = async (req,res,next)=>{
-    console.log("lead creation working");
-    const {clientName,phoneNumber,email,zip,partRequested,make,model,year,trim,} = req.body;
-    if(!clientName||!phoneNumber||!email||!zip||!partRequested||!make||!model||!year||!trim){
-        res.status(401).json('all fields are necessary')
-    }else{
-        const newLead = new Lead({
-            clientName: clientName,
-            phoneNumber: phoneNumber,
-            email: email,
-            zip: zip,
-            partRequested: partRequested,
-            make: make,
-            model: model,
-            year: year,
-            trim: trim,
-          });      
-          try {
-            await newLead.save();
-            const emailContent = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
-              <h2 style="color: #333;">New Quotation Request</h2>
-              <p><strong>Name:</strong> ${clientName}</p>
-              <p><strong>Phone:</strong> ${phoneNumber}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Zip Code:</strong> ${zip}</p>
-              <p><strong>Part Requested:</strong> ${partRequested}</p>
-              <p><strong>Make:</strong> ${make}</p>
-              <p><strong>Model:</strong> ${model}</p>
-              <p><strong>Year:</strong> ${year}</p>
-              <p><strong>Trim:</strong> ${trim}</p>
-              <hr>
-              <p style="color: gray;">This is an automated email from your CRM system.</p>
-            </div>
-          `;
-      
-          // Send Email to Admin
-          await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
-          res.status(201).json({ message: "Lead created successfully and email sent" });
-          } catch (error) {
-            console.log("an error occured",error)
-          }
-    }         
-}
+export const createleads = async (req, res, next) => {
+  console.log("Lead creation working");
 
+  const { clientName, phoneNumber, email, zip, partRequested, make, model, year, trim } = req.body;
+  if (!clientName || !phoneNumber || !email || !zip || !partRequested || !make || !model || !year || !trim) {
+      return res.status(401).json('All fields are necessary');
+  } else {
+      try {
+          const salesTeam = await User.find({ role: 'sales' });
+          if (salesTeam.length === 0) {
+              return res.status(400).json({ message: "No sales team members found" });
+          }
+          let roundRobinState = await RoundRobinState.findOne();
+          console.log("index",roundRobinState)
+          if (!roundRobinState) {
+              roundRobinState = new RoundRobinState();
+              await roundRobinState.save();
+          }
+          const salesPerson = salesTeam[roundRobinState.currentIndex];
+          const newLead = new Lead({
+              clientName,
+              phoneNumber,
+              email,
+              zip,
+              partRequested,
+              make,
+              model,
+              year,
+              trim,
+              salesPerson: salesPerson._id, 
+          });
+          await newLead.save();
+          const nextIndex = (roundRobinState.currentIndex + 1) % salesTeam.length;
+          roundRobinState.currentIndex = nextIndex;
+          await roundRobinState.save();
+          // const emailContent = `
+          //     <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
+          //         <h2 style="color: #333;">New Quotation Request</h2>
+          //         <p><strong>Name:</strong> ${clientName}</p>
+          //         <p><strong>Phone:</strong> ${phoneNumber}</p>
+          //         <p><strong>Email:</strong> ${email}</p>
+          //         <p><strong>Zip Code:</strong> ${zip}</p>
+          //         <p><strong>Part Requested:</strong> ${partRequested}</p>
+          //         <p><strong>Make:</strong> ${make}</p>
+          //         <p><strong>Model:</strong> ${model}</p>
+          //         <p><strong>Year:</strong> ${year}</p>
+          //         <p><strong>Trim:</strong> ${trim}</p>
+          //         <hr>
+          //         <p style="color: gray;">This is an automated email from your CRM system.</p>
+          //     </div>
+          // `;
+
+          // // Send Email to Admin
+          // await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
+          res.status(201).json({ message: "Lead created successfully and email sent" });
+
+      } catch (error) {
+          console.log("An error occurred", error);
+          res.status(500).json({ message: "Error creating lead" });
+      }
+  }
+};
 //getting leads
 export const getleads = async (req, res, next) => {
   console.log("getlist controller working");
@@ -58,8 +77,7 @@ export const getleads = async (req, res, next) => {
   const status = req.query.status || "";
 
   const query = {};
-
-  // Search logic (on clientName, email, phoneNumber)
+ // Search logic (on clientName, email, phoneNumber)
   if (search) {
     query.$or = [
       { clientName: { $regex: search, $options: "i" } },
