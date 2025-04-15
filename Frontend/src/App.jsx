@@ -6,8 +6,9 @@ import Home from './components/Home';
 import Homepage from './components/Homepage';
 import Sales from './components/Sales';
 import Lead from './components/Lead';
-import LeadTableHeader from './components/Lead'
+import LeadTableHeader from './components/Leads'
 import Userfrom from './components/Userfrom';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -18,14 +19,14 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
 
         {/* Protected routes (after login) under /home */}
-        <Route path="/home" element={<Home />}>
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>}>
           <Route index element={<Homepage />} />
-          <Route path="sales" element={<Sales />}>
+          <Route path="/home/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>}>
             <Route index element={<LeadTableHeader />} />
-            <Route path="lead/:id" element={<Lead />} />
+            <Route path="/home/sales/lead/:id" element={<Lead />} />
           </Route>
-          <Route path="userform" element={<Userfrom />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="/home/userform" element={<Userfrom />} />
+          <Route path="/home/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         </Route>
       </Routes>
     </Router>

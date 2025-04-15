@@ -29,7 +29,7 @@ function Home() {
           </div>
           <span className="text-white text-[10px] font-bold">Accounts</span>
         </div>
-        <div className="flex flex-col items-center space-y-1 " onClick={() => navigate('/sales')}>
+        <div className="flex flex-col items-center space-y-1 " onClick={() => navigate('/home/sales')}>
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
             <LineChart className='h-6 w-6 text-white' />
           </div>
