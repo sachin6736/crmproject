@@ -3,10 +3,12 @@ import Sales from './Sales'
 import { Outlet } from 'react-router-dom'
 import { Home as HomeIcon,Users,Briefcase,LineChart,Headset,Megaphone,LucideShoppingCart,PenTool,User} from "lucide-react"
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 
 
 function Home() {
   const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
   return (
     <>
     <div className='w-screen h-screen bg-white flex'>
@@ -66,9 +68,22 @@ function Home() {
           <span className="text-white text-[10px] font-bold">Your Account</span>
         </div>
      </div>
-     <div className="flex-1 h-screen ml-20">
-        <div className="w-full h-12 bg-[#066afe]"></div>
-        <div className="">
+     <div className="flex-1 h-screen ml-20 flex flex-col">
+        <div className="w-full h-12 bg-[#066afe]  flex items-center justify-end pr-4">
+        <button onClick={() => setShowDropdown(!showDropdown)} type="button" className='w-8 h-8 bg-white text-[#066afe] rounded-full flex items-center justify-center'>
+               <User className='w-5 h-5' />
+        </button>
+        {showDropdown && (
+        <div className="absolute right-0 mt-40 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+          <ul className="py-1 text-sm text-gray-700">
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Profile</li>
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Settings</li>
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</li>
+          </ul>
+        </div>
+      )}
+        </div>
+        <div className="flex-1 overflow-y-auto">
         <Outlet/>
         </div>
       </div>
