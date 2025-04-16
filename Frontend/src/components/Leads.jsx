@@ -213,7 +213,7 @@ const LeadTableHeader = () => {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-center items-center mt-4 space-x-2 border border-black bg-white z-20 relative">
+        <div className="flex justify-center items-center mt-4 space-x-2  bg-[#cbd5e1] z-20 relative">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"

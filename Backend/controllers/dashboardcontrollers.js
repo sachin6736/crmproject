@@ -25,3 +25,15 @@ export const getcountbystatus = async(req,res,next)=>{
         res.status(500).json({error: "internal server error"})
     }
 }
+
+export const getorders = async (req,res,next)=>{
+    console.log("getorders working")
+    try {
+        const result = await Lead.find({status:'Ordered'})
+        console.log("orderd",result);
+        res.status(200).json(result)
+    } catch (error) {
+        res.status(500).json({error: "internal server error"})
+        console.log(error)
+    }
+}
