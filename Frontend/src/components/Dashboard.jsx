@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
-
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 const Dashboard = () => {
   const [totalClients, setTotalClients] = useState(0);
   const [countbystatus, setCountbystatus] = useState([]);
-  const [orders,setOrders]=useState([]);
+  const [orders, setOrders] = useState([]);
 
   const statusColor = {
     Quoted: 'bg-yellow-100 text-yellow-800',
@@ -16,7 +25,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchLeadCount = async () => {
       try {
-        const response = await fetch('http://localhost:3000/Admin/getleadcount'); 
+        const response = await fetch('http://localhost:3000/Admin/getleadcount');
         const data = await response.json();
         setTotalClients(data.leadcount);
       } catch (error) {
@@ -30,7 +39,7 @@ const Dashboard = () => {
   useEffect(() => {
     const GetstatusCount = async () => {
       try {
-        const response = await fetch('http://localhost:3000/Admin/getcountbystatus'); 
+        const response = await fetch('http://localhost:3000/Admin/getcountbystatus');
         const datas = await response.json();
         console.log("Fetched status count data:", datas);
         setCountbystatus(datas);
@@ -48,16 +57,9 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (countbystatus.length > 0) {
-      console.log("Count for Quoted:", getStatusCount("Quoted"));
-      console.log("Count for Ordered:", getStatusCount("Ordered"));
-    }
-  }, [countbystatus]);
-
-  useEffect(() => {
     const Getallorders = async () => {
       try {
-        const response = await fetch('http://localhost:3000/Admin/getallorders'); 
+        const response = await fetch('http://localhost:3000/Admin/getallorders');
         const orders = await response.json();
         console.log("Fetched all orders:", orders);
         setOrders(orders);
@@ -65,9 +67,23 @@ const Dashboard = () => {
         console.error("Error fetching allorders:", error);
       }
     };
-  
-    Getallorders(); 
+
+    Getallorders();
   }, []);
+
+  const chartData = [
+    { month: 'Jan', daily: 300, monthly: 2400 },
+    { month: 'Feb', daily: 500, monthly: 1398 },
+    { month: 'Mar', daily: 200, monthly: 9800 },
+    { month: 'Apr', daily: 278, monthly: 3908 },
+    { month: 'May', daily: 189, monthly: 4800 },
+  ];
+
+  const team = [
+    { name: "Ayesha Khan", role: "Sales Executive" },
+    { name: "Ravi Patel", role: "Lead Manager" },
+    { name: "John Doe", role: "Support Specialist" },
+  ];
 
   return (
     <div className='w-full min-h-screen bg-[#f9fafb]'>
@@ -94,12 +110,39 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Other sections */}
+      {/* Sales Graph + My Team */}
       <div className='w-full h-96 flex flex-row space-x-16 pl-20'>
-        <div className='w-[830px] h-full bg-[#ffffff] rounded-xl border border-slate-200 shadow'></div>
-        <div className='w-96 h-96 bg-[#ffffff] rounded-xl border border-slate-200 shadow'></div>
+        {/* Graph */}
+        <div className='w-[830px] h-full bg-[#ffffff] rounded-xl border border-slate-200 shadow p-4'>
+          <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
+          <ResponsiveContainer width="100%" height="85%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="daily" stroke="#8884d8" name="Daily Sales" />
+              <Line type="monotone" dataKey="monthly" stroke="#82ca9d" name="Monthly Sales" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* My Team */}
+        <div className='w-96 h-full bg-[#ffffff] rounded-xl border border-slate-200 shadow p-4'>
+          <h3 className="text-lg font-semibold mb-4">My Team</h3>
+          <ul className="space-y-3">
+            {team.map((member, index) => (
+              <li key={index} className="flex flex-col">
+                <span className="font-medium text-gray-800">{member.name}</span>
+                <span className="text-sm text-gray-500">{member.role}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
+      {/* Placeholder Boxes */}
       <div className='w-full h-[420px] flex flex-row space-x-16 pl-20 pt-5'>
         <div className='w-[606px] h-96 bg-[#ffffff] rounded-xl border border-slate-200 shadow'></div>
         <div className='w-[607px] h-96 bg-[#ffffff] rounded-xl border border-slate-200 shadow'></div>
@@ -120,10 +163,9 @@ const Dashboard = () => {
             <table className="min-w-full table-auto">
               <thead>
                 <tr className="text-left text-sm text-gray-600 border-b">
-                  <th className="p-2">Deal ID</th>
-                  <th className="p-2">Customer</th>
-                  <th className="p-2">Product/Service</th>
-                  <th className="p-2">Deal Value</th>
+                  <th className="p-2">Client Name</th>
+                  <th className="p-2 pl-14">Email</th>
+                  <th className="p-2">Part Requested</th>
                   <th className="p-2">Close Date</th>
                   <th className="p-2">Status</th>
                   <th className="p-2">Action</th>
@@ -132,21 +174,21 @@ const Dashboard = () => {
               <tbody>
                 {orders.map((order, index) => (
                   <tr key={index} className="border-b text-sm">
-                    <td className="p-2">{order.id}</td>
+                    <td className="p-2">{order.clientName}</td>
                     <td className="p-2 flex items-center gap-2">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${order.color}`}>
-                        {order.initials}
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${order.color}`}
+                      >
+                        {order.email[0]?.toUpperCase()}
                       </div>
-                      <div>
-                        <div className="font-medium">{order.name}</div>
-                        <div className="text-gray-500">{order.email}</div>
-                      </div>
+                      <div className="text-gray-500">{order.email}</div>
                     </td>
-                    <td className="p-2">{order.product}</td>
-                    <td className="p-2">{order.value}</td>
+                    <td className="p-2">{order.partRequested}</td>
                     <td className="p-2">{order.date}</td>
                     <td className="p-2">
-                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${statusColor[order.status]}`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full font-medium ${statusColor[order.status]}`}
+                      >
                         {order.status}
                       </span>
                     </td>
