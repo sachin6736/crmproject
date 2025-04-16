@@ -15,6 +15,7 @@ const leadSchema = new mongoose.Schema({
       enum: ["Quoted", "No Response", "Wrong Number", "Not Interested","Price too high","Part not available","Ordered"], 
       default: "Quoted",
     },
+    salesPerson: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     notes: [
       {
         text: String,

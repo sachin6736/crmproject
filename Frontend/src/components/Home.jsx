@@ -9,11 +9,28 @@ import { useState } from 'react'
 function Home() {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+
+  const handlelogout = async()=>{
+    try {
+      console.log("logout controller working")
+      const res = await fetch("http://localhost:3000/Auth/logout",{
+        method:'POST',
+        credentials:"include",
+      });
+      if(res.ok){
+        navigate("/")
+      }else{
+        console.log("logout  failed")
+      }
+    } catch (error) {
+      console.log("error during logout ",error)
+    }
+  }
   return (
     <>
     <div className='w-screen h-screen bg-white flex'>
      <div className="w-20 h-screen bg-[#002775] fixed left-0 top-0 border-r-[2px] border-r-white flex flex-col items-center pt-3 space-y-3 overflow-y-scroll">
-        <div className="flex flex-col items-center space-y-1 "onClick={() => navigate('/')}>
+        <div className="flex flex-col items-center space-y-1 "onClick={() => navigate('/home')}>
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
            <HomeIcon className='h-6 w-6 text-white'/>
           </div>
@@ -76,9 +93,9 @@ function Home() {
         {showDropdown && (
         <div className="absolute right-0 mt-40 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
           <ul className="py-1 text-sm text-gray-700">
-          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Profile</li>
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer"  >Profile</li>
           <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Settings</li>
-          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</li>
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={handlelogout} >Logout</li>
           </ul>
         </div>
       )}

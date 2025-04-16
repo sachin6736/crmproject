@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
   const [leads, setLeads] = useState([]);
   const [editingLeadId, setEditingLeadId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -13,21 +14,45 @@ const LeadTableHeader = () => {
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/Auth/check", {
+          credentials: "include",
+        });
+        const data = await response.json();
+        console.log("data",data)
+        setUser(data.user);
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
     const fetchLeads = async () => {
       try {
+        const isAdmin = user?.role === "admin";
+        const endpoint = isAdmin ? '/getleads' : '/getleadbyperson';
+        console.log("endpoint",endpoint);
         const response = await fetch(
-          `http://localhost:3000/Lead/getleads?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`
+          `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`,
+          {
+            credentials: "include", 
+          }
         );
         const data = await response.json();
         setLeads(data.leads);
         setTotalPages(data.totalPages);
         setCurrentPage(data.currentPage || 1);
       } catch (error) {
-        console.error("Error fetching leads:", error);
+        console.error("Error fetching my leads:", error);
       }
     };
-    fetchLeads();
-  }, [searchQuery, statusFilter, currentPage]);
+    if (user) {
+      fetchLeads();
+    }
+  }, [user,searchQuery, statusFilter, currentPage]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

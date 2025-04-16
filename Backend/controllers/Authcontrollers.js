@@ -41,20 +41,17 @@ export const login = async (req,res,next)=>{
     console.log("login controller working")
     try {
         const { email, password } = req.body;
-    
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: "User not found" });
     
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
-    
         // Create JWT
         const token = jwt.sign(
           { id: user._id, role: user.role },
           JWT_SECRET,
           { expiresIn: '7d' }
         );
-    
         // Send token in HttpOnly cookie
         res.cookie("token", token, {
             httpOnly: true,
@@ -68,5 +65,19 @@ export const login = async (req,res,next)=>{
       } catch (error) {
         console.log("Error",error);
         res.status(500).json({ message: "Error during login", error });
+      }
+}
+
+export const logout = async(req,res,next)=>{
+    console.log("logout working");
+    try {
+        res.clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+        });
+        res.status(200).json({ message: "Logged out successfully" });
+      } catch (error) {
+        res.status(500).json({ message: "Logout failed", error });
       }
 }
