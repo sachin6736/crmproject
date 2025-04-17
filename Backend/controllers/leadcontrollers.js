@@ -61,7 +61,6 @@ export const createleads = async (req, res, next) => {
           // // Send Email to Admin
           // await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
           res.status(201).json({ message: "Lead created successfully and email sent" });
-
       } catch (error) {
           console.log("An error occurred", error);
           res.status(500).json({ message: "Error creating lead" });

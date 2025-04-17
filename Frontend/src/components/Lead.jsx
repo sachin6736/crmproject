@@ -4,6 +4,8 @@ import { useParams } from 'react-router-dom';
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import FullPageLoader from './utilities/FullPageLoader';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const statusOptions = [
   'Quoted',
@@ -61,11 +63,13 @@ const Lead = () => {
       });
 
       if (response.ok) {
+        toast.success("note added")
         setNotes([...notes, { text: newNote, createdAt: new Date() }]);
         setNewNote("");
         setIsEditing(false);
       }
     } catch (error) {
+      toast.error("Error updating notes:", error)
       console.error("Error updating notes:", error);
     }
   };
@@ -101,13 +105,16 @@ const Lead = () => {
       );
 
       if (response.ok) {
+        toast.success("event added")
         setSelectedDates((prevDates) =>
           isDateSelected ? prevDates.filter((d) => d !== dateStr) : [...prevDates, dateStr]
         );
       } else {
+        toast.error("faled to update date")
         console.error("Failed to update date");
       }
     } catch (error) {
+      toast.error("Error updating date:", error)
       console.error("Error updating date:", error);
     }
   };
@@ -218,7 +225,7 @@ const Lead = () => {
                     <p>{note.text}</p>
                     <small className="text-gray-500">{new Date(note.createdAt).toLocaleString()}</small>
                   </div>
-                  <button onClick={() => handleDeleteNote(note._id)}><Trash2 size={16} /></button>
+                  {/* <button onClick={() => handleDeleteNote(note._id)}><Trash2 size={16} /></button> */}
                 </div>
               ))
             ) : (
