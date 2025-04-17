@@ -1,20 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Spinner from './utilities/Spinner';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+
+
 
 const Login = () => {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
-      alert("Please fill in all fields");
+      toast.warning("Please fill in all fields");
       return;
     }
-
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:3000/Auth/login', {
         method: 'POST',
@@ -28,15 +35,18 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || 'Login failed');
+        toast.error(data.message || 'Login failed');
+        setLoading(false);
         return;
       }
 
-      alert('Login successful!');
+      toast.success('Login successful!');
       navigate('/home'); // change to your desired route
     } catch (error) {
       console.error('Login error:', error);
-      alert('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false); // 👈 always hide spinner
     }
   };
 
@@ -67,9 +77,16 @@ const Login = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition duration-200"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition duration-200 flex justify-center items-center"
+            disabled={loading}
           >
-            Login
+            {loading ? (
+              <>
+                <Spinner size="w-4 h-4" /> <span className="ml-2">Logging in...</span>
+              </>
+            ) : (
+              'Login'
+            )}
           </button>
         </form>
         <p className="text-sm text-center text-gray-600">

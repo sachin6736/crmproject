@@ -3,6 +3,7 @@ import { Triangle, Pencil, Save, Edit, Trash2, ChevronDown } from 'lucide-react'
 import { useParams } from 'react-router-dom';
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import FullPageLoader from './utilities/FullPageLoader';
 
 const statusOptions = [
   'Quoted',
@@ -130,7 +131,7 @@ const Lead = () => {
     }
   };
 
-  if (!singleLead) return <div className="p-8">Loading...</div>;
+  if (!singleLead) return <FullPageLoader />;
 
   return (
     <div className="p-4 md:p-8">

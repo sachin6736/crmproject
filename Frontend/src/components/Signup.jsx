@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Spinner from './utilities/Spinner';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -12,6 +15,7 @@ const SignUp = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading,setLoading] = useState(false)
 
   const validate = () => {
     const newErrors = {};
@@ -65,6 +69,7 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    setLoading(true);
 
     try {
       const response = await fetch('http://localhost:3000/Auth/signup', {
@@ -80,14 +85,16 @@ const SignUp = () => {
 
       const data = await response.json();
       if (!response.ok) {
-        alert(data.message || 'Something went wrong');
+        toast.error(data.message || 'Login failed');
+        setLoading(false);
         return;
       }
-
+      toast.success('Signup successful!');
       navigate('/');
     } catch (error) {
       console.error('Signup error:', error);
-      alert('Failed to sign up. Please try again.');
+      toast.error('Something went wrong. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -127,12 +134,21 @@ const SignUp = () => {
             </div>
           ))}
 
-          <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition duration-200"
-          >
-            Sign Up
-          </button>
+<button
+  type="submit"
+  className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition duration-200 flex items-center justify-center gap-2"
+  disabled={loading}
+  aria-label="Submit Sign Up Form"
+>
+  {loading ? (
+    <>
+      <Spinner size="w-5 h-5" color="text-white" fill="fill-green-300" />
+      signing up..
+    </>
+  ) : (
+    'Sign Up'
+  )}
+</button>
         </form>
         <p className="text-sm text-center text-gray-600">
           Already have an account?{' '}

@@ -9,10 +9,21 @@ import Lead from './components/Lead';
 import LeadTableHeader from './components/Leads'
 import Userfrom from './components/Userfrom';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Slide } from 'react-toastify';
 
 function App() {
   return (
     <Router>
+       <ToastContainer
+  position="bottom-right"
+  autoClose={3000}
+  pauseOnHover
+  theme="light"
+  transition={Slide}
+  toastClassName="!w-[250px]  !rounded-xl !shadow-md !text-sm !bg-white !text-gray-800 border border-gray-200"
+/>
       <Routes>
         {/* Default route for login */}
         <Route path="/" element={<Login />} />

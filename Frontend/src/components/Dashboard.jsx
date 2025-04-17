@@ -10,11 +10,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import FullPageLoader from './utilities/FullPageLoader';
+
+
 
 const Dashboard = () => {
   const [totalClients, setTotalClients] = useState(0);
   const [countbystatus, setCountbystatus] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const statusColor = {
     Quoted: 'bg-yellow-100 text-yellow-800',
@@ -23,53 +27,37 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    const fetchLeadCount = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:3000/Admin/getleadcount');
-        const data = await response.json();
-        setTotalClients(data.leadcount);
+        const [leadRes, statusRes, ordersRes] = await Promise.all([
+          fetch('http://localhost:3000/Admin/getleadcount'),
+          fetch('http://localhost:3000/Admin/getcountbystatus'),
+          fetch('http://localhost:3000/Admin/getallorders'),
+        ]);
+
+        const leadData = await leadRes.json();
+        const statusData = await statusRes.json();
+        const ordersData = await ordersRes.json();
+
+        setTotalClients(leadData.leadcount);
+        setCountbystatus(statusData);
+        setOrders(ordersData);
       } catch (error) {
-        console.error("Error fetching lead count:", error);
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchLeadCount();
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    const GetstatusCount = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/Admin/getcountbystatus');
-        const datas = await response.json();
-        console.log("Fetched status count data:", datas);
-        setCountbystatus(datas);
-      } catch (error) {
-        console.error("Error fetching statuscount:", error);
-      }
-    };
-
-    GetstatusCount();
-  }, []);
+ 
 
   const getStatusCount = (status) => {
     const statusObj = countbystatus.find(item => item._id === status);
     return statusObj ? statusObj.count : 0;
   };
 
-  useEffect(() => {
-    const Getallorders = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/Admin/getallorders');
-        const orders = await response.json();
-        console.log("Fetched all orders:", orders);
-        setOrders(orders);
-      } catch (error) {
-        console.error("Error fetching allorders:", error);
-      }
-    };
-
-    Getallorders();
-  }, []);
 
   const chartData = [
     { month: 'Jan', daily: 300, monthly: 2400 },
@@ -84,6 +72,14 @@ const Dashboard = () => {
     { name: "Ravi Patel", role: "Lead Manager" },
     { name: "John Doe", role: "Support Specialist" },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <FullPageLoader size="w-10 h-10" color="text-blue-500" fill="fill-blue-300" />
+      </div>
+    );
+  }
 
   return (
     <div className='w-full min-h-screen bg-[#f9fafb]'>
