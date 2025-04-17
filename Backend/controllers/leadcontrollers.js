@@ -2,19 +2,33 @@ import Lead from "../models/lead.js";
 import User from '../models/user.js';
 import RoundRobinState from '../models/RoundRobinState.js';
 import sendEmail from "../sendEmail.js";
+import { validationResult } from "express-validator";
 
 const ADMIN_EMAIL = "sachinpradeepan27@gmail.com"; 
 
 // creating leads
 export const createleads = async (req, res, next) => {
   console.log("Lead creation working");
-
-  const { clientName, phoneNumber, email, zip, partRequested, make, model, year, trim } = req.body;
-  if (!clientName || !phoneNumber || !email || !zip || !partRequested || !make || !model || !year || !trim) {
-      return res.status(401).json('All fields are necessary');
+  const errors = validationResult(req);
+  console.log("errors:",errors);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ errors: errors.array() });
   } else {
       try {
-          const salesTeam = await User.find({ role: 'sales' });
+        const {
+          clientName,
+          phoneNumber,
+          email,
+          zip,
+          partRequested,
+          make,
+          model,
+          year,
+          trim
+        } = req.body;
+        console.log("requestbody",req.body);
+        
+        const salesTeam = await User.find({ role: 'sales' });
           if (salesTeam.length === 0) {
               return res.status(400).json({ message: "No sales team members found" });
           }
