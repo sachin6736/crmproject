@@ -91,21 +91,21 @@ const Dashboard = () => {
       <div className='w-full h-48 flex flex-row space-x-16 p-3 pl-20'>
         {/* Ordered */}
         <div className='w-96 h-40 rounded-xl bg-white flex flex-col items-center justify-center shadow-lg p-4'>
-          <h3 className="text-gray-500 text-lg">Ordered</h3>
+          <h3 className="text-gray-500 text-lg font-medium">Ordered</h3>
           <span className="text-4xl font-bold text-blue-600">
             {getStatusCount("Ordered")}
           </span>
         </div>
         {/* Quoted */}
         <div className='w-96 h-40 rounded-xl bg-[#ffffff] shadow flex flex-col items-center justify-center'>
-          <h3 className="text-gray-500 text-lg">Quoted</h3>
+          <h3 className="text-gray-500 text-lg font-medium">Quoted</h3>
           <span className="text-4xl font-bold text-blue-600">
             {getStatusCount("Quoted")}
           </span>
         </div>
         {/* Total Clients */}
         <div className='w-96 h-40 rounded-xl bg-[#ffffff] shadow flex flex-col items-center justify-center'>
-          <h3 className="text-gray-500 text-lg">Total Clients</h3>
+          <h3 className="text-gray-500 text-lg font-medium">Total Clients</h3>
           <span className="text-4xl font-bold text-blue-600">{totalClients}</span>
         </div>
       </div>
