@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import FullPageLoader from './utilities/FullPageLoader';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -12,6 +15,8 @@ const LeadTableHeader = () => {
   const dropdownRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [loadingUser, setLoadingUser] = useState(true);  // State to track if user data is loading
+  const [loadingLeads, setLoadingLeads] = useState(true);  // State to track if leads data is loading
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -20,10 +25,12 @@ const LeadTableHeader = () => {
           credentials: "include",
         });
         const data = await response.json();
-        console.log("data",data)
+        console.log("data", data);
         setUser(data.user);
+        setLoadingUser(false);  // Set loadingUser to false once user data is fetched
       } catch (error) {
         console.error("Error fetching user info:", error);
+        setLoadingUser(false);  // Set loadingUser to false in case of an error
       }
     };
     fetchUser();
@@ -33,26 +40,28 @@ const LeadTableHeader = () => {
     const fetchLeads = async () => {
       try {
         const isAdmin = user?.role === "admin";
-        const endpoint = isAdmin ? '/getleads' : '/getleadbyperson';
-        console.log("endpoint",endpoint);
+        const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
+        console.log("endpoint", endpoint);
         const response = await fetch(
           `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`,
           {
-            credentials: "include", 
+            credentials: "include",
           }
         );
         const data = await response.json();
         setLeads(data.leads);
         setTotalPages(data.totalPages);
         setCurrentPage(data.currentPage || 1);
+        setLoadingLeads(false);  // Set loadingLeads to false once leads data is fetched
       } catch (error) {
         console.error("Error fetching my leads:", error);
+        setLoadingLeads(false);  // Set loadingLeads to false in case of an error
       }
     };
     if (user) {
       fetchLeads();
     }
-  }, [user,searchQuery, statusFilter, currentPage]);
+  }, [user, searchQuery, statusFilter, currentPage]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -76,6 +85,7 @@ const LeadTableHeader = () => {
       );
 
       if (response.ok) {
+        toast.success("Status changed")
         setLeads((prevLeads) =>
           prevLeads.map((lead) =>
             lead._id === leadId ? { ...lead, status: newStatus } : lead
@@ -83,9 +93,11 @@ const LeadTableHeader = () => {
         );
         setEditingLeadId(null);
       } else {
+        toast.error("Falied to Update status")
         console.error("Failed to update status");
       }
     } catch (error) {
+      toast.error("Error updating lead status:",error)
       console.error("Error updating lead status:", error);
     }
   };
@@ -109,133 +121,149 @@ const LeadTableHeader = () => {
 
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
-          {["New", "Import", "Contacts", "Calendar", "Testing"].map(
-            (button, index) => (
-              <button
-                key={index}
-                className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
-                onClick={() => button === "New" && navigate("/home/userform")}
-              >
-                {button}
-              </button>
-            )
-          )}
+      {/* Render FullPageLoader if user data is loading */}
+      {loadingUser ? (
+        <div className="flex justify-center items-center py-8">
+          <FullPageLoader />
         </div>
-
-        <div className="flex items-center space-x-4">
-          <input
-            type="text"
-            placeholder="Search by Name, Email, Phone..."
-            className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-
-          <select
-            className="border px-3 py-2 rounded-md"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">All</option>
-            {Object.keys(statusTextColors).map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden overflow-x-auto flex-grow">
-        <table className="w-full text-left text-sm md:text-base">
-          <thead className="bg-gray-200 text-gray-600">
-            <tr>
-              {[
-                "Client Name ⬍",
-                "Phone Number ⬍",
-                "Email ⬍",
-                "Part Requested ⬍",
-                "Status ⬍",
-                "Zip ⬍",
-                "Created At ⬍",
-              ].map((header, index) => (
-                <th
-                  key={index}
-                  className="px-3 md:px-4 py-2 border-b whitespace-nowrap"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredLeads.length > 0 ? (
-              filteredLeads.map((lead, index) => (
-                <tr key={index} className="border-t hover:bg-gray-100">
-                  <td
-                    className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
-                    onClick={() => navigate(`/home/sales/lead/${lead._id}`)}
+      ) : (
+        <>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
+              {["New", "Import", "Contacts", "Calendar", "Testing"].map(
+                (button, index) => (
+                  <button
+                    key={index}
+                    className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
+                    onClick={() => button === "New" && navigate("/home/userform")}
                   >
-                    {lead.clientName}
-                  </td>
-                  <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                    {lead.phoneNumber}
-                  </td>
-                  <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                    {lead.email}
-                  </td>
-                  <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                    {lead.partRequested}
-                  </td>
-                  <td className="px-3 md:px-4 py-2 relative">
-                    <span
-                      className={`cursor-pointer font-semibold ${statusTextColors[lead.status]}`}
-                      onClick={() => setEditingLeadId(lead._id)}
-                    >
-                      {lead.status}
-                    </span>
-                    {editingLeadId === lead._id && (
-                      <div
-                        ref={dropdownRef}
-                        className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
-                      >
-                        {Object.keys(statusTextColors).map((status) => (
-                          <div
-                            key={status}
-                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateStatus(lead._id, status);
-                            }}
-                          >
-                            {status}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                    {lead.zip}
-                  </td>
-                  <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                    {lead.createdAt
-                      ? new Date(lead.createdAt).toLocaleString()
-                      : "N/A"}
-                  </td>
-                </tr>
-              ))
+                    {button}
+                  </button>
+                )
+              )}
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <input
+                type="text"
+                placeholder="Search by Name, Email, Phone..."
+                className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              <select
+                className="border px-3 py-2 rounded-md"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All</option>
+                {Object.keys(statusTextColors).map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden overflow-x-auto flex-grow">
+            {/* Render FullPageLoader if leads data is loading */}
+            {loadingLeads ? (
+              <div className="flex justify-center items-center py-8">
+                <FullPageLoader />
+              </div>
             ) : (
-              <tr>
-                <td className="px-4 py-2 text-center" colSpan={7}>
-                  No data available
-                </td>
-              </tr>
+              <table className="w-full text-left text-sm md:text-base">
+                <thead className="bg-gray-200 text-gray-600">
+                  <tr>
+                    {[
+                      "Client Name ⬍",
+                      "Phone Number ⬍",
+                      "Email ⬍",
+                      "Part Requested ⬍",
+                      "Status ⬍",
+                      "Zip ⬍",
+                      "Created At ⬍",
+                    ].map((header, index) => (
+                      <th
+                        key={index}
+                        className="px-3 md:px-4 py-2 border-b whitespace-nowrap"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLeads.length > 0 ? (
+                    filteredLeads.map((lead, index) => (
+                      <tr key={index} className="border-t hover:bg-gray-100">
+                        <td
+                          className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
+                          onClick={() => navigate(`/home/sales/lead/${lead._id}`)}
+                        >
+                          {lead.clientName}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.phoneNumber}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.email}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.partRequested}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 relative">
+                          <span
+                            className={`cursor-pointer font-semibold ${statusTextColors[lead.status]}`}
+                            onClick={() => setEditingLeadId(lead._id)}
+                          >
+                            {lead.status}
+                          </span>
+                          {editingLeadId === lead._id && (
+                            <div
+                              ref={dropdownRef}
+                              className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
+                            >
+                              {Object.keys(statusTextColors).map((status) => (
+                                <div
+                                  key={status}
+                                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateStatus(lead._id, status);
+                                  }}
+                                >
+                                  {status}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.zip}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.createdAt
+                            ? new Date(lead.createdAt).toLocaleString()
+                            : "N/A"}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="px-4 py-2 text-center" colSpan={7}>
+                        No data available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </>
+      )}
 
       {totalPages > 1 && (
         <div className="flex justify-center items-center mt-4 space-x-2  bg-[#cbd5e1] z-20 relative">

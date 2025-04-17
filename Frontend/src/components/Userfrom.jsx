@@ -1,5 +1,8 @@
 import { useState } from "react";
 import React from "react";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 function UserForm() {
   const [formData, setFormData] = useState({
@@ -33,7 +36,7 @@ function UserForm() {
 
       const data = await response.json();
       if (response.ok) {
-        setMessage("your request has been made!");
+        toast("form has been uploaded",{ icon: "💾" })
         setFormData({
           clientName: "",
           phoneNumber: "",
@@ -46,10 +49,10 @@ function UserForm() {
           trim: "",
         });
       } else {
-        setMessage(data || "Failed to create lead");
+       toast.error(data || "Failed to create lead");
       }
     } catch (error) {
-      setMessage("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
       console.error("Error:", error);
     }
   };
