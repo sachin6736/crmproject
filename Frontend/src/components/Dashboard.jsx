@@ -118,7 +118,7 @@ const Dashboard = () => {
 
         <div className="w-full sm:max-w-sm bg-white rounded-xl shadow p-4">
           <h3 className="text-lg font-semibold mb-4">My Team</h3>
-          <ul className="sspace-y-4 max-h-72 overflow-y-auto pr-2">
+          <ul className="space-y-4 max-h-72 overflow-y-auto pr-2">
             {teamUsers.map((member, index) => (
               <li
                 key={index}
