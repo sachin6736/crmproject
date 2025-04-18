@@ -153,34 +153,21 @@ const Lead = () => {
         </div>
       </div>
 
-      {/* Active status dropdown */}
-      <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14 space-x-8">
-        <div className="bg-white p-2 m-2 w-3/4 h-3/4 flex justify-start space-x-6 rounded-full items-center relative">
-          <button
-            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-            className={`flex items-center justify-between px-4 py-2 w-40 rounded-full bg-[#032d60] text-white text-sm font-medium`}
-          >
-            <span className={`${singleLead.status}`}>
-              {singleLead.status}
-            </span>
-            <ChevronDown size={16} />
-          </button>
-
-          {showStatusDropdown && (
-            <div className="absolute top-14 left-2 z-10 bg-white border rounded shadow-md w-40">
-              {statusOptions.map((status, index) => (
-                <div
-                  key={index}
-                  onClick={() => updateStatus(singleLead._id, status)}
-                  className={`px-4 py-2 text-sm cursor-pointer hover:bg-blue-100 ${statusTextColors[status]}`}
-                >
-                  {status}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+  {/* Active status row */}
+  <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14 space-x-2 overflow-x-auto">
+  <div className="flex gap-14 px-2">
+    {statusOptions.map((status, index) => (
+      <button
+        key={index}
+        onClick={() => updateStatus(singleLead._id, status)}
+        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap
+          ${singleLead.status === status ? 'bg-[#032d60] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+      >
+        {status}
+      </button>
+    ))}
+  </div>
+  </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-300 p-4 rounded-xl">
