@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
+import SalesDashboard from './components/SalesDashboard';
 import Login from './components/Login';
 import SignUp from './components/Signup';
 import Home from './components/Home';
@@ -38,6 +39,7 @@ function App() {
           </Route>
           <Route path="/home/userform" element={<Userfrom />} />
           <Route path="/home/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/home/salesdashboard" element={<SalesDashboard/>}></Route>
         </Route>
       </Routes>
     </Router>
