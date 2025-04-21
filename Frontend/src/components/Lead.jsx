@@ -34,6 +34,7 @@ const Lead = () => {
   const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
+  const [showNotes, setShowNotes] = useState(true);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   useEffect(() => {
@@ -202,40 +203,75 @@ const Lead = () => {
         </div>
 
         {/* Notes Section */}
-        <div className="w-full h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md flex flex-col">
-          <h2 className="text-lg font-semibold border-b pb-2">Notes</h2>
-          <div className="p-2 mt-2 text-gray-700 whitespace-pre-wrap overflow-y-auto flex-1">
-            {notes.length > 0 ? (
-              notes.map((note, index) => (
-                <div key={index} className="mb-2 p-2 bg-gray-100 rounded flex justify-between items-center">
-                  <div>
-                    <p>{note.text}</p>
-                    <small className="text-gray-500">{new Date(note.createdAt).toLocaleString()}</small>
-                  </div>
-                  {/* <button onClick={() => handleDeleteNote(note._id)}><Trash2 size={16} /></button> */}
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-sm text-center">no notes added yet</p>
-            )}
-          </div>
-
-          {isEditing ? (
-            <div className="mt-4">
-              <textarea className="w-full p-2 border rounded text-sm" value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Add a note..." />
-              <div className="flex justify-end gap-2 mt-2">
-                <button onClick={() => setIsEditing(false)} className="text-red-500 text-sm">Cancel</button>
-                <button onClick={handleSaveNotes} className="text-green-500 flex items-center gap-1 text-sm">
-                  <Save size={18} /> Save
-                </button>
+        <div className="w-full h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md overflow-hidden relative">
+  <div className="w-full h-full flex transition-transform duration-500 ease-in-out" style={{ transform: showNotes ? 'translateX(0%)' : 'translateX(-100%)' }}>
+    
+    {/* Notes Page */}
+    <div className="w-full flex-shrink-0 flex flex-col">
+      <h2 className="text-lg font-semibold border-b pb-2">Notes</h2>
+      <div className="p-2 mt-2 text-gray-700 whitespace-pre-wrap overflow-y-auto flex-1">
+        {notes.length > 0 ? (
+          notes.map((note, index) => (
+            <div key={index} className="mb-2 p-2 bg-gray-100 rounded flex justify-between items-center">
+              <div>
+                <p>{note.text}</p>
+                <small className="text-gray-500">{new Date(note.createdAt).toLocaleString()}</small>
               </div>
             </div>
-          ) : (
-            <button onClick={() => setIsEditing(true)} className="text-blue-500 flex items-center gap-1 mt-2 text-sm">
-              <Edit size={18} /> Add Note
+          ))
+        ) : (
+          <p className="text-gray-500 text-sm text-center">no notes added yet</p>
+        )}
+      </div>
+
+      {isEditing ? (
+        <div className="mt-4">
+          <textarea className="w-full p-2 border rounded text-sm" value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Add a note..." />
+          <div className="flex justify-end gap-2 mt-2">
+            <button onClick={() => setIsEditing(false)} className="text-red-500 text-sm">Cancel</button>
+            <button onClick={handleSaveNotes} className="text-green-500 flex items-center gap-1 text-sm">
+              <Save size={18} /> Save
             </button>
-          )}
+          </div>
         </div>
+      ) : (
+        <button onClick={() => setIsEditing(true)} className="text-blue-500 flex items-center gap-1 mt-2 text-sm">
+          <Edit size={18} /> Add Note
+        </button>
+      )}
+
+      <button onClick={() => setShowNotes(false)} className="text-sm text-[#032d60] mt-4">Go →</button>
+    </div>
+
+    {/* Blank Page */}
+  <div className="w-5/6 flex-shrink-0 flex flex-col items-center justify-center gap-3 ml-8">
+  {[
+    { label: "Tax Cost", value: "$300" },
+    { label: "Shipping Cost", value: "$300" },
+    { label: "Gross Profit", value: "$300" },
+    { label: "Total Cost", value: "" },
+  ].map((item, index) => (
+    <div
+      key={index}
+      className="w-full h-20 bg-[#f3f4f6] flex flex-row items-center justify-between px-6 rounded-lg"
+    >
+      <p className="text-base font-medium">{item.label}</p>
+      <p className="text-base font-semibold">{item.value}</p>
+    </div>
+  ))}
+
+  <button
+    onClick={() => setShowNotes(true)}
+    className="text-sm text-[#032d60] mt-4"
+  >
+    ← Back to Notes
+  </button>
+</div>
+
+
+  </div>
+</div>
+
 
         {/* Calendar Section */}
         <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md flex flex-col">
