@@ -3,12 +3,31 @@ import Sales from './Sales'
 import { Outlet } from 'react-router-dom'
 import { Home as HomeIcon,Users,Briefcase,LineChart,Headset,Megaphone,LucideShoppingCart,PenTool,User} from "lucide-react"
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState ,useEffect } from 'react'
 
 
 function Home() {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/Auth/check", {
+          credentials: "include",
+        });
+        const data = await res.json();
+        setUser(data.user);
+      } catch (err) {
+        console.log("Error fetching user info:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handlelogout = async()=>{
     try {
@@ -60,11 +79,20 @@ function Home() {
           </div>
           <span className="text-white text-[10px] font-bold">Service</span>
         </div>
-        <div className="flex flex-col items-center space-y-1" onClick={()=> navigate('/home/dashboard')}>
+        <div className="flex flex-col items-center space-y-1" onClick={() => {
+  if (loading) return;
+  if (user?.role === 'admin') {
+    navigate('/home/dashboard');
+  } else if (user?.role === 'sales') {
+    navigate('/home/salesdashboard');
+  } else {
+    console.log("Role not recognized");
+  }
+}}>
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
             <Megaphone className='h-6 w-6 text-white' />
           </div>
-          <span className="text-white text-[10px] font-bold">Outreach</span>
+          <span className="text-white text-[10px] font-bold">Dashboard</span>
         </div>
         <div className="flex flex-col items-center space-y-1">
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>

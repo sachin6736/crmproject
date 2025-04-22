@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import leadroutes from './routes/leadroutes.js';
 import dashboardrotes from './routes/dashboardroute.js';
 import authroutes from './routes/authroutes.js';
+import sindashroutes from './routes/sindashroutes.js'
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use(cookieParser()); // <-- Add this line to parse cookies
 app.use('/Lead', leadroutes); // Leads area
 app.use('/Admin', dashboardrotes); // Dashboard
 app.use('/Auth', authroutes); // Authentication routes
+app.use('/Sales',sindashroutes); //salesperson dasboard
 
 const port = process.env.PORT || 5000;
 
