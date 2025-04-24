@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Spinner from './utilities/Spinner';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import logo from '../assets/logo.png';
+import login from '../assets/login.avif'
 
 
 
@@ -51,18 +53,30 @@ const Login = () => {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-[#002775]">Welcome</h2>
+
+    
+    <div className="flex h-screen w-full">
+      <div className="absolute top-10 left-10 flex items-center space-x-2 z-10">
+  <img src={logo} alt="Equivise Logo" className="h-8 w-8" />
+  <h1 className="text-xl font-bold text-gray-900">Equivise</h1>
+</div>
+    {/* Left Side - Form Section */}
+    <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
+      <div className="w-full max-w-md p-8 space-y-6">
+        <div className="mb-2">
+  <h2 className="text-xl font-sans text-gray-800 mb-1">Start your journey</h2>
+  <h3 className="text-2xl font-bold text-[#002775]">Sign In to Equivise</h3>
+</div>
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">Email</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">E-mail</label>
             <input
               type="email"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="example@email.com"
             />
           </div>
           <div>
@@ -89,11 +103,27 @@ const Login = () => {
             )}
           </button>
         </form>
-        <p className="text-sm text-center text-gray-600">
-          Don't have an account? <a href="/signup" className="text-[#002775] hover:underline">Sign up</a>
-        </p>
       </div>
     </div>
+
+    {/* Right Side - Image Section */}
+    <div className="hidden md:block w-1/2">
+      <img
+        src={login}
+        alt="Background"
+        className="h-full w-full object-cover opacity-70"
+      />
+    </div>
+    <div className="absolute bottom-10 left-10 flex items-center ">
+        <p className="text-sm text-gray-600">Forgot password?</p>
+        <button
+          type="button"
+          className=" text-sm text-blue-600 px-3 py-1 rounded "
+        >
+          Contact Admin
+        </button>
+      </div>
+  </div>
   );
 };
 

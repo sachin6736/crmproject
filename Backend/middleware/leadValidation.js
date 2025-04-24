@@ -4,7 +4,7 @@ export const validateLead = [
   body('clientName').notEmpty().withMessage('Client name is required'),
   body('phoneNumber')
     .notEmpty().withMessage('Phone number is required')
-    .isMobilePhone().withMessage('Invalid phone number'),
+    .matches(/^\+?[1-9]\d{1,14}$/).withMessage('Invalid phone number format'),
   body('email')
     .notEmpty().withMessage('Email is required')
     .isEmail().withMessage('Invalid email format'),

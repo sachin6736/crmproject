@@ -27,18 +27,27 @@ export const createleads = async (req, res, next) => {
           trim
         } = req.body;
         console.log("requestbody",req.body);
-        
-        const salesTeam = await User.find({ role: 'sales' });
+         
+        const salesTeam = await User.find({ role: 'sales' , isPaused: false });
+          console.log("salesteam",salesTeam)
           if (salesTeam.length === 0) {
               return res.status(400).json({ message: "No sales team members found" });
           }
           let roundRobinState = await RoundRobinState.findOne();
-          console.log("index",roundRobinState)
+          
           if (!roundRobinState) {
-              roundRobinState = new RoundRobinState();
-              await roundRobinState.save();
+            roundRobinState = new RoundRobinState({ currentIndex: 0 });
+            await roundRobinState.save();
           }
-          const salesPerson = salesTeam[roundRobinState.currentIndex];
+
+          if (roundRobinState.currentIndex >= salesTeam.length) {
+            roundRobinState.currentIndex = 0;
+          }
+          console.log("index",roundRobinState)
+          const currentIndex = roundRobinState.currentIndex % salesTeam.length;
+          const salesPerson = salesTeam[currentIndex];
+
+          console.log("salesperson",salesPerson)
           const newLead = new Lead({
               clientName,
               phoneNumber,
@@ -52,7 +61,7 @@ export const createleads = async (req, res, next) => {
               salesPerson: salesPerson._id, 
           });
           await newLead.save();
-          const nextIndex = (roundRobinState.currentIndex + 1) % salesTeam.length;
+          const nextIndex = (currentIndex + 1) % salesTeam.length;
           roundRobinState.currentIndex = nextIndex;
           await roundRobinState.save();
           // const emailContent = `
