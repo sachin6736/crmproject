@@ -49,7 +49,7 @@ function Home() {
     <>
     <div className='w-screen h-screen bg-white flex'>
      <div className="w-20 h-screen bg-[#002775] fixed left-0 top-0 border-r-[2px] border-r-white flex flex-col items-center pt-3 space-y-3 overflow-y-scroll">
-        <div className="flex flex-col items-center space-y-1 "onClick={() => navigate('/home')}>
+        <div className="flex flex-col items-center space-y-1 " onClick={()=> navigate('/home/dashboard')}>
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
            <HomeIcon className='h-6 w-6 text-white'/>
           </div>
@@ -104,7 +104,7 @@ function Home() {
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
             <PenTool className='h-6 w-6 text-white' />
           </div>
-          <span className="text-white text-[10px] pl-4 font-bold">Generative Canvas</span>
+          <span className="text-white text-[10px] pl-4 mr-3 font-bold">Generative Canvas</span>
         </div>
         <div className="flex flex-col items-center space-y-1">
           <div className='w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center'>
@@ -121,7 +121,7 @@ function Home() {
         {showDropdown && (
         <div className="absolute right-0 mt-40 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
           <ul className="py-1 text-sm text-gray-700">
-          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer"  >Profile</li>
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Profile</li>
           <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Settings</li>
           <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={handlelogout} >Logout</li>
           </ul>

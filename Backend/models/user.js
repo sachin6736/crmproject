@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
       enum: ["admin", "sales", "customer_relations", "procurement"], 
       default: "sales" 
     },
+    isPaused: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   });
   

@@ -9,6 +9,7 @@ import Sales from './components/Sales';
 import Lead from './components/Lead';
 import LeadTableHeader from './components/Leads'
 import Userfrom from './components/Userfrom';
+import Orders from './components/Orders'
 import ProtectedRoute from './components/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -38,6 +39,7 @@ function App() {
             <Route path="/home/sales/lead/:id" element={<Lead />} />
           </Route>
           <Route path="/home/userform" element={<Userfrom />} />
+          <Route path="/home/orders" element={<Orders/>}/>
           <Route path="/home/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/home/salesdashboard" element={<SalesDashboard/>}></Route>
         </Route>

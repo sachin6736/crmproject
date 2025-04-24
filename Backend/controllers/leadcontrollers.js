@@ -58,7 +58,7 @@ export const createleads = async (req, res, next) => {
           // const emailContent = `
           //     <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
           //         <h2 style="color: #333;">New Quotation Request</h2>
-          //         <p><strong>Name:</strong> ${clientName}</p>
+          //         <p><strong>Name:</strong> ${clientName}</p>  
           //         <p><strong>Phone:</strong> ${phoneNumber}</p>
           //         <p><strong>Email:</strong> ${email}</p>
           //         <p><strong>Zip Code:</strong> ${zip}</p>
@@ -183,10 +183,18 @@ export const editstatus = async(req,res,next)=>{
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
     }lead.status = status;
+
+     console.log("testing",req.user)
+     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+     lead.notes.push({
+       text: `changed to '${status}' by ${userIdentity}`,
+       addedBy: userIdentity,
+       createdAt: new Date(),
+     });
      await lead.save();
      return res.status(200).json({ message: "Lead status updated", lead });
   } catch (error) {
-    console.error("Error updating lead status:", error);
+    console.log("Error updating lead status:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -200,6 +208,7 @@ export const getLeadById = async (req, res ,next) => {
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
     }
+    lead.notes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json(lead);
   } catch (error) {
     res.status(500).json({ message: "Error fetching lead", error });
