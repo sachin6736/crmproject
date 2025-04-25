@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Triangle, Pencil, Save, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { Triangle, Pencil, Save, Edit, Trash2, ChevronDown ,Check} from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -150,7 +150,7 @@ const Lead = () => {
       {/* Top Right Buttons */}
       <div className="flex justify-end">
         <div className="flex flex-wrap justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 md:w-1/2 w-full">
-          {["Convert", "Change Owner", "Edit", <Triangle size={16} className="rotate-180 fill-blue-500 text-blue-500" />].map((button, index) => (
+          {["Convert", "Change Owner", "Edit", "Send Quote",<Triangle size={16} className="rotate-180 fill-blue-500 text-blue-500" />].map((button, index) => (
             <button key={index} className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 text-sm">
               {button}
             </button>
@@ -206,8 +206,8 @@ const Lead = () => {
           </div>
         </div>
 
-        {/* Notes Section */}
-        <div className="w-full h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md overflow-hidden relative">
+  {/* Notes Section */}
+  <div className="w-full h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md overflow-hidden relative">
   <div className="w-full h-full flex transition-transform duration-500 ease-in-out" style={{ transform: showNotes ? 'translateX(0%)' : 'translateX(-100%)' }}>
     
     {/* Notes Page */}
@@ -250,17 +250,21 @@ const Lead = () => {
     {/* Blank Page */}
   <div className="w-5/6 flex-shrink-0 flex flex-col items-center justify-center gap-3 ml-8">
   {[
-    { label: "Tax Cost", value: "$300" },
-    { label: "Shipping Cost", value: "$300" },
-    { label: "Gross Profit", value: "$300" },
+    { label: "Tax Cost", value: "" },
+    { label: "Shipping Cost", value: "" },
     { label: "Total Cost", value: "" },
+    { label: "Gross Profit", value: "" },
   ].map((item, index) => (
     <div
       key={index}
       className="w-full h-20 bg-[#f3f4f6] flex flex-row items-center justify-between px-6 rounded-lg"
     >
       <p className="text-base font-medium">{item.label}</p>
-      <p className="text-base font-semibold">{item.value}</p>
+      {/* <p className="text-base font-semibold">{item.value}</p> */}
+      <div className='space-x-2'>
+      <input type="text" placeholder='$' className='w-28 h-10 bg-white border-none rounded-md'/>
+      <button><Check size={16}/></button>
+      </div>
     </div>
   ))}
 
@@ -271,13 +275,10 @@ const Lead = () => {
     ← Back to Notes
   </button>
 </div>
-
-
-  </div>
+</div>
 </div>
 
-
-        {/* Calendar Section */}
+{/* Calendar Section */}
         <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md flex flex-col">
           <h2 className="text-lg font-semibold border-b pb-2">Important Dates</h2>
           <div className="flex justify-center items-center">
