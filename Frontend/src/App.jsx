@@ -33,7 +33,7 @@ function App() {
 
         {/* Protected routes (after login) under /home */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>}>
-          <Route index element={<Homepage />} />
+          <Route index element={<Dashboard />} />
           <Route path="/home/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>}>
             <Route index element={<LeadTableHeader />} />
             <Route path="/home/sales/lead/:id" element={<Lead />} />
