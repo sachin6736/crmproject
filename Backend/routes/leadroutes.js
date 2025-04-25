@@ -10,7 +10,7 @@ const router = express.Router();
 router.post('/createlead',validateLead,createleads)//creatingleads;
 router.get('/getleads',protect,getleads)//gettinng all leads list for the admin;
 router.get('/getleadbyperson',protect,leadbyperson)//getting leads by person for saleperson
-router.put('/updatelead/:id',editstatus)//editing status;
+router.put('/updatelead/:id',protect,editstatus)//editing status;
 router.get('/getleadbyid/:id',getLeadById)//get leadbyid by clientid;
 
 router.put('/updateNotes/:id',createnotes)//creating notes

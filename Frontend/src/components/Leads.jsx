@@ -40,7 +40,7 @@ const LeadTableHeader = () => {
     const fetchLeads = async () => {
       try {
         const isAdmin = user?.role === "admin";
-        const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
+        const endpoint = isAdmin ? "/getleads" : "/getleadbyperson"; 
         console.log("endpoint", endpoint);
         const response = await fetch(
           `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`,
@@ -80,7 +80,9 @@ const LeadTableHeader = () => {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ status: newStatus }),
+
         }
       );
 

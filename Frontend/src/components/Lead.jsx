@@ -37,19 +37,19 @@ const Lead = () => {
   const [showNotes, setShowNotes] = useState(true);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
-  useEffect(() => {
-    const fetchSingleLead = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/Lead/getleadbyid/${id}`);
-        const data = await response.json();
-        setSingleLead(data);
-        setNotes(data.notes || []);
-        setSelectedDates(data.importantDates || []);
-      } catch (error) {
-        console.error("Error fetching single lead:", error);
-      }
-    };
+  const fetchSingleLead = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/Lead/getleadbyid/${id}`);
+      const data = await response.json();
+      setSingleLead(data);
+      setNotes(data.notes || []);
+      setSelectedDates(data.importantDates || []);
+    } catch (error) {
+      console.error("Error fetching single lead:", error);
+    }
+  };
 
+  useEffect(() => {
     fetchSingleLead();
   }, [id]);
 
@@ -74,21 +74,20 @@ const Lead = () => {
       console.error("Error updating notes:", error);
     }
   };
-
-  const handleDeleteNote = async (noteid) => {
-    try {
-      const response = await fetch(`http://localhost:3000/Lead/deleteNotes/${id}/${noteid}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setNotes(notes.filter((note) => note._id !== noteid));
-      } else {
-        console.error("Error deleting note");
-      }
-    } catch (error) {
-      console.error("Error deleting note:", error);
-    }
-  };
+  // const handleDeleteNote = async (noteid) => {
+  //   try {
+  //     const response = await fetch(http://localhost:3000/Lead/deleteNotes/${id}/${noteid}, {
+  //       method: "DELETE",
+  //     });
+  //     if (response.ok) {
+  //       setNotes(notes.filter((note) => note._id !== noteid));
+  //     } else {
+  //       console.error("Error deleting note");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error deleting note:", error);
+  //   }
+  // }; // deleting notes option
 
   const handleDateClick = async (date) => {
     const dateStr = date.toISOString().split("T")[0];
@@ -125,16 +124,21 @@ const Lead = () => {
       const response = await fetch(`http://localhost:3000/Lead/updatelead/${leadId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ status: newStatus }),
       });
 
       if (response.ok) {
+        toast.success("status changed succesfully");
         setSingleLead((prev) => ({ ...prev, status: newStatus }));
         setShowStatusDropdown(false);
+        await fetchSingleLead(); // 🔁 refresh notes & lead data after status update
       } else {
+        toast.error("Failed to update status")
         console.error("Failed to update status");
       }
     } catch (error) {
+      toast.error("Error updating lead status:", error)
       console.error("Error updating lead status:", error);
     }
   };
