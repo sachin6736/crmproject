@@ -26,11 +26,12 @@ function UserForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:3000/Lead/createlead", {
+      const response = await fetch("http://localhost:3000/Lead/createnewlead", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials:"include",
         body: JSON.stringify(formData),
       });
 
