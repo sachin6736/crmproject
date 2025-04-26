@@ -3,6 +3,7 @@ import { Trash2, Plus, MoreVertical } from "lucide-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -16,6 +17,7 @@ import {
 import FullPageLoader from "./utilities/FullPageLoader";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [totalClients, setTotalClients] = useState(0);
   const [countbystatus, setCountbystatus] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -34,6 +36,32 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    const verifyRole = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/Auth/check", {
+          method: "GET",
+          credentials: "include", // important for cookies
+        });
+
+        if (!res.ok) {
+          throw new Error("Not authorized");
+        }
+        const data = await res.json();
+        console.log("data",data)
+        if (data.user.role !== "admin") {
+          navigate("/home/salesdashboard");
+        } else {
+          setLoading(false); // allow rendering
+        }
+      } catch (error) {
+        navigate("/"); // go to login or home if auth fails
+      }
+    };
+
+    verifyRole();
+  }, [navigate]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [leadRes, statusRes, ordersRes, usersRes] = await Promise.all([
@@ -47,7 +75,7 @@ const Dashboard = () => {
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
         const usersData = await usersRes.json();
-        console.log("userdata", usersData);
+        //console.log("userdata", usersData);
 
         setTotalClients(leadData.leadcount);
         setCountbystatus(statusData);
@@ -241,7 +269,7 @@ const Dashboard = () => {
                       member.isPaused ? "bg-red-500" : "bg-blue-500"
                     }`}
                   >
-                    {member.name[0]?.toUpperCase()}
+                    {member.role[0]?.toUpperCase()}
                   </div>
                   <div className="flex flex-col">
                     <span className="font-medium text-gray-800">
