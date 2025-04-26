@@ -139,6 +139,7 @@ const Dashboard = () => {
       toast.error("Error adding user");
     }
   };
+  
   const handleUserAction = async (action, userId) => {
     let status;
     if (action === "Pause") status = true;
