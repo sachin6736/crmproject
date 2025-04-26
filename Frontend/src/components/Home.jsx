@@ -61,7 +61,15 @@ function Home() {
         <div className="w-20 h-screen bg-[#002775] fixed left-0 top-0 border-r-[2px] border-r-white flex flex-col items-center pt-3 space-y-3 overflow-y-scroll">
           <div
             className="flex flex-col items-center space-y-1 "
-            onClick={() => navigate("/home/dashboard")}
+            onClick={() => {
+              console.log("user",user)
+              if (loading) return;
+              if (user?.role === "admin") {
+                navigate("/home/dashboard");
+              }else {
+                navigate("/home/salesdashboard");
+              }
+            }}
           >
             <div className="w-12 h-12 bg-[#002775] rounded-md border border-[#002775] hover:border-white transition duration-300 flex items-center justify-center">
               <HomeIcon className="h-6 w-6 text-white" />
@@ -98,13 +106,12 @@ function Home() {
           <div
             className="flex flex-col items-center space-y-1"
             onClick={() => {
+              console.log("user",user)
               if (loading) return;
               if (user?.role === "admin") {
                 navigate("/home/dashboard");
-              } else if (user?.role === "sales") {
+              }else {
                 navigate("/home/salesdashboard");
-              } else {
-                console.log("Role not recognized");
               }
             }}
           >
@@ -137,43 +144,39 @@ function Home() {
           </div>
         </div>
         <div className="flex-1 h-screen ml-20 flex flex-col">
-        <div className="w-full h-24 bg-[#066afe] flex items-center justify-between px-4">
-  <div className="flex items-center space-x-2">
-    <img
-      src={logo}
-      alt="Equivise Logo"
-      className="w-20 h-20 "
-    />
-    {/* <span className="text-white font-serif text-lg">| Equivise</span> */}
-  </div>
-  <div className="flex items-center space-x-4">
-    <button
-      onClick={() => setShowDropdown(!showDropdown)}
-      type="button"
-      className="w-8 h-8 bg-white text-[#066afe] rounded-full flex items-center justify-center"
-    >
-      <User className="w-5 h-5" />
-    </button>
-    {showDropdown && (
-      <div className="absolute right-0 mt-40 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-        <ul className="py-1 text-sm text-gray-700">
-          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-            Profile
-          </li>
-          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-            Settings
-          </li>
-          <li
-            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-            onClick={handlelogout}
-          >
-            Logout
-          </li>
-        </ul>
-      </div>
-    )}
-  </div>
-</div>
+          <div className="w-full h-24 bg-[#066afe] flex items-center justify-between px-4">
+            <div className="flex items-center space-x-2">
+              <img src={logo} alt="Equivise Logo" className="w-20 h-20 " />
+              {/* <span className="text-white font-serif text-lg">| Equivise</span> */}
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                type="button"
+                className="w-8 h-8 bg-white text-[#066afe] rounded-full flex items-center justify-center"
+              >
+                <User className="w-5 h-5" />
+              </button>
+              {showDropdown && (
+                <div className="absolute right-0 mt-40 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                  <ul className="py-1 text-sm text-gray-700">
+                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                      Profile
+                    </li>
+                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                      Settings
+                    </li>
+                    <li
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={handlelogout}
+                    >
+                      Logout
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex-1 overflow-y-auto">
             <Outlet />
           </div>
