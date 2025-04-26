@@ -62,32 +62,32 @@ export const createuser = async(req,res,next)=>{
     });
     await newUser.save();
 
-    const subject = 'Your Equivise CRM Account Details';
-    const emailcontent = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <h2 style="color: #4A90E2;">Welcome to Equivise CRM 🚀</h2>
+  //   const subject = 'Your Equivise CRM Account Details';
+  //   const emailcontent = `
+  //   <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  //   <h2 style="color: #4A90E2;">Welcome to Equivise CRM 🚀</h2>
 
-    <p>Hi <strong>${name}</strong>,</p>
+  //   <p>Hi <strong>${name}</strong>,</p>
 
-    <p>Your account has been successfully created in the Equivise CRM system.</p>
+  //   <p>Your account has been successfully created in the Equivise CRM system.</p>
 
-    <p>Here are your login details:</p>
+  //   <p>Here are your login details:</p>
     
-    <ul style="list-style: none; padding-left: 0;">
-      <li><strong>Login Email:</strong> ${email}</li>
-      <li><strong>Password:</strong> <span style="color: #d6336c;">${plainPassword}</span></li>
-    </ul>
+  //   <ul style="list-style: none; padding-left: 0;">
+  //     <li><strong>Login Email:</strong> ${email}</li>
+  //     <li><strong>Password:</strong> <span style="color: #d6336c;">${plainPassword}</span></li>
+  //   </ul>
 
-    <p>Need help? Feel free to reach out to our support team.</p>
+  //   <p>Need help? Feel free to reach out to our support team.</p>
 
-    <br/>
-    <p style="color: #888;">– The Equivise Team</p>
-    <p style="font-size: 0.9em;">This is an automated message. Please do not reply directly to this email.</p>
-  </div>
-    `;
+  //   <br/>
+  //   <p style="color: #888;">– The Equivise Team</p>
+  //   <p style="font-size: 0.9em;">This is an automated message. Please do not reply directly to this email.</p>
+  // </div>
+  //   `;
 
-    await sendEmail(email, subject, emailcontent);
-    res.status(201).json({ message: 'User created and email sent' });
+  //   await sendEmail(email, subject, emailcontent);
+    res.status(201).json(newUser);
   } catch (error) {
     console.log('Create user error:', error);  
     res.status(500).json({ message: 'Internal server error' });

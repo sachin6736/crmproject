@@ -50,4 +50,28 @@ export const pauseandresume = async(req,res,next)=>{
         console.log("error occured when changing action",error)
         res.status(500).json({message:"server error"})
     }
+}//pausing and resuming user
+
+
+export const rolechange = async(req,res,next)=>{
+  console.log("rolechange working")
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+    const {newrole} = req.body;
+    const user = await User.findById(req.params.id);
+          if (!user) {
+            return res.status(404).json({ message: "User not found." });
+          }
+          if (user.role === newrole ){
+            return res.status(204).json({ message: `User is  already this role}.` });
+          }
+          user.role = newrole;
+          await user.save();
+          res.status(200).json({ message: "user role changed" });      
+  } catch (error) {
+    console.log("error occured when changing action",error)
+    res.status(500).json({message:"server error"})
+  }
 }
