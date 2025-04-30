@@ -80,15 +80,15 @@ export const rolechange = async(req,res,next)=>{
 export const reassign = async (req,res,next)=>{
   console.log("reassign")
   const { id } = req.params;
-  console.log("user",id)
+  //console.log("user",id)
   try {
     const salespersons = await User.find({ role: "sales", _id: { $ne: id }, isPaused: { $ne: true } });
     if (salespersons.length === 0) {
       return res.status(400).json({ message: "No other active salespersons available for reassignment." });
     }
-    console.log("salespersons",salespersons)
+    //console.log("salespersons",salespersons)
     const leads = await Lead.find({ salesPerson: id });
-    console.log("leads",leads)
+    //console.log("leads",leads)
     if (leads.length === 0) {
       return res.status(200).json({ message: "No leads to reassign." });
     }

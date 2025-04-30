@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema({
       default: "sales" 
     },
     isPaused: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ["Available", "OnBreak", "Lunch", "Meeting", "LoggedOut"],
+      default: "Available"
+    },
     createdAt: { type: Date, default: Date.now },
   });
   

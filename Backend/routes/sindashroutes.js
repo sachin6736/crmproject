@@ -1,11 +1,12 @@
 import express from 'express';
-import { singleleads } from '../controllers/singledashboard.js';
+import { singleleads ,changestatus } from '../controllers/singledashboard.js';
 import { protect } from '../middleware/authmiddleware.js';
 
 const router = express.Router();
 
 
-router.get('/getsingleleads',protect,singleleads)
+router.get('/getsingleleads',protect,singleleads);
+router.post('/changestatus/:id',protect,changestatus)
 
 
 

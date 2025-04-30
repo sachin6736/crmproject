@@ -1,7 +1,7 @@
-import Lead from "../models/lead.js";
-import User from "../models/user.js";
-import RoundRobinState from "../models/RoundRobinState.js";
-import sendEmail from "../sendEmail.js";
+import Lead from "../../models/lead.js";
+import User from "../../models/user.js";
+import RoundRobinState from "../../models/RoundRobinState.js";
+import sendEmail from "../../sendEmail.js";
 import { validationResult } from "express-validator";
 
 const ADMIN_EMAIL = "sachinpradeepan27@gmail.com";

@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { createleads , getleads,editstatus,getLeadById,createnotes,deletenotes, adddate,deleteDate, leadbyperson ,createLeadBySalesperson} from "../controllers/leadcontrollers.js";
+import { createleads , getleads,editstatus,getLeadById,createnotes,deletenotes, adddate,deleteDate, leadbyperson ,createLeadBySalesperson} from "../controllers/User/leadcontrollers.js";
 import {protect} from '../middleware/authmiddleware.js'
 import { validateLead } from "../middleware/leadValidation.js";
 import { validationResult } from "express-validator";
