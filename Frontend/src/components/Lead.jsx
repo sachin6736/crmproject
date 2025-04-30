@@ -283,6 +283,9 @@ const Lead = () => {
                   )}
                 </div>
               ))}
+              <div className='flex items-end justify-end ml-60'>
+                <button className='bg-green-800 w-20 text-gray-50'>Submit</button>
+              </div>
               <button onClick={() => setShowNotes(true)} className="text-sm text-[#032d60] mt-4">← Back</button>
             </div>
           </div>

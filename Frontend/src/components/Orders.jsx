@@ -1,56 +1,116 @@
-import React from "react";
+import React, { useState } from 'react';
 
-const OrderPage = () => {
-  const orderItems = [
-    { id: 1, name: "Mango Smoothie", qty: 2, price: 3.5 },
-    { id: 2, name: "Omani Coffee", qty: 1, price: 2.0 },
-    { id: 3, name: "Date Cake", qty: 1, price: 4.0 },
-  ];
+const OrderForm = () => {
+  const [formData, setFormData] = useState({
+    make: '',
+    model: '',
+    year: '',
+    specifications: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    cardNumber: '',
+    cardMonth: '',
+    cardYear: '',
+    cvv: '',
+    billingAddress: '',
+    city: '',
+    state: '',
+    zip: '',
+    shippingAddress: '',
+    shippingCity: '',
+    shippingState: '',
+    shippingZip: '',
+    amount: '',
+  });
 
-  const total = orderItems.reduce((acc, item) => acc + item.qty * item.price, 0);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Submitted data:', formData);
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 mt-10">
-      <h1 className="text-2xl font-bold mb-6">Order Summary</h1>
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-4 space-y-8">
+      {/* Order Information */}
+      <section>
+        <h2 className="text-2xl font-bold">Order Information</h2>
+        <p className="mb-4 text-gray-600">
+          Provide your product selection and personal details to complete your order.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <select name="make" onChange={handleChange} required className="border rounded p-2">
+            <option value="">Make *</option>
+            <option value="Toyota">Toyota</option>
+            <option value="Honda">Honda</option>
+          </select>
+          <select name="model" onChange={handleChange} required className="border rounded p-2">
+            <option value="">Model *</option>
+            <option value="Corolla">Corolla</option>
+            <option value="Civic">Civic</option>
+          </select>
+          <select name="year" onChange={handleChange} required className="border rounded p-2">
+            <option value="">Year *</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+          </select>
+          <input name="specifications" placeholder="Specifications *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="firstName" placeholder="First Name *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="lastName" placeholder="Last Name *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="phone" placeholder="Phone *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="email" placeholder="Email *" type="email" onChange={handleChange} required className="border rounded p-2" />
+        </div>
+      </section>
 
-      {/* Customer Details */}
-      <div className="bg-white p-4 rounded-xl shadow mb-6">
-        <h2 className="text-lg font-semibold mb-2">Customer Details</h2>
-        <p>Name: Ali Al-Mango</p>
-        <p>Table No: 5</p>
-        <p>Phone: +968 9123 4567</p>
-      </div>
+      {/* Payment Information */}
+      <section>
+        <h2 className="text-2xl font-bold">Payment Information</h2>
+        <p className="mb-4 text-gray-600">Securely enter your card information to complete the payment.</p>
+        <input name="cardNumber" placeholder="Card Number *" onChange={handleChange} required className="border rounded p-2 w-full mb-2" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input name="cardMonth" placeholder="Month *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="cardYear" placeholder="Year *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="cvv" placeholder="CVV Number *" onChange={handleChange} required className="border rounded p-2" />
+        </div>
+      </section>
 
-      {/* Order Items */}
-      <div className="bg-white p-4 rounded-xl shadow mb-6">
-        <h2 className="text-lg font-semibold mb-4">Items Ordered</h2>
-        <ul>
-          {orderItems.map((item) => (
-            <li
-              key={item.id}
-              className="flex justify-between items-center border-b py-2"
-            >
-              <span>
-                {item.name} x {item.qty}
-              </span>
-              <span>${(item.qty * item.price).toFixed(2)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Billing Address */}
+      <section>
+        <h2 className="text-2xl font-bold">Billing Address</h2>
+        <p className="mb-4 text-gray-600">Please provide the address associated with your payment method.</p>
+        <input name="billingAddress" placeholder="Billing Address *" onChange={handleChange} required className="border rounded p-2 w-full mb-2" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input name="city" placeholder="City *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="state" placeholder="State or Province *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="zip" placeholder="Postal or Zip *" onChange={handleChange} required className="border rounded p-2" />
+        </div>
+      </section>
 
-      {/* Total */}
-      <div className="bg-white p-4 rounded-xl shadow flex justify-between items-center mb-6">
-        <span className="text-lg font-semibold">Total</span>
-        <span className="text-xl font-bold text-green-600">${total.toFixed(2)}</span>
-      </div>
+      {/* Shipping Address */}
+      <section>
+        <h2 className="text-2xl font-bold">Shipping Address</h2>
+        <p className="mb-4 text-gray-600">Enter the address where the order should be shipped.</p>
+        <input name="shippingAddress" placeholder="Shipping Address *" onChange={handleChange} required className="border rounded p-2 w-full mb-2" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input name="shippingCity" placeholder="City *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="shippingState" placeholder="State or Province *" onChange={handleChange} required className="border rounded p-2" />
+          <input name="shippingZip" placeholder="Postal or Zip *" onChange={handleChange} required className="border rounded p-2" />
+        </div>
+      </section>
 
-      {/* Place Order Button */}
-      <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition">
-        Place Order
-      </button>
-    </div>
+      {/* Amount */}
+      <section>
+        <label className="block font-semibold text-lg mt-4 mb-2">Amount $ :</label>
+        <input name="amount" placeholder="Amount" onChange={handleChange} required className="border rounded p-2" />
+      </section>
+
+      <button type="submit" className="bg-black text-white px-6 py-2 rounded mt-4 hover:bg-gray-800">Submit Now</button>
+    </form>
   );
 };
 
-export default OrderPage;
+export default OrderForm;
