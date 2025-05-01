@@ -1,7 +1,7 @@
-import User from '../../models/user.js';
+import User from '../models/user.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import sendEmail from "../../sendEmail.js";
+import sendEmail from "../sendEmail.js";
 
 const JWT_SECRET = process.env.JWT_SECRET 
 

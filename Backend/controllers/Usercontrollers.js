@@ -1,5 +1,5 @@
-import User from '../../models/user.js';
-import Lead from "../../models/lead.js";
+import User from '../models/user.js';
+import Lead from "../models/lead.js";
 import bcrypt from 'bcrypt';
 
 export const resetpassword = async(req,res,next)=>{

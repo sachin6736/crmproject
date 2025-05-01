@@ -1,5 +1,5 @@
-import Lead from "../../models/lead.js";
-import User from "../../models/user.js";
+import Lead from "../models/lead.js";
+import User from "../models/user.js";
 
 export const getleadcount= async (req,res,next)=>{
     console.log("getleadcountworking")

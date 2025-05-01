@@ -1,5 +1,5 @@
 import express from "express";
-import { pauseandresume, reassign, resetpassword ,rolechange} from "../controllers/Admin/Usercontrollers.js";
+import { pauseandresume, reassign, resetpassword ,rolechange} from "../controllers/Usercontrollers.js";
 import {protect} from "../middleware/authmiddleware.js"
 
 const router = express.Router();

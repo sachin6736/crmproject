@@ -1,5 +1,5 @@
 import express from 'express';
-import { getcountbystatus, getleadcount,getmyteam,getorders  } from '../controllers/Admin/dashboardcontrollers.js';
+import { getcountbystatus, getleadcount,getmyteam,getorders  } from '../controllers/dashboardcontrollers.js';
 
 const router = express.Router();
 
