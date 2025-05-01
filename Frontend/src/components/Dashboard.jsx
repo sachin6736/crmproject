@@ -140,48 +140,115 @@ const Dashboard = () => {
     }
   };
   
-  const handleUserAction = async (action, userId) => {
-    let status;
-    if (action === "Pause") status = true;
-    else if (action === "Resume") status = false;
-    else return;
+  // const handleUserAction = async (action, userId) => {
+  //   let status;
+  //   if (action === "Pause") status = true;
+  //   else if (action === "Resume") status = false;
+  //   else return;
 
+  //   try {
+  //     const res = await fetch(
+  //       `http://localhost:3000/User/Pauseandresume/${userId}`,
+  //       {
+  //         method: "PATCH",
+  //         headers: { "Content-Type": "application/json" },
+  //         credentials: "include",
+  //         body: JSON.stringify({ status }),
+  //       }
+  //     );
+  //     if (res.status === 403) {
+  //       toast.error("acces denied, contact admin");
+  //       return;
+  //     }
+  //     if (res.status === 204) {
+  //       toast.info(`user is already ${action}d `);
+  //       return;
+  //     }
+  //     if (res.status === 400) {
+  //       toast.error("invalid status selected");
+  //       return;
+  //     }
+  //     if (!res.ok) {
+  //       toast.error("Failed to changge action");
+  //       return;
+  //     }
+  //     setTeamUsers((prevUsers) =>
+  //       prevUsers.map((user) =>
+  //         user._id === userId ? { ...user, isPaused: status } : user
+  //       )
+  //     );
+  //     toast.success(`User ${action.toLowerCase()}d successfully`);
+  //     // Optionally refresh the UI
+  //   } catch (error) {
+  //     console.log(error);
+  //     toast.error(`Failed to ${action.toLowerCase()} user`);
+  //   }
+  // };
+
+  const handleUserAction = async (action, userId) => {
     try {
-      const res = await fetch(
-        `http://localhost:3000/User/Pauseandresume/${userId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ status }),
+      // Handle Pause / Resume
+      if (action === "Pause" || action === "Resume") {
+        const status = action === "Pause";
+        const res = await fetch(
+          `http://localhost:3000/User/Pauseandresume/${userId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ status }),
+          }
+        );
+  
+        if (res.status === 403) {
+          toast.error("Access denied, contact admin");
+          return;
         }
-      );
-      if (res.status === 403) {
-        toast.error("acces denied, contact admin");
-        return;
+        if (res.status === 204) {
+          toast.info(`User is already ${action.toLowerCase()}d`);
+          return;
+        }
+        if (res.status === 400) {
+          toast.error("Invalid status selected");
+          return;
+        }
+        if (!res.ok) {
+          toast.error("Failed to change status");
+          return;
+        }
+  
+        setTeamUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === userId ? { ...user, isPaused: status } : user
+          )
+        );
+        toast.success(`User ${action.toLowerCase()}d successfully`);
       }
-      if (res.status === 204) {
-        toast.info(`user is already ${action}d `);
-        return;
+  
+      // Handle Reassign Leads
+      else if (action === "Reassign Leads") {
+        const res = await fetch(
+          `http://localhost:3000/User/Reassign/${userId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }
+        );
+  
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.message || "Failed to reassign leads");
+          return;
+        }
+  
+        toast.success(data.message);
       }
-      if (res.status === 400) {
-        toast.error("invalid status selected");
-        return;
-      }
-      if (!res.ok) {
-        toast.error("Failed to changge action");
-        return;
-      }
-      setTeamUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user._id === userId ? { ...user, isPaused: status } : user
-        )
-      );
-      toast.success(`User ${action.toLowerCase()}d successfully`);
-      // Optionally refresh the UI
+  
+      // Ignore other actions (handled elsewhere)
     } catch (error) {
-      console.log(error);
-      toast.error(`Failed to ${action.toLowerCase()} user`);
+      console.error(error);
+      toast.error(`Failed to perform action: ${action}`);
     }
   };
 

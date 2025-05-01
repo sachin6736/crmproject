@@ -95,7 +95,7 @@ export const createuser = async(req,res,next)=>{
 }
 
 export const login = async (req,res,next)=>{
-    console.log("login controller working")
+    //console.log("login controller working")
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
@@ -126,7 +126,7 @@ export const login = async (req,res,next)=>{
 }
 
 export const logout = async(req,res,next)=>{
-    console.log("logout working");
+    //console.log("logout working");
     try {
         res.clearCookie("token", {
           httpOnly: true,
