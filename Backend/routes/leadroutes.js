@@ -8,7 +8,7 @@ import { validationResult } from "express-validator";
 const router = express.Router();
 
 router.post('/createlead',validateLead,createleads)//creatingleads;
-router.post('/createnewlead',protect,validateLead,createLeadBySalesperson)
+router.post('/createnewlead',protect,validateLead,createLeadBySalesperson)//
 router.get('/getleads',protect,getleads)//gettinng all leads list for the admin;
 router.get('/getleadbyperson',protect,leadbyperson)//getting leads by person for saleperson
 router.put('/editstatus/:id',protect,editstatus)//editing status;
