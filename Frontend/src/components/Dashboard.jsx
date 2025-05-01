@@ -340,7 +340,7 @@ const Dashboard = () => {
                           setDropdownOpen(null); // close dropdown
                         }}
                       >
-                        Change Password
+                        Password
                       </button>
                     </div>
                   )}

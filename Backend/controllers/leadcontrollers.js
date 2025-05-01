@@ -185,8 +185,9 @@ export const getleads = async (req, res, next) => {
     const leads = await Lead.find(query)
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ createdAt: -1 });
-
+      .sort({ createdAt: -1 })
+      .populate("salesPerson", "name");
+    console.log("leads",leads)
     res.status(200).json({
       leads,
       totalPages: Math.ceil(totalLeads / limit),
@@ -393,3 +394,45 @@ export const deleteDate = async (req, res, next) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 }; ///removing date
+
+
+export const editlead = async (req, res, next) => {
+  try {
+    const leadId = req.params.id;
+    const updatedFields = req.body;
+
+    // Define the fields that are allowed to be updated
+    const allowedFields = [
+      'clientName',
+      'phoneNumber',
+      'email',
+      'zip',
+      'partRequested',
+      'make',
+      'model',
+      'year',
+      'trim'
+    ];
+
+    // Filter updatedFields to only include allowed fields
+    const filteredFields = {};
+    allowedFields.forEach(field => {
+      if (updatedFields[field] !== undefined) {
+        filteredFields[field] = updatedFields[field];
+      }
+    });
+
+    const updatedLead = await Lead.findByIdAndUpdate(
+      leadId,
+      { $set: filteredFields },
+      { new: true }
+    );
+
+    if (!updatedLead) return res.status(404).json({ message: "Lead not found" });
+
+    res.status(200).json(updatedLead);
+  } catch (error) {
+    console.error("Error updating lead:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
