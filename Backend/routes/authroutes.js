@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/signup',signup);//sihnup route
 router.post('/Createuser',protect,createuser);//creating user
 router.post('/login',login);//login route
-router.post('/logout',logout)
+router.post('/logout',logout);
 
 router.get('/check', protect, (req, res) => {
     res.status(200).json({ user: req.user });

@@ -1,4 +1,5 @@
 import User from '../models/user.js';
+import Lead from "../models/lead.js";
 import bcrypt from 'bcrypt';
 
 export const resetpassword = async(req,res,next)=>{
@@ -73,5 +74,38 @@ export const rolechange = async(req,res,next)=>{
   } catch (error) {
     console.log("error occured when changing action",error)
     res.status(500).json({message:"server error"})
+  }
+}
+
+export const reassign = async (req,res,next)=>{
+  console.log("reassign")
+  const { id } = req.params;
+  //console.log("user",id)
+  try {
+    const salespersons = await User.find({ role: "sales", _id: { $ne: id }, isPaused: { $ne: true } });
+    if (salespersons.length === 0) {
+      return res.status(400).json({ message: "No other active salespersons available for reassignment." });
+    }
+    //console.log("salespersons",salespersons)
+    const leads = await Lead.find({ salesPerson: id });
+    //console.log("leads",leads)
+    if (leads.length === 0) {
+      return res.status(200).json({ message: "No leads to reassign." });
+    }
+    const updatedLeads = [];
+    let index = 0;
+
+    for (const lead of leads) {
+      const newSalesPerson = salespersons[index % salespersons.length];
+      lead.salesPerson = newSalesPerson._id;
+      updatedLeads.push(lead.save());
+      index++;
+    }
+    await Promise.all(updatedLeads);
+
+    res.status(200).json({ message: `Reassigned ${leads.length} leads to other salespersons.` });
+  } catch (error) {
+    console.log("Error reassigning leads:", error);
+    res.status(500).json({ message: "Server error while reassigning leads." });
   }
 }

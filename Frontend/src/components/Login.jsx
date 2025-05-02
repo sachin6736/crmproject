@@ -56,16 +56,16 @@ const Login = () => {
 
     
     <div className="flex h-screen w-full">
-      <div className="absolute top-10 left-10 flex items-center space-x-2 z-10">
+      {/* <div className="absolute top-10 left-10 flex items-center space-x-2 z-10">
   <img src={logo} alt="Equivise Logo" className="h-8 w-8" />
   <h1 className="text-xl font-bold text-gray-900">Equivise</h1>
-</div>
+</div> */}
     {/* Left Side - Form Section */}
     <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
       <div className="w-full max-w-md p-8 space-y-6">
         <div className="mb-2">
   <h2 className="text-xl font-sans text-gray-800 mb-1">Start your journey</h2>
-  <h3 className="text-2xl font-bold text-[#002775]">Sign In to Equivise</h3>
+  {/* <h3 className="text-2xl font-bold text-[#002775]">Sign In to Equivise</h3> */}
 </div>
 
         <form onSubmit={handleLogin} className="space-y-4">

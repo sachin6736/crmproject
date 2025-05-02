@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function Home() {
   const navigate = useNavigate();
@@ -62,11 +64,11 @@ function Home() {
           <div
             className="flex flex-col items-center space-y-1 "
             onClick={() => {
-              console.log("user",user)
+              console.log("user", user);
               if (loading) return;
               if (user?.role === "admin") {
                 navigate("/home/dashboard");
-              }else {
+              } else {
                 navigate("/home/salesdashboard");
               }
             }}
@@ -106,11 +108,11 @@ function Home() {
           <div
             className="flex flex-col items-center space-y-1"
             onClick={() => {
-              console.log("user",user)
+              console.log("user", user);
               if (loading) return;
               if (user?.role === "admin") {
                 navigate("/home/dashboard");
-              }else {
+              } else {
                 navigate("/home/salesdashboard");
               }
             }}
@@ -158,16 +160,58 @@ function Home() {
                 <User className="w-5 h-5" />
               </button>
               {showDropdown && (
-                <div className="absolute right-0 mt-40 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                <div className="absolute right-0 mt-40 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-2">
+                  <div className="mb-2">
+                    <label className="text-sm font-semibold block mb-1">
+                      Status
+                    </label>
+                    <select
+                      className="w-full border rounded px-2 py-1 text-sm"
+                      value={user?.status || ""}
+                      onChange={async (e) => {
+                        const selectedStatus = e.target.value;
+                        try {
+                          const res = await fetch(
+                            `http://localhost:3000/Sales/changestatus/${user.id}`,
+                            {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({ status: selectedStatus }),
+                              credentials: "include",
+                            }
+                          );
+                          if (res.ok) {
+                            const updated = await res.json();
+                            setUser((prev) => ({
+                              ...prev,
+                              status: updated.status,
+                            }));
+                            toast.success("status changed");
+                          }
+                        } catch (err) {
+                          console.log("Error changing status:", err);
+                          toast.error("error occured");
+                        }
+                      }}
+                    >
+                      <option value="Available">Available</option>
+                      <option value="OnBreak">OnBreak</option>
+                      <option value="Lunch">Lunch</option>
+                      <option value="Meeting">Meeting</option>
+                      <option value="LoggedOut">LoggedOut</option>
+                    </select>
+                  </div>
                   <ul className="py-1 text-sm text-gray-700">
-                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">
                       Profile
                     </li>
-                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">
                       Settings
                     </li>
                     <li
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
                       onClick={handlelogout}
                     >
                       Logout

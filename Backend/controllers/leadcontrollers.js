@@ -394,3 +394,45 @@ export const deleteDate = async (req, res, next) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 }; ///removing date
+
+
+export const editlead = async (req, res, next) => {
+  try {
+    const leadId = req.params.id;
+    const updatedFields = req.body;
+
+    // Define the fields that are allowed to be updated
+    const allowedFields = [
+      'clientName',
+      'phoneNumber',
+      'email',
+      'zip',
+      'partRequested',
+      'make',
+      'model',
+      'year',
+      'trim'
+    ];
+
+    // Filter updatedFields to only include allowed fields
+    const filteredFields = {};
+    allowedFields.forEach(field => {
+      if (updatedFields[field] !== undefined) {
+        filteredFields[field] = updatedFields[field];
+      }
+    });
+
+    const updatedLead = await Lead.findByIdAndUpdate(
+      leadId,
+      { $set: filteredFields },
+      { new: true }
+    );
+
+    if (!updatedLead) return res.status(404).json({ message: "Lead not found" });
+
+    res.status(200).json(updatedLead);
+  } catch (error) {
+    console.error("Error updating lead:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
