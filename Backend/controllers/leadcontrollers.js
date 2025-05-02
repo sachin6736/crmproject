@@ -185,8 +185,9 @@ export const getleads = async (req, res, next) => {
     const leads = await Lead.find(query)
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ createdAt: -1 });
-
+      .sort({ createdAt: -1 })
+      .populate("salesPerson", "name");
+    console.log("leads",leads)
     res.status(200).json({
       leads,
       totalPages: Math.ceil(totalLeads / limit),
@@ -196,7 +197,7 @@ export const getleads = async (req, res, next) => {
     console.log(error);
     res.status(500).json("Error while fetching leads.");
   }
-}; ///getting total leads by admin
+};
 
 export const leadbyperson = async (req, res, next) => {
   console.log("getMyLeads controller working");

@@ -120,6 +120,8 @@ const LeadTableHeader = () => {
         field.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (statusFilter === "" || lead.status === statusFilter)
   );
+  console.log("Filtered leads",filteredLeads);
+  
 
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col">
@@ -185,6 +187,7 @@ const LeadTableHeader = () => {
                       "Email ⬍",
                       "Part Requested ⬍",
                       "Status ⬍",
+                      "Assigned ⬍",
                       "Zip ⬍",
                       "Created At ⬍",
                     ].map((header, index) => (
@@ -242,6 +245,9 @@ const LeadTableHeader = () => {
                               ))}
                             </div>
                           )}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.salesPerson.name}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap">
                           {lead.zip}
