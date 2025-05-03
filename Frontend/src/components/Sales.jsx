@@ -19,7 +19,7 @@ const Sales = () => {
         <span className='text-md mt-2 group-hover:text-[#0250d9]'>Leads</span>
         <ChevronDown className=' mt-2 group-hover:text-[#0250d9]'/>
         </div>
-        <div className="w-auto h-full border-b-[4px] border-transparent hover:border-[#0250d9] flex items-center justify-center group">
+        {/* <div className="w-auto h-full border-b-[4px] border-transparent hover:border-[#0250d9] flex items-center justify-center group">
         <span className='text-md mt-2 group-hover:text-[#0250d9]'>Accounts</span>
         <ChevronDown className=' mt-2 group-hover:text-[#0250d9]'/>
         </div>
@@ -34,7 +34,7 @@ const Sales = () => {
         <div className="w-auto h-full border-b-[4px] border-transparent hover:border-[#0250d9] flex items-center justify-center group">
         <span className='text-md mt-2 group-hover:text-[#0250d9]'>Products</span>
         <ChevronDown className=' mt-2 group-hover:text-[#0250d9]'/>
-        </div>
+        </div> */}
         <div className="w-auto h-full border-b-[4px] border-transparent hover:border-[#0250d9] flex items-center justify-center group">
         <span className='text-md mt-2 group-hover:text-[#0250d9]'>Analytics</span>
         <ChevronDown className=' mt-2 group-hover:text-[#0250d9]'/>

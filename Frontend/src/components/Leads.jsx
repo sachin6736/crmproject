@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import FullPageLoader from './utilities/FullPageLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -15,8 +17,8 @@ const LeadTableHeader = () => {
   const dropdownRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [loadingUser, setLoadingUser] = useState(true);  // State to track if user data is loading
-  const [loadingLeads, setLoadingLeads] = useState(true);  // State to track if leads data is loading
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingLeads, setLoadingLeads] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -25,12 +27,11 @@ const LeadTableHeader = () => {
           credentials: "include",
         });
         const data = await response.json();
-        console.log("data", data);
         setUser(data.user);
-        setLoadingUser(false);  // Set loadingUser to false once user data is fetched
+        setLoadingUser(false);
       } catch (error) {
         console.error("Error fetching user info:", error);
-        setLoadingUser(false);  // Set loadingUser to false in case of an error
+        setLoadingUser(false);
       }
     };
     fetchUser();
@@ -40,8 +41,7 @@ const LeadTableHeader = () => {
     const fetchLeads = async () => {
       try {
         const isAdmin = user?.role === "admin";
-        const endpoint = isAdmin ? "/getleads" : "/getleadbyperson"; 
-        console.log("endpoint", endpoint);
+        const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
         const response = await fetch(
           `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`,
           {
@@ -52,10 +52,10 @@ const LeadTableHeader = () => {
         setLeads(data.leads);
         setTotalPages(data.totalPages);
         setCurrentPage(data.currentPage || 1);
-        setLoadingLeads(false);  // Set loadingLeads to false once leads data is fetched
+        setLoadingLeads(false);
       } catch (error) {
-        console.error("Error fetching my leads:", error);
-        setLoadingLeads(false);  // Set loadingLeads to false in case of an error
+        console.error("Error fetching leads:", error);
+        setLoadingLeads(false);
       }
     };
     if (user) {
@@ -73,34 +73,56 @@ const LeadTableHeader = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const updateStatus = async (leadId, newStatus) => {
+  const showConfirmationModal = (leadId, newStatus) => {
+    confirmAlert({
+      title: 'Confirm Status Change',
+      message: "Status will be changed to 'Ordered'. Do you want to go to the Order Page?",
+      buttons: [
+        {
+          label: 'Yes, go to Order Page',
+          onClick: () => updateStatus(leadId, newStatus, true),
+          className: "text-white bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+        },
+        {
+          label: 'No, just change status',
+          onClick: () => updateStatus(leadId, newStatus, false),
+          className: "text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+        }
+      ],
+      closeOnClickOutside: true
+    });
+  };
+
+  const updateStatus = async (leadId, newStatus, goToOrderPage = false) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/Lead/updatelead/${leadId}`,
+        `http://localhost:3000/Lead/editstatus/${leadId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ status: newStatus }),
-
         }
       );
 
       if (response.ok) {
-        toast.success("Status changed")
+        toast.success("Status changed");
         setLeads((prevLeads) =>
           prevLeads.map((lead) =>
             lead._id === leadId ? { ...lead, status: newStatus } : lead
           )
         );
         setEditingLeadId(null);
+
+        if (newStatus === "Ordered" && goToOrderPage) {
+          navigate(`/home/order`);
+        }
       } else {
-        toast.error("Falied to Update status")
-        console.error("Failed to update status");
+        toast.error("Failed to update status");
       }
     } catch (error) {
-      toast.error("Error updating lead status:",error)
-      console.error("Error updating lead status:", error);
+      toast.error("Error updating status");
+      console.error("Error updating status:", error);
     }
   };
 
@@ -120,12 +142,9 @@ const LeadTableHeader = () => {
         field.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (statusFilter === "" || lead.status === statusFilter)
   );
-  console.log("Filtered leads",filteredLeads);
-  
 
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col">
-      {/* Render FullPageLoader if user data is loading */}
       {loadingUser ? (
         <div className="flex justify-center items-center py-8">
           <FullPageLoader />
@@ -134,17 +153,15 @@ const LeadTableHeader = () => {
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
-              {["New", "Import", "Contacts", "Calendar", "Testing"].map(
-                (button, index) => (
-                  <button
-                    key={index}
-                    className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
-                    onClick={() => button === "New" && navigate("/home/userform")}
-                  >
-                    {button}
-                  </button>
-                )
-              )}
+              {["New", "Import", "Calendar"].map((button, index) => (
+                <button
+                  key={index}
+                  className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
+                  onClick={() => button === "New" && navigate("/home/userform")}
+                >
+                  {button}
+                </button>
+              ))}
             </div>
 
             <div className="flex items-center space-x-4">
@@ -155,7 +172,6 @@ const LeadTableHeader = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-
               <select
                 className="border px-3 py-2 rounded-md"
                 value={statusFilter}
@@ -172,7 +188,6 @@ const LeadTableHeader = () => {
           </div>
 
           <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden overflow-x-auto flex-grow">
-            {/* Render FullPageLoader if leads data is loading */}
             {loadingLeads ? (
               <div className="flex justify-center items-center py-8">
                 <FullPageLoader />
@@ -237,7 +252,11 @@ const LeadTableHeader = () => {
                                   className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    updateStatus(lead._id, status);
+                                    if (status === "Ordered") {
+                                      showConfirmationModal(lead._id, status);
+                                    } else {
+                                      updateStatus(lead._id, status);
+                                    }
                                   }}
                                 >
                                   {status}
@@ -247,7 +266,7 @@ const LeadTableHeader = () => {
                           )}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.salesPerson.name}
+                          {lead.salesPerson?.name}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap">
                           {lead.zip}
@@ -261,7 +280,7 @@ const LeadTableHeader = () => {
                     ))
                   ) : (
                     <tr>
-                      <td className="px-4 py-2 text-center" colSpan={7}>
+                      <td className="px-4 py-2 text-center" colSpan={8}>
                         No data available
                       </td>
                     </tr>
@@ -274,7 +293,7 @@ const LeadTableHeader = () => {
       )}
 
       {totalPages > 1 && (
-        <div className="flex justify-center items-center mt-4 space-x-2  bg-[#cbd5e1] z-20 relative">
+        <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] z-20 relative">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
