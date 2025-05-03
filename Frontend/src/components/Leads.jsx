@@ -1,15 +1,12 @@
-
+// LeadTableHeader.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from './utilities/FullPageLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-<<<<<<< HEAD
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
-=======
-import { exportToExcel } from './utilities/exportToExcel'; // Assuming exportToExcel is in a separate file
->>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
+import { exportToExcel } from './utilities/exportToExcel';
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -25,12 +22,20 @@ const LeadTableHeader = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingLeads, setLoadingLeads] = useState(true);
 
+  const statusTextColors = {
+    Quoted: "text-yellow-600",
+    "No Response": "text-gray-500",
+    "Wrong Number": "text-red-500",
+    "Not Interested": "text-red-500",
+    "Price too high": "text-orange-500",
+    "Part not available": "text-purple-600",
+    Ordered: "text-green-600",
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:3000/Auth/check", {
-          credentials: "include",
-        });
+        const response = await fetch("http://localhost:3000/Auth/check", { credentials: "include" });
         const data = await response.json();
         setUser(data.user);
         setLoadingUser(false);
@@ -47,15 +52,9 @@ const LeadTableHeader = () => {
       try {
         const isAdmin = user?.role === "admin";
         const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
-<<<<<<< HEAD
-=======
-        console.log("endpoint", endpoint);
->>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
         const response = await fetch(
           `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`,
-          {
-            credentials: "include",
-          }
+          { credentials: "include" }
         );
         const data = await response.json();
         setLeads(data.leads);
@@ -63,17 +62,11 @@ const LeadTableHeader = () => {
         setCurrentPage(data.currentPage || 1);
         setLoadingLeads(false);
       } catch (error) {
-<<<<<<< HEAD
         console.error("Error fetching leads:", error);
-=======
-        console.error("Error fetching my leads:", error);
->>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
         setLoadingLeads(false);
       }
     };
-    if (user) {
-      fetchLeads();
-    }
+    if (user) fetchLeads();
   }, [user, searchQuery, statusFilter, currentPage]);
 
   useEffect(() => {
@@ -108,15 +101,12 @@ const LeadTableHeader = () => {
 
   const updateStatus = async (leadId, newStatus, goToOrderPage = false) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/Lead/editstatus/${leadId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
+      const response = await fetch(`http://localhost:3000/Lead/editstatus/${leadId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: newStatus }),
+      });
 
       if (response.ok) {
         toast.success("Status changed");
@@ -132,18 +122,10 @@ const LeadTableHeader = () => {
         }
       } else {
         toast.error("Failed to update status");
-<<<<<<< HEAD
       }
     } catch (error) {
       toast.error("Error updating status");
       console.error("Error updating status:", error);
-=======
-        console.error("Failed to update status");
-      }
-    } catch (error) {
-      toast.error("Error updating lead status:", error);
-      console.error("Error updating lead status:", error);
->>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
     }
   };
 
@@ -153,7 +135,6 @@ const LeadTableHeader = () => {
       return;
     }
 
-    // Format leads data for Excel
     const formattedLeads = leads.map((lead) => ({
       ClientName: lead.clientName,
       PhoneNumber: lead.phoneNumber,
@@ -161,9 +142,7 @@ const LeadTableHeader = () => {
       PartRequested: lead.partRequested,
       Status: lead.status,
       Zip: lead.zip,
-      CreatedAt: lead.createdAt
-        ? new Date(lead.createdAt).toLocaleString()
-        : "N/A",
+      CreatedAt: lead.createdAt ? new Date(lead.createdAt).toLocaleString() : "N/A",
     }));
 
     try {
@@ -175,21 +154,10 @@ const LeadTableHeader = () => {
     }
   };
 
-  const statusTextColors = {
-    Quoted: "text-yellow-600",
-    "No Response": "text-gray-500",
-    "Wrong Number": "text-red-500",
-    "Not Interested": "text-red-500",
-    "Price too high": "text-orange-500",
-    "Part not available": "text-purple-600",
-    Ordered: "text-green-600",
-  };
-
-  const filteredLeads = leads.filter(
-    (lead) =>
-      [lead.clientName, lead.email, lead.phoneNumber].some((field) =>
-        field.toLowerCase().includes(searchQuery.toLowerCase())
-      ) && (statusFilter === "" || lead.status === statusFilter)
+  const filteredLeads = leads.filter((lead) =>
+    [lead.clientName, lead.email, lead.phoneNumber].some((field) =>
+      field.toLowerCase().includes(searchQuery.toLowerCase())
+    ) && (statusFilter === "" || lead.status === statusFilter)
   );
 
   return (
@@ -202,13 +170,13 @@ const LeadTableHeader = () => {
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
-              {["New", "Import", "Calendar"].map((button, index) => (
+              {["New", "Import", "Calendar"].map((btn, i) => (
                 <button
-                  key={index}
+                  key={i}
                   className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 hover:bg-[#032d60] hover:text-white"
-                  onClick={() => button === "New" && navigate("/home/userform")}
+                  onClick={() => btn === "New" && navigate("/home/userform")}
                 >
-                  {button}
+                  {btn}
                 </button>
               ))}
             </div>
@@ -228,12 +196,9 @@ const LeadTableHeader = () => {
               >
                 <option value="">All</option>
                 {Object.keys(statusTextColors).map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
+                  <option key={status} value={status}>{status}</option>
                 ))}
               </select>
-
               {user?.role === "admin" && (
                 <button
                   onClick={handleExportToExcel}
@@ -246,7 +211,7 @@ const LeadTableHeader = () => {
             </div>
           </div>
 
-          <div className="mt-4 bg-white rounded-md shadow-md overflow-hidden overflow-x-auto flex-grow">
+          <div className="mt-4 bg-white rounded-md shadow-md overflow-x-auto flex-grow">
             {loadingLeads ? (
               <div className="flex justify-center items-center py-8">
                 <FullPageLoader />
@@ -263,161 +228,68 @@ const LeadTableHeader = () => {
                       "Status ⬍",
                       "Assigned ⬍",
                       "Zip ⬍",
-                      "Created At ⬍",
-                    ].map((header, index) => (
-                      <th
-                        key={index}
-                        className="px-3 md:px-4 py-2 border-b whitespace-nowrap"
-                      >
+                      "Created At ⬍"
+                    ].map((header, i) => (
+                      <th key={i} className="px-3 md:px-4 py-2 border-b whitespace-nowrap">
                         {header}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLeads.length > 0 ? (
-                    filteredLeads.map((lead, index) => (
-                      <tr key={index} className="border-t hover:bg-gray-100">
-                        <td
-                          className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
-                          onClick={() => navigate(`/home/sales/lead/${lead._id}`)}
+                  {filteredLeads.length > 0 ? filteredLeads.map((lead, index) => (
+                    <tr key={index} className="border-t hover:bg-gray-100">
+                      <td className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap" onClick={() => navigate(`/home/sales/lead/${lead._id}`)}>
+                        {lead.clientName}
+                      </td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.phoneNumber}</td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.email}</td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.partRequested}</td>
+                      <td className="px-3 md:px-4 py-2 relative">
+                        <span
+                          className={`cursor-pointer font-semibold ${statusTextColors[lead.status]}`}
+                          onClick={() => setEditingLeadId(lead._id)}
                         >
-                          {lead.clientName}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.phoneNumber}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.email}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.partRequested}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 relative">
-                          <span
-                            className={`cursor-pointer font-semibold ${statusTextColors[lead.status]}`}
-                            onClick={() => setEditingLeadId(lead._id)}
+                          {lead.status}
+                        </span>
+                        {editingLeadId === lead._id && (
+                          <div
+                            ref={dropdownRef}
+                            className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
                           >
-                            {lead.status}
-                          </span>
-                          {editingLeadId === lead._id && (
-                            <div
-                              ref={dropdownRef}
-                              className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
-                            >
-                              {Object.keys(statusTextColors).map((status) => (
-                                <div
-                                  key={status}
-                                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (status === "Ordered") {
-                                      showConfirmationModal(lead._id, status);
-                                    } else {
-                                      updateStatus(lead._id, status);
-                                    }
-                                  }}
-                                >
-                                  {status}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.salesPerson?.name}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.zip}
-                        </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.createdAt
-                            ? new Date(lead.createdAt).toLocaleString()
-                            : "N/A"}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-4 py-2 text-center" colSpan={8}>
-                        No data available
+                            {Object.keys(statusTextColors).map((status) => (
+                              <div
+                                key={status}
+                                className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  status === "Ordered"
+                                    ? showConfirmationModal(lead._id, status)
+                                    : updateStatus(lead._id, status);
+                                }}
+                              >
+                                {status}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                        {lead.salesPerson?.name}
+                      </td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.zip}</td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                        {lead.createdAt ? new Date(lead.createdAt).toLocaleString() : "N/A"}
                       </td>
                     </tr>
+                  )) : (
+                    <tr><td colSpan="8" className="text-center py-4">No leads found</td></tr>
                   )}
                 </tbody>
               </table>
             )}
           </div>
-
-<<<<<<< HEAD
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] z-20 relative">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
-            disabled={currentPage === 1}
-          >
-            Prev
-          </button>
-          {[...Array(totalPages)].map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentPage(index + 1)}
-              className={`px-3 py-1 border rounded ${
-                currentPage === index + 1
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100"
-              } hover:bg-blue-100`}
-            >
-              {index + 1}
-            </button>
-          ))}
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-        </div>
-=======
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] z-20 relative">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
-                disabled={currentPage === 1}
-              >
-                Prev
-              </button>
-              {[...Array(totalPages)].map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPage(index + 1)}
-                  className={`px-3 py-1 border rounded ${
-                    currentPage === index + 1
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100"
-                  } hover:bg-blue-100`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-            </div>
-          )}
         </>
->>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
       )}
     </div>
   );
