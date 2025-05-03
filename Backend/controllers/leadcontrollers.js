@@ -203,7 +203,7 @@ export const getleads = async (req, res, next) => {
     console.log(error);
     res.status(500).json("Error while fetching leads.");
   }
-}; ///getting total leads by admin
+};
 
 export const leadbyperson = async (req, res, next) => {
   console.log("getMyLeads controller working");
