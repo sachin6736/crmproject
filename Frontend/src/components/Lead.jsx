@@ -50,6 +50,7 @@ const Lead = () => {
   const [shippingCost, setShippingCost] = useState("");
   const [grossProfit, setGrossProfit] = useState("");
   const [totalCost, setTotalCost] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // New loading state
 
   useEffect(() => {
     const fetchSingleLead = async () => {
@@ -72,6 +73,11 @@ const Lead = () => {
           year: data.year || "",
           trim: data.trim || "",
         });
+        // Initialize cost fields
+        setPartCost(data.partCost?.toString() || "");
+        setShippingCost(data.shippingCost?.toString() || "");
+        setGrossProfit(data.grossProfit?.toString() || "");
+        setTotalCost(data.totalCost?.toString() || "");
       } catch (error) {
         console.error("Error fetching single lead:", error);
       }
@@ -200,7 +206,50 @@ const Lead = () => {
   };
 
   const handleDownload = () => {
-    exportToExcel([singleLead], "LeadData");
+    exportToExcel([singleLead], "LeadData.xlsx");
+  };
+
+  const handleSubmitCosts = async () => {
+    // Validate inputs
+    const part = parseFloat(partCost) || 0;
+    const shipping = parseFloat(shippingCost) || 0;
+    const gp = parseFloat(grossProfit) || 0;
+    if (part < 0 || shipping < 0 || gp < 0) {
+      toast.error("Costs cannot be negative");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(
+        `http://localhost:3000/Lead/updatecost/${id}`, // Fixed endpoint
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // Added for authentication
+          body: JSON.stringify({
+            partCost: part,
+            shippingCost: shipping,
+            grossProfit: gp,
+            totalCost: parseFloat(totalCost) || 0,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const updatedLead = await response.json();
+        setSingleLead(updatedLead);
+        toast.success("Costs updated successfully");
+        setShowNotes(true);
+      } else {
+        toast.error("Failed to update costs");
+      }
+    } catch (error) {
+      toast.error("Error updating costs");
+      console.error("Error updating costs:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!singleLead) return <FullPageLoader />;
@@ -401,7 +450,6 @@ const Lead = () => {
                 Go →
               </button>
             </div>
-
             <div className="w-5/6 flex-shrink-0 flex flex-col items-center justify-center gap-3 ml-8">
               {[
                 { label: "Part Cost", value: partCost, setter: setPartCost },
@@ -431,13 +479,19 @@ const Lead = () => {
                       onChange={(e) => item.setter(e.target.value)}
                       className="border p-2 rounded w-24"
                       placeholder="0.00"
+                      step="0.01" // Added for precision
+                      min="0" // Prevent negative values
                     />
                   )}
                 </div>
               ))}
-              <div className="flex items-end justify-end ml-60">
-                <button className="bg-green-800 w-20 text-gray-50">
-                  Submit
+              <div className="flex justify-end w-full pr-6">
+                <button
+                  onClick={handleSubmitCosts}
+                  className="bg-green-800 w-20 text-gray-50 disabled:opacity-50"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Saving..." : "Submit"}
                 </button>
               </div>
               <button
