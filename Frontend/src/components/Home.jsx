@@ -148,7 +148,7 @@ function Home() {
         <div className="flex-1 h-screen ml-20 flex flex-col">
           <div className="w-full h-24 bg-[#066afe] flex items-center justify-between px-4">
             <div className="flex items-center space-x-2">
-              <img src={logo} alt="Equivise Logo" className="w-20 h-20 " />
+              {/* <img src={logo} alt="Equivise Logo" className="w-20 h-20 " /> */}
               {/* <span className="text-white font-serif text-lg">| Equivise</span> */}
             </div>
             <div className="flex items-center space-x-4">

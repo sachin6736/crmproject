@@ -83,8 +83,10 @@ export const createleads = async (req, res, next) => {
 
       // // Send Email to Admin
       // await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
-      
-      res.status(201).json({ message: "Lead created successfully and email sent" });  
+
+      res
+        .status(201)
+        .json({ message: "Lead created successfully and email sent" });
     } catch (error) {
       console.log("An error occurred", error);
       res.status(500).json({ message: "Error creating lead" });
@@ -146,8 +148,12 @@ export const createLeadBySalesperson = async (req, res, next) => {
           </div>
       `;
 
-      // Send Email to Admin
-      await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
+    // Send Email to Admin
+    await sendEmail(
+      ADMIN_EMAIL,
+      "New Quotation Request Received",
+      emailContent
+    );
 
     res
       .status(201)
@@ -187,7 +193,7 @@ export const getleads = async (req, res, next) => {
       .limit(limit)
       .sort({ createdAt: -1 })
       .populate("salesPerson", "name");
-    console.log("leads",leads)
+    console.log("leads", leads);
     res.status(200).json({
       leads,
       totalPages: Math.ceil(totalLeads / limit),
@@ -395,7 +401,6 @@ export const deleteDate = async (req, res, next) => {
   }
 }; ///removing date
 
-
 export const editlead = async (req, res, next) => {
   try {
     const leadId = req.params.id;
@@ -403,20 +408,20 @@ export const editlead = async (req, res, next) => {
 
     // Define the fields that are allowed to be updated
     const allowedFields = [
-      'clientName',
-      'phoneNumber',
-      'email',
-      'zip',
-      'partRequested',
-      'make',
-      'model',
-      'year',
-      'trim'
+      "clientName",
+      "phoneNumber",
+      "email",
+      "zip",
+      "partRequested",
+      "make",
+      "model",
+      "year",
+      "trim",
     ];
 
     // Filter updatedFields to only include allowed fields
     const filteredFields = {};
-    allowedFields.forEach(field => {
+    allowedFields.forEach((field) => {
       if (updatedFields[field] !== undefined) {
         filteredFields[field] = updatedFields[field];
       }
@@ -428,11 +433,115 @@ export const editlead = async (req, res, next) => {
       { new: true }
     );
 
-    if (!updatedLead) return res.status(404).json({ message: "Lead not found" });
+    if (!updatedLead)
+      return res.status(404).json({ message: "Lead not found" });
 
     res.status(200).json(updatedLead);
   } catch (error) {
     console.error("Error updating lead:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const updatecost = async (req, res, next) => {
+  //console.log("updatecostworking");
+  const { id } = req.params;
+  console.log("leadd", id);
+  const { partCost, shippingCost, grossProfit, totalCost } = req.body;
+
+  try {
+    const lead = await Lead.findById(id);
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // Update cost fields
+    lead.partCost = partCost || lead.partCost;
+    lead.shippingCost = shippingCost || lead.shippingCost;
+    lead.grossProfit = grossProfit || lead.grossProfit;
+    lead.totalCost = totalCost || lead.totalCost;
+
+    await lead.save();
+    res.status(200).json(lead);
+  } catch (error) {
+    console.error("Error updating costs:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const leadquatation = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const lead = await Lead.findById(id);
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    if (!lead.email) {
+      return res.status(400).json({ message: "Lead email is missing" });
+    }
+    // Email content
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
+      <div style="text-align: center;">
+        <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746259616/Screenshot_2025-05-03_133627_eymhnw.png" alt="First Used Autoparts" style="max-width: 200px; margin-bottom: 20px;" />
+      </div>
+      
+      <h2 style="color: #2a2a2a;">Welcome to First Used Autoparts!</h2>
+      <p style="color: #555;">
+        Dear ${lead.clientName},<br />
+        Thank you for your inquiry. We’re excited to provide you with a quotation for the part you requested.
+      </p>
+  
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Quotation Summary</h3>
+      <ul style="list-style: none; padding-left: 0; color: #333;">
+        <li><strong>Part Requested:</strong> ${lead.partRequested}</li>
+        <li><strong>Make:</strong> ${lead.make}</li>
+        <li><strong>Model:</strong> ${lead.model}</li>
+        <li><strong>Year:</strong> ${lead.year}</li>
+        <li><strong>Trim:</strong> ${lead.trim}</li>
+        <li><strong>Total Cost (including shipping):</strong> $${lead.totalCost}</li>
+      </ul>
+  
+      <p style="color: #555;">
+        Please let us know if you have any questions or if you're ready to proceed with the order.
+      </p>
+  
+      <p style="color: #555;">Best regards,<br />
+      <strong>First Used Autoparts Team</strong></p>
+  
+      <hr style="margin: 30px 0;" />
+  
+      <div style="font-size: 14px; color: #888;">
+        <p><strong>Address:</strong><br />
+        330 N Brand Blvd, STE 700<br />
+        Glendale, California 91203</p>
+  
+        <p><strong>Contact:</strong><br />
+        +1 888-282-7476<br />
+        <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF;">contact@firstusedautoparts.com</a></p>
+      </div>
+  
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_366f7fdbcafc4effaeddb0dba92014c1~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_366f7fdbcafc4effaeddb0dba92014c1~mv2.png" alt="Facebook" /></a>
+        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_60c5fc4a3ecd49f2a697206b09eeace1~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_60c5fc4a3ecd49f2a697206b09eeace1~mv2.png " alt="LinkedIn" /></a>
+        <a href="https://www.instagram.com/first_used_auto_parts/" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_084cbbff6ae446c1b03dc3637193e77a~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_084cbbff6ae446c1b03dc3637193e77a~mv2.png " alt="Instagram" /></a>
+        <a href="https://twitter.com/parts54611" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_81cefb1bd2e2490d892a1cad5cc1cd8a~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_81cefb1bd2e2490d892a1cad5cc1cd8a~mv2.png" alt="X" /></a>
+      </div>
+  
+      <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
+        &copy; ${new Date().getFullYear()} First Used Autoparts. All rights reserved.
+      </p>
+    </div>
+  `;
+
+    await sendEmail(lead.email, `Quotation for ${lead.partRequested}`, htmlContent);
+
+    res.status(200).json({ message: "Quotation sent successfully" });
+  } catch (error) {
+    console.error("Error sending quotation:", error);
+    res.status(500).json({ message: "Failed to send quotation" });
   }
 };

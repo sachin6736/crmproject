@@ -1,10 +1,15 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from './utilities/FullPageLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+<<<<<<< HEAD
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
+=======
+import { exportToExcel } from './utilities/exportToExcel'; // Assuming exportToExcel is in a separate file
+>>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -42,6 +47,10 @@ const LeadTableHeader = () => {
       try {
         const isAdmin = user?.role === "admin";
         const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
+<<<<<<< HEAD
+=======
+        console.log("endpoint", endpoint);
+>>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
         const response = await fetch(
           `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`,
           {
@@ -54,7 +63,11 @@ const LeadTableHeader = () => {
         setCurrentPage(data.currentPage || 1);
         setLoadingLeads(false);
       } catch (error) {
+<<<<<<< HEAD
         console.error("Error fetching leads:", error);
+=======
+        console.error("Error fetching my leads:", error);
+>>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
         setLoadingLeads(false);
       }
     };
@@ -119,10 +132,46 @@ const LeadTableHeader = () => {
         }
       } else {
         toast.error("Failed to update status");
+<<<<<<< HEAD
       }
     } catch (error) {
       toast.error("Error updating status");
       console.error("Error updating status:", error);
+=======
+        console.error("Failed to update status");
+      }
+    } catch (error) {
+      toast.error("Error updating lead status:", error);
+      console.error("Error updating lead status:", error);
+>>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
+    }
+  };
+
+  const handleExportToExcel = () => {
+    if (leads.length === 0) {
+      toast.error("No leads available to export");
+      return;
+    }
+
+    // Format leads data for Excel
+    const formattedLeads = leads.map((lead) => ({
+      ClientName: lead.clientName,
+      PhoneNumber: lead.phoneNumber,
+      Email: lead.email,
+      PartRequested: lead.partRequested,
+      Status: lead.status,
+      Zip: lead.zip,
+      CreatedAt: lead.createdAt
+        ? new Date(lead.createdAt).toLocaleString()
+        : "N/A",
+    }));
+
+    try {
+      exportToExcel(formattedLeads, "leads.xlsx");
+      toast.success("Leads exported to Excel successfully");
+    } catch (error) {
+      toast.error("Error exporting leads to Excel");
+      console.error("Error exporting to Excel:", error);
     }
   };
 
@@ -184,6 +233,16 @@ const LeadTableHeader = () => {
                   </option>
                 ))}
               </select>
+
+              {user?.role === "admin" && (
+                <button
+                  onClick={handleExportToExcel}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                  disabled={loadingLeads || leads.length === 0}
+                >
+                  Download as Excel
+                </button>
+              )}
             </div>
           </div>
 
@@ -289,9 +348,8 @@ const LeadTableHeader = () => {
               </table>
             )}
           </div>
-        </>
-      )}
 
+<<<<<<< HEAD
       {totalPages > 1 && (
         <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] z-20 relative">
           <button
@@ -324,6 +382,42 @@ const LeadTableHeader = () => {
             Next
           </button>
         </div>
+=======
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] z-20 relative">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+                disabled={currentPage === 1}
+              >
+                Prev
+              </button>
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPage(index + 1)}
+                  className={`px-3 py-1 border rounded ${
+                    currentPage === index + 1
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100"
+                  } hover:bg-blue-100`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+>>>>>>> 7fd9fcc9ad647634db67c1e42ab7165e132c7b52
       )}
     </div>
   );

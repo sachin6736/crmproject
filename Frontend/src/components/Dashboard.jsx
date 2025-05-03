@@ -29,6 +29,9 @@ const Dashboard = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [showRoleModal, setShowRoleModal] = useState(false); // For role change modal
+  const [selectedRole, setSelectedRole] = useState(""); // For selected role
+  const [currentRole, setCurrentRole] = useState(""); // For current role of selected user
 
   const statusColor = {
     Quoted: "bg-yellow-100 text-yellow-800",
@@ -47,7 +50,7 @@ const Dashboard = () => {
           throw new Error("Not authorized");
         }
         const data = await res.json();
-        console.log("data",data)
+        console.log("data", data);
         if (data.user.role !== "admin") {
           navigate("/home/salesdashboard");
         } else {
@@ -75,7 +78,6 @@ const Dashboard = () => {
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
         const usersData = await usersRes.json();
-        //console.log("userdata", usersData);
 
         setTotalClients(leadData.leadcount);
         setCountbystatus(statusData);
@@ -118,7 +120,7 @@ const Dashboard = () => {
         body: JSON.stringify(newMember),
       });
       if (res.status === 403) {
-        toast.error("access denied,contact admin");
+        toast.error("access denied, contact admin");
         return;
       }
       if (res.status === 409) {
@@ -139,51 +141,6 @@ const Dashboard = () => {
       toast.error("Error adding user");
     }
   };
-  
-  // const handleUserAction = async (action, userId) => {
-  //   let status;
-  //   if (action === "Pause") status = true;
-  //   else if (action === "Resume") status = false;
-  //   else return;
-
-  //   try {
-  //     const res = await fetch(
-  //       `http://localhost:3000/User/Pauseandresume/${userId}`,
-  //       {
-  //         method: "PATCH",
-  //         headers: { "Content-Type": "application/json" },
-  //         credentials: "include",
-  //         body: JSON.stringify({ status }),
-  //       }
-  //     );
-  //     if (res.status === 403) {
-  //       toast.error("acces denied, contact admin");
-  //       return;
-  //     }
-  //     if (res.status === 204) {
-  //       toast.info(`user is already ${action}d `);
-  //       return;
-  //     }
-  //     if (res.status === 400) {
-  //       toast.error("invalid status selected");
-  //       return;
-  //     }
-  //     if (!res.ok) {
-  //       toast.error("Failed to changge action");
-  //       return;
-  //     }
-  //     setTeamUsers((prevUsers) =>
-  //       prevUsers.map((user) =>
-  //         user._id === userId ? { ...user, isPaused: status } : user
-  //       )
-  //     );
-  //     toast.success(`User ${action.toLowerCase()}d successfully`);
-  //     // Optionally refresh the UI
-  //   } catch (error) {
-  //     console.log(error);
-  //     toast.error(`Failed to ${action.toLowerCase()} user`);
-  //   }
-  // };
 
   const handleUserAction = async (action, userId) => {
     try {
@@ -199,7 +156,7 @@ const Dashboard = () => {
             body: JSON.stringify({ status }),
           }
         );
-  
+
         if (res.status === 403) {
           toast.error("Access denied, contact admin");
           return;
@@ -216,7 +173,7 @@ const Dashboard = () => {
           toast.error("Failed to change status");
           return;
         }
-  
+
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === userId ? { ...user, isPaused: status } : user
@@ -224,7 +181,7 @@ const Dashboard = () => {
         );
         toast.success(`User ${action.toLowerCase()}d successfully`);
       }
-  
+
       // Handle Reassign Leads
       else if (action === "Reassign Leads") {
         const res = await fetch(
@@ -235,17 +192,25 @@ const Dashboard = () => {
             credentials: "include",
           }
         );
-  
+
         const data = await res.json();
         if (!res.ok) {
           toast.error(data.message || "Failed to reassign leads");
           return;
         }
-  
+
         toast.success(data.message);
       }
-  
-      // Ignore other actions (handled elsewhere)
+
+      // Handle Change Role
+      else if (action === "Change Role") {
+        const user = teamUsers.find((user) => user._id === userId);
+        if (user) {
+          setSelectedUserId(userId); // Store the user ID
+          setCurrentRole(user.role); // Store the current role
+          setShowRoleModal(true); // Open the role change modal
+        }
+      }
     } catch (error) {
       console.error(error);
       toast.error(`Failed to perform action: ${action}`);
@@ -561,6 +526,121 @@ const Dashboard = () => {
                     onClick={handleAddUser}
                   >
                     Add
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        {showRoleModal && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm"
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+            >
+              <h3 className="text-lg font-semibold mb-4">Change User Role</h3>
+              <div className="space-y-4">
+                <select
+                  className="w-full border p-2 rounded"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select New Role
+                  </option>
+                  <option value="admin" disabled={currentRole === "admin"}>
+                    Admin
+                  </option>
+                  <option value="sales" disabled={currentRole === "sales"}>
+                    Sales
+                  </option>
+                  <option
+                    value="customer_relations"
+                    disabled={currentRole === "customer_relations"}
+                  >
+                    Customer Relations
+                  </option>
+                  <option
+                    value="procurement"
+                    disabled={currentRole === "procurement"}
+                  >
+                    Procurement
+                  </option>
+                </select>
+                <div className="flex justify-end gap-2">
+                  <button
+                    className="px-4 py-1 border rounded-lg"
+                    onClick={() => {
+                      setShowRoleModal(false);
+                      setSelectedRole("");
+                      setCurrentRole("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-1 bg-blue-500 text-white rounded-lg"
+                    onClick={async () => {
+                      if (!selectedRole) {
+                        toast.error("Please select a role");
+                        return;
+                      }
+                      try {
+                        const res = await fetch(
+                          `http://localhost:3000/User/Changerole/${selectedUserId}`,
+                          {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
+                            body: JSON.stringify({ newrole: selectedRole }),
+                          }
+                        );
+
+                        const data = await res.json();
+                        if (res.status === 403) {
+                          toast.error("Access denied, contact admin");
+                          return;
+                        }
+                        if (res.status === 404) {
+                          toast.error("User not found");
+                          return;
+                        }
+                        if (res.status === 204) {
+                          toast.info("User is already assigned this role");
+                          return;
+                        }
+                        if (!res.ok) {
+                          toast.error(data.message || "Failed to change role");
+                          return;
+                        }
+
+                        // Update the teamUsers state with the new role
+                        setTeamUsers((prevUsers) =>
+                          prevUsers.map((user) =>
+                            user._id === selectedUserId
+                              ? { ...user, role: selectedRole }
+                              : user
+                          )
+                        );
+
+                        toast.success("User role changed successfully!");
+                        setShowRoleModal(false);
+                        setSelectedRole("");
+                        setCurrentRole("");
+                      } catch (error) {
+                        console.error(error);
+                        toast.error("Failed to change role");
+                      }
+                    }}
+                  >
+                    Update
                   </button>
                 </div>
               </div>

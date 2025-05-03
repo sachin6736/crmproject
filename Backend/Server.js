@@ -9,7 +9,8 @@ import leadroutes from './routes/leadroutes.js';
 import dashboardrotes from './routes/dashboardroute.js';
 import authroutes from './routes/authroutes.js';
 import sindashroutes from './routes/sindashroutes.js';
-import userroutes from './routes/userroutes.js'
+import userroutes from './routes/userroutes.js';
+
 
 dotenv.config();
 
@@ -32,6 +33,8 @@ app.use('/Admin', dashboardrotes); // Dashboard
 app.use('/Auth', authroutes); // Authentication routes
 app.use('/Sales',sindashroutes); //salesperson dasboard
 app.use('/User',userroutes);//userrotes
+
+
 
 const port = process.env.PORT || 5000;
 
