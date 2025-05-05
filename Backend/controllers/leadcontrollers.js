@@ -545,3 +545,13 @@ export const leadquatation = async (req, res) => {
     res.status(500).json({ message: "Failed to send quotation" });
   }
 };
+
+
+export const changeowner = async(req,res,next)=>{
+  try {
+    const {id} = req.params
+    const {newowner} = req.body 
+  } catch (error) {
+    
+  }
+}

@@ -1,12 +1,11 @@
-// LeadTableHeader.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from './utilities/FullPageLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { exportToExcel } from './utilities/exportToExcel';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
-import { exportToExcel } from './utilities/exportToExcel';
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -118,7 +117,7 @@ const LeadTableHeader = () => {
         setEditingLeadId(null);
 
         if (newStatus === "Ordered" && goToOrderPage) {
-          navigate(`/home/order`);
+          navigate("/home/order");
         }
       } else {
         toast.error("Failed to update status");
@@ -159,6 +158,7 @@ const LeadTableHeader = () => {
       field.toLowerCase().includes(searchQuery.toLowerCase())
     ) && (statusFilter === "" || lead.status === statusFilter)
   );
+  console.log("Filtered leads", filteredLeads);
 
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col">
