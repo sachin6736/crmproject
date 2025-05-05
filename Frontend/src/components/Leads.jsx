@@ -338,7 +338,7 @@ const LeadTableHeader = () => {
                 disabled={currentPage === totalPages}
               >
                 Next
-              </button>
+              </button> 
             </div>
           )}
         </>
