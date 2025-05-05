@@ -1,10 +1,11 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from './utilities/FullPageLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { exportToExcel } from './utilities/exportToExcel'; // Assuming exportToExcel is in a separate file
+import { exportToExcel } from './utilities/exportToExcel';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -75,7 +76,27 @@ const LeadTableHeader = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const updateStatus = async (leadId, newStatus) => {
+  const showConfirmationModal = (leadId, newStatus) => {
+    confirmAlert({
+      title: 'Confirm Status Change',
+      message: "Status will be changed to 'Ordered'. Do you want to go to the Order Page?",
+      buttons: [
+        {
+          label: 'Yes, go to Order Page',
+          onClick: () => updateStatus(leadId, newStatus, true),
+          className: "text-white bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+        },
+        {
+          label: 'No, just change status',
+          onClick: () => updateStatus(leadId, newStatus, false),
+          className: "text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+        }
+      ],
+      closeOnClickOutside: true
+    });
+  };
+
+  const updateStatus = async (leadId, newStatus, goToOrderPage = false) => {
     try {
       const response = await fetch(
         `http://localhost:3000/Lead/editstatus/${leadId}`,
@@ -95,6 +116,10 @@ const LeadTableHeader = () => {
           )
         );
         setEditingLeadId(null);
+
+        if (newStatus === "Ordered" && goToOrderPage) {
+          navigate("/home/order");
+        }
       } else {
         toast.error("Failed to update status");
         console.error("Failed to update status");
@@ -149,8 +174,7 @@ const LeadTableHeader = () => {
         field.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (statusFilter === "" || lead.status === statusFilter)
   );
-  console.log("Filtered leads",filteredLeads);
-  
+  console.log("Filtered leads", filteredLeads);
 
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col">
@@ -274,7 +298,11 @@ const LeadTableHeader = () => {
                                   className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    updateStatus(lead._id, status);
+                                    if (status === "Ordered") {
+                                      showConfirmationModal(lead._id, status);
+                                    } else {
+                                      updateStatus(lead._id, status);
+                                    }
                                   }}
                                 >
                                   {status}
@@ -284,7 +312,7 @@ const LeadTableHeader = () => {
                           )}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.salesPerson.name}
+                          {lead.salesPerson?.name || "N/A"}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap">
                           {lead.zip}
@@ -298,7 +326,7 @@ const LeadTableHeader = () => {
                     ))
                   ) : (
                     <tr>
-                      <td className="px-4 py-2 text-center" colSpan={7}>
+                      <td className="px-4 py-2 text-center" colSpan={8}>
                         No data available
                       </td>
                     </tr>
@@ -338,7 +366,7 @@ const LeadTableHeader = () => {
                 disabled={currentPage === totalPages}
               >
                 Next
-              </button> 
+              </button>
             </div>
           )}
         </>
