@@ -187,7 +187,7 @@ const LeadTableHeader = () => {
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex flex-wrap justify-start space-x-2 bg-white shadow-md p-2 w-full md:w-1/2 rounded-md">
-              {["New", "Import", "Contacts", "Calendar", "Testing"].map(
+              {["New", "Import"].map(
                 (button, index) => (
                   <button
                     key={index}
