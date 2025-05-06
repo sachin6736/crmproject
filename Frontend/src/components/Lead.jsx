@@ -8,7 +8,7 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom"; // Added useNavigate
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import FullPageLoader from "./utilities/FullPageLoader";
@@ -38,6 +38,7 @@ const statusTextColors = {
 
 const Lead = () => {
   const { id } = useParams();
+  const navigate = useNavigate(); // Added for navigation
   const [singleLead, setSingleLead] = useState(null);
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
@@ -50,7 +51,7 @@ const Lead = () => {
   const [shippingCost, setShippingCost] = useState("");
   const [grossProfit, setGrossProfit] = useState("");
   const [totalCost, setTotalCost] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // New loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchSingleLead = async () => {
@@ -73,7 +74,6 @@ const Lead = () => {
           year: data.year || "",
           trim: data.trim || "",
         });
-        // Initialize cost fields
         setPartCost(data.partCost?.toString() || "");
         setShippingCost(data.shippingCost?.toString() || "");
         setGrossProfit(data.grossProfit?.toString() || "");
@@ -210,7 +210,6 @@ const Lead = () => {
   };
 
   const handleSubmitCosts = async () => {
-    // Validate inputs
     const part = parseFloat(partCost) || 0;
     const shipping = parseFloat(shippingCost) || 0;
     const gp = parseFloat(grossProfit) || 0;
@@ -222,11 +221,11 @@ const Lead = () => {
     setIsSubmitting(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/Lead/updatecost/${id}`, // Fixed endpoint
+        `http://localhost:3000/Lead/updatecost/${id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // Added for authentication
+          credentials: "include",
           body: JSON.stringify({
             partCost: part,
             shippingCost: shipping,
@@ -252,6 +251,11 @@ const Lead = () => {
     }
   };
 
+  // Navigate to order page
+  const handleGoToOrder = () => {
+    navigate(`/home/order/${id}`);
+  };
+
   if (!singleLead) return <FullPageLoader />;
 
   return (
@@ -267,18 +271,26 @@ const Lead = () => {
               {button}
             </button>
           ))}
-          <button className="px-4 py-2">
+          {/* <button className="px-4 py-2">
             <Triangle
               size={16}
               className="rotate-180 fill-blue-500 text-blue-500"
             />
-          </button>
+          </button> */}
           <button
             onClick={handleDownload}
             className="px-4 py-2 text-blue-600 text-sm"
           >
             Download
           </button>
+          {singleLead.status === "Ordered" && (
+            <button
+              onClick={handleGoToOrder}
+              className="px-4 py-2 text-green-600 text-sm border-l border-gray-300"
+            >
+              Go to Order
+            </button>
+          )}
         </div>
       </div>
 
@@ -479,8 +491,8 @@ const Lead = () => {
                       onChange={(e) => item.setter(e.target.value)}
                       className="border p-2 rounded w-24"
                       placeholder="0.00"
-                      step="0.01" // Added for precision
-                      min="0" // Prevent negative values
+                      step="0.01"
+                      min="0"
                     />
                   )}
                 </div>
