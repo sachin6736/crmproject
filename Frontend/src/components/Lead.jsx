@@ -8,13 +8,14 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
+import { useTheme } from "../context/ThemeContext"; // Import useTheme
 
 const statusOptions = [
   "Quoted",
@@ -27,17 +28,19 @@ const statusOptions = [
 ];
 
 const statusTextColors = {
-  Quoted: "text-yellow-600",
-  "No Response": "text-gray-500",
-  "Wrong Number": "text-red-500",
-  "Not Interested": "text-red-500",
-  "Price too high": "text-orange-500",
-  "Part not available": "text-purple-600",
-  Ordered: "text-green-600",
+  Quoted: "text-yellow-600 dark:text-yellow-400",
+  "No Response": "text-gray-500 dark:text-gray-400",
+  "Wrong Number": "text-red-500 dark:text-red-400",
+  "Not Interested": "text-red-500 dark:text-red-400",
+  "Price too high": "text-orange-500 dark:text-orange-400",
+  "Part not available": "text-purple-600 dark:text-purple-400",
+  Ordered: "text-green-600 dark:text-green-400",
 };
 
 const Lead = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { theme } = useTheme(); // Get current theme
   const [singleLead, setSingleLead] = useState(null);
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
@@ -50,14 +53,17 @@ const Lead = () => {
   const [shippingCost, setShippingCost] = useState("");
   const [grossProfit, setGrossProfit] = useState("");
   const [totalCost, setTotalCost] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // New loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingQuote, setIsSendingQuote] = useState(false);
 
   useEffect(() => {
     const fetchSingleLead = async () => {
       try {
         const response = await fetch(
-          `http://localhost:3000/Lead/getleadbyid/${id}`
+          `http://localhost:3000/Lead/getleadbyid/${id}`,
+          { credentials: "include" }
         );
+        if (!response.ok) throw new Error("Failed to fetch lead");
         const data = await response.json();
         setSingleLead(data);
         setNotes(data.notes || []);
@@ -73,13 +79,13 @@ const Lead = () => {
           year: data.year || "",
           trim: data.trim || "",
         });
-        // Initialize cost fields
         setPartCost(data.partCost?.toString() || "");
         setShippingCost(data.shippingCost?.toString() || "");
         setGrossProfit(data.grossProfit?.toString() || "");
         setTotalCost(data.totalCost?.toString() || "");
       } catch (error) {
         console.error("Error fetching single lead:", error);
+        toast.error("Failed to load lead data");
       }
     };
 
@@ -102,6 +108,7 @@ const Lead = () => {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ text: newNote }),
         }
       );
@@ -111,6 +118,8 @@ const Lead = () => {
         setNotes([...notes, { text: newNote, createdAt: new Date() }]);
         setNewNote("");
         setIsEditing(false);
+      } else {
+        toast.error("Failed to add note");
       }
     } catch (error) {
       toast.error("Error updating notes");
@@ -129,6 +138,7 @@ const Lead = () => {
         {
           method: isDateSelected ? "DELETE" : "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: isDateSelected
             ? null
             : JSON.stringify({ selectedDate: dateStr }),
@@ -166,7 +176,8 @@ const Lead = () => {
       if (response.ok) {
         toast.success("Status changed successfully");
         const leadResponse = await fetch(
-          `http://localhost:3000/Lead/getleadbyid/${leadId}`
+          `http://localhost:3000/Lead/getleadbyid/${leadId}`,
+          { credentials: "include" }
         );
         const updatedLead = await leadResponse.json();
         setSingleLead(updatedLead);
@@ -187,6 +198,7 @@ const Lead = () => {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(editForm),
         }
       );
@@ -210,7 +222,6 @@ const Lead = () => {
   };
 
   const handleSubmitCosts = async () => {
-    // Validate inputs
     const part = parseFloat(partCost) || 0;
     const shipping = parseFloat(shippingCost) || 0;
     const gp = parseFloat(grossProfit) || 0;
@@ -222,11 +233,11 @@ const Lead = () => {
     setIsSubmitting(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/Lead/updatecost/${id}`, // Fixed endpoint
+        `http://localhost:3000/Lead/updatecost/${id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // Added for authentication
+          credentials: "include",
           body: JSON.stringify({
             partCost: part,
             shippingCost: shipping,
@@ -252,38 +263,87 @@ const Lead = () => {
     }
   };
 
-  if (!singleLead) return <FullPageLoader />;
+  const handleSendQuote = async () => {
+    setIsSendingQuote(true);
+    try {
+      const response = await fetch(
+        `http://localhost:3000/Lead/leadquatation/${id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        toast.success(data.message);
+        // Optionally update status to "Quoted" after sending
+        await updateStatus(id, "Quoted");
+      } else {
+        toast.error(data.message || "Failed to send quotation");
+      }
+    } catch (error) {
+      toast.error("Error sending quotation");
+      console.error("Error sending quotation:", error);
+    } finally {
+      setIsSendingQuote(false);
+    }
+  };
+
+  const handleGoToOrder = () => {
+    navigate(`/home/order/${id}`);
+  };
+
+  if (!singleLead) return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
+      <FullPageLoader
+        size="w-10 h-10"
+        color="text-blue-500 dark:text-blue-400"
+        fill="fill-blue-300 dark:fill-blue-600"
+      />
+    </div>
+  );
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {/* Action Buttons */}
       <div className="flex justify-end">
-        <div className="flex flex-wrap justify-start space-x-2 bg-white rounded-full shadow-md p-2 mb-4 md:w-1/2 w-full">
-          {["Convert", "Change Owner", "Send Quote"].map((button, index) => (
+        <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 md:w-1/2 w-full">
+          {["Convert", "Change Owner"].map((button, index) => (
             <button
               key={index}
-              className="px-4 py-2 text-blue-600 border-r last:border-r-0 border-gray-300 text-sm"
+              className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300"
             >
               {button}
             </button>
           ))}
-          <button className="px-4 py-2">
-            <Triangle
-              size={16}
-              className="rotate-180 fill-blue-500 text-blue-500"
-            />
+          <button
+            onClick={handleSendQuote}
+            className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm border-r border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50"
+            disabled={isSendingQuote}
+          >
+            {isSendingQuote ? "Sending..." : "Send Quote"}
           </button>
           <button
             onClick={handleDownload}
-            className="px-4 py-2 text-blue-600 text-sm"
+            className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300"
           >
             Download
           </button>
+          {singleLead.status === "Ordered" && (
+            <button
+              onClick={handleGoToOrder}
+              className="px-4 py-2 text-green-600 dark:text-green-400 text-sm border-l border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-green-700 dark:hover:text-green-300"
+            >
+              Go to Order
+            </button>
+          )}
         </div>
       </div>
 
       {/* Active Status Row */}
-      <div className="flex justify-center items-center bg-white rounded-full shadow-md p-2 mb-4 w-full m-2 h-14 space-x-2 overflow-x-auto">
+      <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full m-2 h-14 space-x-2 overflow-x-auto">
         <div className="flex gap-14 px-2">
           {statusOptions.map((status, index) => (
             <button
@@ -291,8 +351,8 @@ const Lead = () => {
               onClick={() => updateStatus(singleLead._id, status)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
                 singleLead.status === status
-                  ? "bg-[#032d60] text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  ? "bg-[#032d60] dark:bg-blue-600 text-white"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               {status}
@@ -302,16 +362,16 @@ const Lead = () => {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-300 p-4 rounded-xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-300 dark:bg-gray-800 p-4 rounded-xl">
         {/* Lead Details */}
-        <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50 p-4">
-          <div className="flex justify-between items-center border-b pb-2">
-            <h2 className="text-lg font-semibold">{singleLead.clientName}</h2>
+        <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50 dark:bg-gray-700 p-4">
+          <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{singleLead.clientName}</h2>
             <div className="flex gap-2">
               <button
                 onClick={() => setIsEditingLead(!isEditingLead)}
                 className={`flex items-center gap-1 text-sm ${
-                  isEditingLead ? "text-red-500" : "text-blue-500"
+                  isEditingLead ? "text-red-500 dark:text-red-400" : "text-blue-500 dark:text-blue-400"
                 }`}
               >
                 {isEditingLead ? (
@@ -325,7 +385,7 @@ const Lead = () => {
               {isEditingLead && (
                 <button
                   onClick={handleEditLead}
-                  className="flex items-center gap-1 text-sm text-green-500"
+                  className="flex items-center gap-1 text-sm text-green-500 dark:text-green-400"
                 >
                   <Save size={18} /> Save
                 </button>
@@ -351,9 +411,9 @@ const Lead = () => {
             ].map((item, index) => (
               <div
                 key={index}
-                className="flex justify-between items-center border-b pb-1 text-sm"
+                className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-1 text-sm"
               >
-                <span className="text-gray-600 font-medium">{item.label}</span>
+                <span className="text-gray-600 dark:text-gray-400 font-medium">{item.label}</span>
                 <div className="flex items-center gap-2 w-1/2">
                   {isEditingLead && item.key !== "status" ? (
                     <input
@@ -362,17 +422,17 @@ const Lead = () => {
                       onChange={(e) =>
                         setEditForm({ ...editForm, [item.key]: e.target.value })
                       }
-                      className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none text-right text-sm w-full transition-colors duration-200"
+                      className="bg-transparent border-b border-transparent focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none text-right text-sm w-full transition-colors duration-200 text-gray-900 dark:text-gray-100"
                     />
                   ) : item.isLink ? (
                     <a
                       href={`mailto:${singleLead[item.key]}`}
-                      className="text-blue-500 hover:underline truncate"
+                      className="text-blue-500 dark:text-blue-400 hover:underline truncate"
                     >
                       {singleLead[item.key]}
                     </a>
                   ) : (
-                    <span className="truncate">{singleLead[item.key]}</span>
+                    <span className="truncate text-gray-900 dark:text-gray-100">{singleLead[item.key]}</span>
                   )}
                 </div>
               </div>
@@ -381,7 +441,7 @@ const Lead = () => {
         </div>
 
         {/* Notes Section */}
-        <div className="w-full h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md overflow-hidden relative">
+        <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md overflow-hidden relative">
           <div
             className="w-full h-full flex transition-transform duration-500 ease-in-out"
             style={{
@@ -389,24 +449,24 @@ const Lead = () => {
             }}
           >
             <div className="w-full flex-shrink-0 flex flex-col">
-              <h2 className="text-lg font-semibold border-b pb-2">Notes</h2>
-              <div className="p-2 mt-2 text-gray-700 whitespace-pre-wrap overflow-y-auto flex-1">
+              <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">Notes</h2>
+              <div className="p-2 mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-wrap overflow-y-auto flex-1">
                 {notes.length > 0 ? (
                   notes.map((note, index) => (
                     <div
                       key={index}
-                      className="mb-2 p-2 bg-gray-100 rounded flex justify-between items-center"
+                      className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex justify-between items-center"
                     >
                       <div>
-                        <p>{note.text}</p>
-                        <small className="text-gray-500">
+                        <p className="text-gray-900 dark:text-gray-100">{note.text}</p>
+                        <small className="text-gray-500 dark:text-gray-400">
                           {new Date(note.createdAt).toLocaleString()}
                         </small>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm text-center">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
                     No notes added yet
                   </p>
                 )}
@@ -415,7 +475,7 @@ const Lead = () => {
               {isEditing ? (
                 <div className="mt-4">
                   <textarea
-                    className="w-full p-2 border rounded text-sm"
+                    className="w-full p-2 border rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Add a note..."
@@ -423,13 +483,13 @@ const Lead = () => {
                   <div className="flex justify-end gap-2 mt-2">
                     <button
                       onClick={() => setIsEditing(false)}
-                      className="text-red-500 text-sm"
+                      className="text-red-500 dark:text-red-400 text-sm"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSaveNotes}
-                      className="text-green-500 flex items-center gap-1 text-sm"
+                      className="text-green-500 dark:text-green-400 flex items-center gap-1 text-sm"
                     >
                       <Save size={18} /> Save
                     </button>
@@ -438,14 +498,14 @@ const Lead = () => {
               ) : (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="text-blue-500 flex items-center gap-1 mt-2 text-sm"
+                  className="text-blue-500 dark:text-blue-400 flex items-center gap-1 mt-2 text-sm"
                 >
                   <Edit size={18} /> Add Note
                 </button>
               )}
               <button
                 onClick={() => setShowNotes(false)}
-                className="text-sm text-[#032d60] mt-4"
+                className="text-sm text-[#032d60] dark:text-blue-400 mt-4"
               >
                 Go →
               </button>
@@ -467,20 +527,20 @@ const Lead = () => {
               ].map((item, index) => (
                 <div
                   key={index}
-                  className="w-full h-20 bg-[#f3f4f6] flex items-center justify-between px-6 rounded-lg"
+                  className="w-full h-20 bg-[#f3f4f6] dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
                 >
-                  <p className="text-base font-medium">{item.label}</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-gray-100">{item.label}</p>
                   {item.readonly ? (
-                    <p className="text-base font-semibold">${item.value}</p>
+                    <p className="text-base font-semibold text-gray-900 dark:text-gray-100">${item.value}</p>
                   ) : (
                     <input
                       type="number"
                       value={item.value}
                       onChange={(e) => item.setter(e.target.value)}
-                      className="border p-2 rounded w-24"
+                      className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                       placeholder="0.00"
-                      step="0.01" // Added for precision
-                      min="0" // Prevent negative values
+                      step="0.01"
+                      min="0"
                     />
                   )}
                 </div>
@@ -488,7 +548,7 @@ const Lead = () => {
               <div className="flex justify-end w-full pr-6">
                 <button
                   onClick={handleSubmitCosts}
-                  className="bg-green-800 w-20 text-gray-50 disabled:opacity-50"
+                  className="bg-green-800 dark:bg-green-600 text-gray-50 dark:text-gray-100 w-20 disabled:opacity-50 hover:bg-green-900 dark:hover:bg-green-700"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Saving..." : "Submit"}
@@ -496,7 +556,7 @@ const Lead = () => {
               </div>
               <button
                 onClick={() => setShowNotes(true)}
-                className="text-sm text-[#032d60] mt-4"
+                className="text-sm text-[#032d60] dark:text-blue-400 mt-4"
               >
                 ← Back
               </button>
@@ -504,8 +564,8 @@ const Lead = () => {
           </div>
         </div>
 
-        <div className="w-full h-auto md:h-96 rounded-2xl bg-white p-4 shadow-md">
-          <h2 className="text-lg font-semibold border-b pb-2">
+        <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md">
+          <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">
             Important Dates
           </h2>
           <div className="flex justify-center p-2">
@@ -513,9 +573,10 @@ const Lead = () => {
               onClickDay={handleDateClick}
               tileClassName={({ date }) =>
                 selectedDates.includes(date.toISOString().split("T")[0])
-                  ? "bg-blue-500 text-white rounded-full"
+                  ? "bg-blue-500 dark:bg-blue-600 text-white rounded-full"
                   : ""
               }
+              className={theme === 'dark' ? 'dark-calendar' : ''}
             />
           </div>
         </div>

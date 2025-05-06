@@ -15,13 +15,15 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import FullPageLoader from "./utilities/FullPageLoader";
+import { useTheme } from "../context/ThemeContext"; // Import useTheme
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme(); // Get current theme
   const [totalClients, setTotalClients] = useState(0);
   const [countbystatus, setCountbystatus] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [teamUsers, setTeamUsers] = useState([]);
+  const [ teamUsers, setTeamUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newMember, setNewMember] = useState({ name: "", email: "", role: "" });
@@ -34,52 +36,52 @@ const Dashboard = () => {
   const [currentRole, setCurrentRole] = useState("");
 
   const statusColor = {
-    Quoted: "bg-yellow-100 text-yellow-800",
-    Ordered: "bg-green-100 text-green-800",
+    Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    Ordered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   };
 
   const statusIcons = {
     Available: (
-      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-        <CheckCircle className="w-3 h-3 text-green-500" />
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
+        <CheckCircle className="w-3 h-3 text-green-500 dark:text-green-400" />
         <span>Available</span>
-        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+        <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
           Available
         </span>
       </div>
     ),
     OnBreak: (
-      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-        <Coffee className="w-3 h-3 text-blue-500" />
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+        <Coffee className="w-3 h-3 text-blue-500 dark:text-blue-400" />
         <span>On Break</span>
-        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+        <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
           On Break
         </span>
       </div>
     ),
     Lunch: (
-      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
-        <Utensils className="w-3 h-3 text-orange-500" />
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200 rounded-full text-xs font-medium">
+        <Utensils className="w-3 h-3 text-orange-500 dark:text-orange-400" />
         <span>Lunch</span>
-        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+        <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
           Lunch
         </span>
       </div>
     ),
     Meeting: (
-      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-        <Calendar className="w-3 h-3 text-purple-500" />
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 rounded-full text-xs font-medium">
+        <Calendar className="w-3 h-3 text-purple-500 dark:text-purple-400" />
         <span>Meeting</span>
-        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+        <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
           Meeting
         </span>
       </div>
     ),
     LoggedOut: (
-      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-        <LogOut className="w-3 h-3 text-red-500" />
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-full text-xs font-medium">
+        <LogOut className="w-3 h-3 text-red-500 dark:text-red-400" />
         <span>Logged Out</span>
-        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+        <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
           Logged Out
         </span>
       </div>
@@ -98,7 +100,6 @@ const Dashboard = () => {
           throw new Error("Not authorized");
         }
         const data = await res.json();
-        console.log("data", data);
         if (data.user.role !== "admin") {
           navigate("/home/salesdashboard");
         } else {
@@ -260,48 +261,54 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
         <FullPageLoader
           size="w-10 h-10"
-          color="text-blue-500"
-          fill="fill-blue-300"
+          color="text-blue-500 dark:text-blue-400"
+          fill="fill-blue-300 dark:fill-blue-600"
         />
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#f9fafb]">
+    <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="flex flex-wrap gap-6 p-3 px-6 sm:px-20">
         {["Ordered", "Quoted"].map((status) => (
           <div
             key={status}
-            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white rounded-xl shadow flex flex-col items-center justify-center p-4"
+            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4"
           >
-            <h3 className="text-gray-500 text-lg">{status}</h3>
-            <span className="text-4xl font-bold text-blue-600">
+            <h3 className="text-gray-500 dark:text-gray-300 text-lg">{status}</h3>
+            <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
               {getStatusCount(status)}
             </span>
           </div>
         ))}
-        <div className="flex-1 min-w-[250px] max-w-sm h-40 bg-white rounded-xl shadow flex flex-col items-center justify-center p-4">
-          <h3 className="text-gray-500 text-lg">Total Clients</h3>
-          <span className="text-4xl font-bold text-blue-600">
+        <div className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4">
+          <h3 className="text-gray-500 dark:text-gray-300 text-lg">Total Clients</h3>
+          <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
             {totalClients}
           </span>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-6 p-6 sm:px-20">
-        <div className="flex-1 min-w-[300px] bg-white rounded-xl shadow p-4">
-          <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
+        <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Sales Overview</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+              <XAxis dataKey="month" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} />
+              <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                  border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                  color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                }}
+              />
+              <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937' }} />
               <Line
                 type="monotone"
                 dataKey="daily"
@@ -318,12 +325,12 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="w-full sm:max-w-sm bg-white rounded-xl shadow p-4 relative">
+        <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">My Team</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">My Team</h3>
             <button
               onClick={() => setShowModal(true)}
-              className="p-1 text-sm bg-blue-500 text-white rounded-full hover:bg-blue-600"
+              className="p-1 text-sm bg-blue-500 dark:bg-blue-600 text-white rounded-full hover:bg-blue-600 dark:hover:bg-blue-700"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -332,31 +339,31 @@ const Dashboard = () => {
             {teamUsers.map((member, index) => (
               <li
                 key={index}
-                className="relative flex items-center justify-between space-x-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                className="relative flex items-center justify-between space-x-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 text-white rounded-full flex items-center justify-center font-semibold ${
-                      member.isPaused ? "bg-red-500" : "bg-blue-500"
+                      member.isPaused ? "bg-red-500 dark:bg-red-600" : "bg-blue-500 dark:bg-blue-600"
                     }`}
                   >
                     {member.role[0]?.toUpperCase()}
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-medium text-gray-800">
+                    <span className="font-medium text-gray-800 dark:text-gray-200">
                       {member.name}
                     </span>
-                    <span className="text-sm text-gray-500 capitalize">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
                       {member.role.replace("_", " ")}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
                       {member.email}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="absolute top-2 right-12">
-                    {statusIcons[member.status] || <span className="text-xs text-gray-500">Unknown</span>}
+                    {statusIcons[member.status] || <span className="text-xs text-gray-500 dark:text-gray-400">Unknown</span>}
                   </div>
                   <div className="relative">
                     <button
@@ -364,12 +371,12 @@ const Dashboard = () => {
                         setDropdownOpen(dropdownOpen === index ? null : index)
                       }
                     >
-                      <MoreVertical className="w-5 h-5 text-gray-600 hover:text-black" />
+                      <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-gray-100" />
                     </button>
                     {dropdownOpen === index && (
-                      <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border z-10">
+                      <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                         <button
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
                             if (member.isPaused) {
                               handleUserAction("Resume", member._id);
@@ -382,7 +389,7 @@ const Dashboard = () => {
                           {member.isPaused ? "Resume" : "Pause"}
                         </button>
                         <button
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
                             handleUserAction("Reassign Leads", member._id);
                             setDropdownOpen(null);
@@ -391,7 +398,7 @@ const Dashboard = () => {
                           Reassign Leads
                         </button>
                         <button
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
                             handleUserAction("Change Role", member._id);
                             setDropdownOpen(null);
@@ -400,7 +407,7 @@ const Dashboard = () => {
                           Change Role
                         </button>
                         <button
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
                             setSelectedUserId(member._id);
                             setShowPasswordModal(true);
@@ -422,29 +429,29 @@ const Dashboard = () => {
       <AnimatePresence>
         {showPasswordModal && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-sm"
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
             >
-              <h3 className="text-lg font-semibold mb-4">Change Password</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Change Password</h3>
               <div className="space-y-4">
                 <input
                   type="password"
-                  className="w-full border p-2 rounded"
+                  className="w-full border p-2 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   placeholder="New Password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                 />
                 <div className="flex justify-end gap-2">
                   <button
-                    className="px-4 py-1 border rounded-lg"
+                    className="px-4 py-1 border rounded-lg text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => {
                       setShowPasswordModal(false);
                       setPasswordInput("");
@@ -453,7 +460,7 @@ const Dashboard = () => {
                     Cancel
                   </button>
                   <button
-                    className="px-4 py-1 bg-blue-500 text-white rounded-lg"
+                    className="px-4 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
                     onClick={async () => {
                       try {
                         const res = await fetch(
@@ -505,21 +512,21 @@ const Dashboard = () => {
         )}
         {showModal && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-sm"
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
             >
-              <h3 className="text-lg font-semibold mb-4">Add Team Member</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Add Team Member</h3>
               <div className="space-y-4">
                 <input
-                  className="w-full border p-2 rounded"
+                  className="w-full border p-2 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   placeholder="Name"
                   value={newMember.name}
                   onChange={(e) =>
@@ -527,7 +534,7 @@ const Dashboard = () => {
                   }
                 />
                 <input
-                  className="w-full border p-2 rounded"
+                  className="w-full border p-2 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   placeholder="Email"
                   value={newMember.email}
                   onChange={(e) =>
@@ -535,7 +542,7 @@ const Dashboard = () => {
                   }
                 />
                 <select
-                  className="w-full border p-2 rounded"
+                  className="w-full border p-2 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   value={newMember.role}
                   onChange={(e) =>
                     setNewMember({ ...newMember, role: e.target.value })
@@ -551,13 +558,13 @@ const Dashboard = () => {
                 </select>
                 <div className="flex justify-end gap-2">
                   <button
-                    className="px-4 py-1 border rounded-lg"
+                    className="px-4 py-1 border rounded-lg text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => setShowModal(false)}
                   >
                     Cancel
                   </button>
                   <button
-                    className="px-4 py-1 bg-blue-500 text-white rounded-lg"
+                    className="px-4 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
                     onClick={handleAddUser}
                   >
                     Add
@@ -569,21 +576,21 @@ const Dashboard = () => {
         )}
         {showRoleModal && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-sm"
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
             >
-              <h3 className="text-lg font-semibold mb-4">Change User Role</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Change User Role</h3>
               <div className="space-y-4">
                 <select
-                  className="w-full border p-2 rounded"
+                  className="w-full border p-2 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
                 >
@@ -611,7 +618,7 @@ const Dashboard = () => {
                 </select>
                 <div className="flex justify-end gap-2">
                   <button
-                    className="px-4 py-1 border rounded-lg"
+                    className="px-4 py-1 border rounded-lg text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => {
                       setShowRoleModal(false);
                       setSelectedRole("");
@@ -621,7 +628,7 @@ const Dashboard = () => {
                     Cancel
                   </button>
                   <button
-                    className="px-4 py-1 bg-blue-500 text-white rounded-lg"
+                    className="px-4 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
                     onClick={async () => {
                       if (!selectedRole) {
                         toast.error("Please select a role");
@@ -684,19 +691,19 @@ const Dashboard = () => {
       </AnimatePresence>
 
       <div className="flex flex-wrap gap-6 p-6 sm:px-20">
-        <div className="flex-1 min-w-[300px] h-96 bg-white rounded-xl shadow"></div>
-        <div className="flex-1 min-w-[300px] h-96 bg-white rounded-xl shadow"></div>
+        <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow"></div>
+        <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow"></div>
       </div>
 
       <div className="w-full px-4 sm:px-20 py-8">
-        <div className="p-6 bg-white rounded-xl shadow border border-slate-200 overflow-x-auto">
+        <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 overflow-x-auto">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Recent Orders</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
             <div className="space-x-2">
-              <button className="px-4 py-1 border rounded-lg text-sm">
+              <button className="px-4 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
                 Filter
               </button>
-              <button className="px-4 py-1 border rounded-lg text-sm">
+              <button className="px-4 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
                 See all
               </button>
             </div>
@@ -704,7 +711,7 @@ const Dashboard = () => {
 
           <table className="min-w-[700px] w-full table-auto">
             <thead>
-              <tr className="text-left text-sm text-gray-600 border-b">
+              <tr className="text-left text-sm text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                 <th className="p-2">Client Name</th>
                 <th className="p-2 pl-14">Email</th>
                 <th className="p-2">Part Requested</th>
@@ -715,20 +722,20 @@ const Dashboard = () => {
             </thead>
             <tbody>
               {orders.map((order, index) => (
-                <tr key={index} className="border-b text-sm">
-                  <td className="p-2">{order.clientName}</td>
+                <tr key={index} className="border-b border-gray-200 dark:border-gray-700 text-sm">
+                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.clientName}</td>
                   <td className="p-2 flex items-center gap-2">
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                        order.color || "bg-blue-400"
+                        order.color || "bg-blue-400 dark:bg-blue-600"
                       }`}
                     >
                       {order.email[0]?.toUpperCase()}
                     </div>
-                    <div className="text-gray-500">{order.email}</div>
+                    <div className="text-gray-500 dark:text-gray-400">{order.email}</div>
                   </td>
-                  <td className="p-2">{order.partRequested}</td>
-                  <td className="p-2">{order.date}</td>
+                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.partRequested}</td>
+                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.date}</td>
                   <td className="p-2">
                     <span
                       className={`px-2 py-1 text-xs rounded-full font-medium ${
@@ -739,7 +746,7 @@ const Dashboard = () => {
                     </span>
                   </td>
                   <td className="p-2">
-                    <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-600 cursor-pointer" />
+                    <Trash2 className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 cursor-pointer" />
                   </td>
                 </tr>
               ))}

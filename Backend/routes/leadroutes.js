@@ -14,7 +14,7 @@ router.get('/getleadbyperson',protect,leadbyperson)//getting leads by person for
 router.put('/editstatus/:id',protect,editstatus)//editing status;
 router.get('/getleadbyid/:id',getLeadById)//get leadbyid by clientid;
 router.put('/editlead/:id',editlead)//editing lead details;
-router.post('/updatecost/:id',updatecost)//updatecost;
+router.post('/updatecost/:id',protect,updatecost)//updatecost;
 router.post('/leadquatation/:id',leadquatation)//
 router.post('/reassign/:id',protect,changeowner)
 

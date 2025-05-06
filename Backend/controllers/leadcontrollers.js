@@ -460,6 +460,12 @@ export const updatecost = async (req, res, next) => {
     lead.shippingCost = shippingCost || lead.shippingCost;
     lead.grossProfit = grossProfit || lead.grossProfit;
     lead.totalCost = totalCost || lead.totalCost;
+    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+    lead.notes.push({
+      text: `cost updated by ${userIdentity}`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
 
     await lead.save();
     res.status(200).json(lead);
@@ -482,6 +488,11 @@ export const leadquatation = async (req, res) => {
     if (!lead.email) {
       return res.status(400).json({ message: "Lead email is missing" });
     }
+
+    if (!lead.totalCost || lead.totalCost <= 0) {
+      return res.status(400).json({ message: "Quotation cannot be sent without a valid total cost" });
+    }
+
     // Email content
     const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
@@ -532,13 +543,12 @@ export const leadquatation = async (req, res) => {
       </div>
   
       <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
-        &copy; ${new Date().getFullYear()} First Used Autoparts. All rights reserved.
+        © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.
       </p>
     </div>
   `;
 
     await sendEmail(lead.email, `Quotation for ${lead.partRequested}`, htmlContent);
-
     res.status(200).json({ message: "Quotation sent successfully" });
   } catch (error) {
     console.error("Error sending quotation:", error);

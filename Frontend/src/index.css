@@ -2,32 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  @apply bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+}
 
+/* react-confirm-alert dark mode styles */
+.dark-overlay .react-confirm-alert-overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
 
-.react-calendar {
-    width: 100%;
-    max-width: 300px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    padding: 10px;
-  }
-  
-  .react-calendar__tile {
-    padding: 10px;
-    border-radius: 50%;
-    transition: background 0.3s ease;
-  }
-  
-  .react-calendar__tile--active {
-    background: red !important;
-    color: white !important;
-    font-weight: bold;
-    border-radius: 50%;
-  }
-  
-  .react-calendar__tile:hover {
-    background: #e5e5e5;
-  }
-  
+.dark-overlay .react-confirm-alert {
+  background: #1F2937; /* gray-800 */
+  color: #D1D5DB; /* gray-300 */
+  border: 1px solid #4B5563; /* gray-600 */
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 
+.dark-overlay .react-confirm-alert h1 {
+  color: #F3F4F6; /* gray-100 */
+}
+
+.dark-overlay .react-confirm-alert .react-confirm-alert-body {
+  background: #1F2937; /* gray-800 */
+  color: #D1D5DB; /* gray-300 */
+}
+
+.dark-overlay .react-confirm-alert-button-group button {
+  background: #1F2937; /* gray-800 */
+  color: #D1D5DB; /* gray-300 */
+  border: 1px solid #4B5563; /* gray-600 */
+}
+
+.dark-overlay .react-confirm-alert-button-group button:hover {
+  background: #374151; /* gray-700 */
+}
+
+/* react-calendar dark mode styles */
+.dark-calendar {
+  background: #1F2937; /* gray-800 */
+  color: #D1D5DB; /* gray-300 */
+  border: 1px solid #4B5563; /* gray-600 */
+  border-radius: 0.5rem;
+}
+
+.dark-calendar .react-calendar__navigation {
+  background: #374151; /* gray-700 */
+}
+
+.dark-calendar .react-calendar__navigation button {
+  color: #F3F4F6; /* gray-100 */
+}
+
+.dark-calendar .react-calendar__navigation button:hover {
+  background: #4B5563; /* gray-600 */
+}
+
+.dark-calendar .react-calendar__month-view__weekdays {
+  color: #9CA3AF; /* gray-400 */
+}
+
+.dark-calendar .react-calendar__month-view__days__day {
+  color: #D1D5DB; /* gray-300 */
+}
+
+.dark-calendar .react-calendar__month-view__days__day--weekend {
+  color: #F3F4F6; /* gray-100 */
+}
+
+.dark-calendar .react-calendar__month-view__days__day--neighboringMonth {
+  color: #6B7280; /* gray-500 */
+}
+
+.dark-calendar .react-calendar__tile:hover {
+  background: #4B5563; /* gray-600 */
+}
+
+.dark-calendar .react-calendar__tile--active {
+  background: #2563EB; /* blue-600 */
+  color: #FFFFFF;
+}
