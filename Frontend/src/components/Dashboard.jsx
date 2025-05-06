@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trash2, Plus, MoreVertical } from "lucide-react";
+import { Trash2, Plus, MoreVertical, CheckCircle, Coffee, Utensils, Calendar, LogOut } from "lucide-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
@@ -25,17 +25,65 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newMember, setNewMember] = useState({ name: "", email: "", role: "" });
-  const [dropdownOpen, setDropdownOpen] = useState(null); // track which dropdown is open
+  const [dropdownOpen, setDropdownOpen] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
-  const [showRoleModal, setShowRoleModal] = useState(false); // For role change modal
-  const [selectedRole, setSelectedRole] = useState(""); // For selected role
-  const [currentRole, setCurrentRole] = useState(""); // For current role of selected user
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [currentRole, setCurrentRole] = useState("");
 
   const statusColor = {
     Quoted: "bg-yellow-100 text-yellow-800",
     Ordered: "bg-green-100 text-green-800",
+  };
+
+  const statusIcons = {
+    Available: (
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+        <CheckCircle className="w-3 h-3 text-green-500" />
+        <span>Available</span>
+        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+          Available
+        </span>
+      </div>
+    ),
+    OnBreak: (
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+        <Coffee className="w-3 h-3 text-blue-500" />
+        <span>On Break</span>
+        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+          On Break
+        </span>
+      </div>
+    ),
+    Lunch: (
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
+        <Utensils className="w-3 h-3 text-orange-500" />
+        <span>Lunch</span>
+        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+          Lunch
+        </span>
+      </div>
+    ),
+    Meeting: (
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+        <Calendar className="w-3 h-3 text-purple-500" />
+        <span>Meeting</span>
+        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+          Meeting
+        </span>
+      </div>
+    ),
+    LoggedOut: (
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+        <LogOut className="w-3 h-3 text-red-500" />
+        <span>Logged Out</span>
+        <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+          Logged Out
+        </span>
+      </div>
+    ),
   };
 
   useEffect(() => {
@@ -43,7 +91,7 @@ const Dashboard = () => {
       try {
         const res = await fetch("http://localhost:3000/Auth/check", {
           method: "GET",
-          credentials: "include", // important for cookies
+          credentials: "include",
         });
 
         if (!res.ok) {
@@ -54,10 +102,10 @@ const Dashboard = () => {
         if (data.user.role !== "admin") {
           navigate("/home/salesdashboard");
         } else {
-          setLoading(false); // allow rendering
+          setLoading(false);
         }
       } catch (error) {
-        navigate("/"); // go to login or home if auth fails
+        navigate("/");
       }
     };
 
@@ -144,7 +192,6 @@ const Dashboard = () => {
 
   const handleUserAction = async (action, userId) => {
     try {
-      // Handle Pause / Resume
       if (action === "Pause" || action === "Resume") {
         const status = action === "Pause";
         const res = await fetch(
@@ -180,10 +227,7 @@ const Dashboard = () => {
           )
         );
         toast.success(`User ${action.toLowerCase()}d successfully`);
-      }
-
-      // Handle Reassign Leads
-      else if (action === "Reassign Leads") {
+      } else if (action === "Reassign Leads") {
         const res = await fetch(
           `http://localhost:3000/User/Reassign/${userId}`,
           {
@@ -200,15 +244,12 @@ const Dashboard = () => {
         }
 
         toast.success(data.message);
-      }
-
-      // Handle Change Role
-      else if (action === "Change Role") {
+      } else if (action === "Change Role") {
         const user = teamUsers.find((user) => user._id === userId);
         if (user) {
-          setSelectedUserId(userId); // Store the user ID
-          setCurrentRole(user.role); // Store the current role
-          setShowRoleModal(true); // Open the role change modal
+          setSelectedUserId(userId);
+          setCurrentRole(user.role);
+          setShowRoleModal(true);
         }
       }
     } catch (error) {
@@ -231,7 +272,6 @@ const Dashboard = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#f9fafb]">
-      {/* Stats */}
       <div className="flex flex-wrap gap-6 p-3 px-6 sm:px-20">
         {["Ordered", "Quoted"].map((status) => (
           <div
@@ -252,7 +292,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Graph + My Team */}
       <div className="flex flex-wrap gap-6 p-6 sm:px-20">
         <div className="flex-1 min-w-[300px] bg-white rounded-xl shadow p-4">
           <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
@@ -293,9 +332,8 @@ const Dashboard = () => {
             {teamUsers.map((member, index) => (
               <li
                 key={index}
-                className="relative flex items-center justify-between space-x-4 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                className="relative flex items-center justify-between space-x-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
               >
-                {/* Left section: Avatar + Info */}
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 text-white rounded-full flex items-center justify-center font-semibold ${
@@ -316,66 +354,64 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-
-                {/* Right section: Dropdown trigger */}
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setDropdownOpen(dropdownOpen === index ? null : index)
-                    }
-                  >
-                    <MoreVertical className="w-5 h-5 text-gray-600 hover:text-black" />
-                  </button>
-
-                  {/* Dropdown menu */}
-                  {dropdownOpen === index && (
-                    <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border z-10">
-                      <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => {
-                          if (member.isPaused) {
-                            handleUserAction("Resume", member._id);
-                          } else {
-                            handleUserAction("Pause", member._id);
-                          }
-                          setDropdownOpen(null); // close dropdown
-                        }}
-                      >
-                        {member.isPaused ? "Resume" : "Pause"}
-                      </button>
-
-                      <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => {
-                          handleUserAction("Reassign Leads", member._id);
-                          setDropdownOpen(null); // close dropdown
-                        }}
-                      >
-                        Reassign Leads
-                      </button>
-
-                      <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => {
-                          handleUserAction("Change Role", member._id);
-                          setDropdownOpen(null); // close dropdown
-                        }}
-                      >
-                        Change Role
-                      </button>
-
-                      <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => {
-                          setSelectedUserId(member._id);
-                          setShowPasswordModal(true);
-                          setDropdownOpen(null); // close dropdown
-                        }}
-                      >
-                        Password
-                      </button>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2">
+                  <div className="absolute top-2 right-12">
+                    {statusIcons[member.status] || <span className="text-xs text-gray-500">Unknown</span>}
+                  </div>
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setDropdownOpen(dropdownOpen === index ? null : index)
+                      }
+                    >
+                      <MoreVertical className="w-5 h-5 text-gray-600 hover:text-black" />
+                    </button>
+                    {dropdownOpen === index && (
+                      <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border z-10">
+                        <button
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => {
+                            if (member.isPaused) {
+                              handleUserAction("Resume", member._id);
+                            } else {
+                              handleUserAction("Pause", member._id);
+                            }
+                            setDropdownOpen(null);
+                          }}
+                        >
+                          {member.isPaused ? "Resume" : "Pause"}
+                        </button>
+                        <button
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => {
+                            handleUserAction("Reassign Leads", member._id);
+                            setDropdownOpen(null);
+                          }}
+                        >
+                          Reassign Leads
+                        </button>
+                        <button
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => {
+                            handleUserAction("Change Role", member._id);
+                            setDropdownOpen(null);
+                          }}
+                        >
+                          Change Role
+                        </button>
+                        <button
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => {
+                            setSelectedUserId(member._id);
+                            setShowPasswordModal(true);
+                            setDropdownOpen(null);
+                          }}
+                        >
+                          Password
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}
@@ -383,7 +419,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Modal */}
       <AnimatePresence>
         {showPasswordModal && (
           <motion.div
@@ -621,7 +656,6 @@ const Dashboard = () => {
                           return;
                         }
 
-                        // Update the teamUsers state with the new role
                         setTeamUsers((prevUsers) =>
                           prevUsers.map((user) =>
                             user._id === selectedUserId
@@ -649,13 +683,11 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* Placeholder Boxes */}
       <div className="flex flex-wrap gap-6 p-6 sm:px-20">
         <div className="flex-1 min-w-[300px] h-96 bg-white rounded-xl shadow"></div>
         <div className="flex-1 min-w-[300px] h-96 bg-white rounded-xl shadow"></div>
       </div>
 
-      {/* Recent Orders */}
       <div className="w-full px-4 sm:px-20 py-8">
         <div className="p-6 bg-white rounded-xl shadow border border-slate-200 overflow-x-auto">
           <div className="flex justify-between items-center mb-4">

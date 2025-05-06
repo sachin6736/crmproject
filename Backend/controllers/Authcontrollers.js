@@ -105,7 +105,7 @@ export const login = async (req,res,next)=>{
         if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
         // Create JWT
         const token = jwt.sign(
-          { id: user._id, name: user.name, role: user.role },
+          { id: user._id, name: user.name, role: user.role, status:user.status },
           JWT_SECRET,
           { expiresIn: '7d' }
         );
@@ -117,7 +117,7 @@ export const login = async (req,res,next)=>{
             maxAge: 7 * 24 * 60 * 60 * 1000,
           })
           .status(200)
-          .json({ message: "Login successful", user: { name: user.name, email: user.email, role: user.role } });
+          .json({ message: "Login successful", user: { name: user.name, email: user.email, role: user.role,  } });
     
       } catch (error) {
         console.log("Error",error);

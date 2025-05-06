@@ -547,11 +547,40 @@ export const leadquatation = async (req, res) => {
 };
 
 
-export const changeowner = async(req,res,next)=>{
+export const changeowner = async (req, res) => {
   try {
-    const {id} = req.params
-    const {newowner} = req.body 
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+    const {id} = req.params;
+    console.log("lle",req.params)
+    const { salesPersonId } = req.body;
+    console.log("rerre",req.body)
+    if (!id || !salesPersonId) {
+      return res.status(400).json({ message: "Lead ID and Salesperson ID are required." });
+    }
+    const lead = await Lead.findById(id);
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+    const salesPerson = await User.findById(salesPersonId);
+    if (!salesPerson) {
+      return res.status(404).json({ message: "Salesperson not found." });
+    }
+    if (salesPerson.role !== "sales") {
+      return res.status(400).json({ message: "Selected user is not a salesperson." });
+    }
+    if (salesPerson.isPaused) {
+      return res.status(405).json({ message: "Cannot assign lead to a paused salesperson." });
+    }
+    if (lead.salesPerson && lead.salesPerson.toString() === salesPersonId) {
+      return res.status(400).json({ message: "Lead is already assigned to this salesperson." });
+    }
+    lead.salesPerson = salesPersonId;
+    await lead.save();
+    res.status(200).json({ message: "Lead reassigned successfully" });
   } catch (error) {
-    
+    console.log("Error reassigning lead:", error);
+    res.status(500).json({ message: "Server error" });
   }
-}
+};

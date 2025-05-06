@@ -1,24 +1,27 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from './utilities/FullPageLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { exportToExcel } from './utilities/exportToExcel'; // Assuming exportToExcel is in a separate file
+import { exportToExcel } from './utilities/exportToExcel';
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [leads, setLeads] = useState([]);
+  const [salesPersons, setSalesPersons] = useState([]);
   const [editingLeadId, setEditingLeadId] = useState(null);
+  const [editingAssignedId, setEditingAssignedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
   const dropdownRef = useRef(null);
+  const assignedDropdownRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingLeads, setLoadingLeads] = useState(true);
+  const [loadingSalesPersons, setLoadingSalesPersons] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -37,6 +40,29 @@ const LeadTableHeader = () => {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    const fetchSalesPersons = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/Admin/getmyteam", {
+          credentials: "include",
+        });
+        const data = await response.json();
+        const salesUsers = data.filter((user) => user.role === "sales");
+        setSalesPersons(salesUsers);
+        setLoadingSalesPersons(false);
+      } catch (error) {
+        console.error("Error fetching salespersons:", error);
+        toast.error("Error fetching salespersons");
+        setLoadingSalesPersons(false);
+      }
+    };
+    if (user?.role === "admin") {
+      fetchSalesPersons();
+    } else {
+      setLoadingSalesPersons(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -69,6 +95,9 @@ const LeadTableHeader = () => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setEditingLeadId(null);
+      }
+      if (assignedDropdownRef.current && !assignedDropdownRef.current.contains(event.target)) {
+        setEditingAssignedId(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -105,13 +134,48 @@ const LeadTableHeader = () => {
     }
   };
 
+  const reassignLead = async (leadId, salesPersonId, salesPersonName) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/Lead/reassign/${leadId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ salesPersonId }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        toast.success(data.message);
+        setLeads((prevLeads) =>
+          prevLeads.map((lead) =>
+            lead._id === leadId
+              ? {
+                  ...lead,
+                  salesPerson: { _id: salesPersonId, name: salesPersonName },
+                }
+              : lead
+          )
+        );
+        setEditingAssignedId(null);
+      } else {
+        toast.error(data.message || "Failed to reassign lead");
+        console.error("Failed to reassign lead:", data.message || response.statusText);
+      }
+    } catch (error) {
+      toast.error("Network error: Unable to reassign lead");
+      console.error("Error reassigning lead:", error);
+    }
+  };
+
   const handleExportToExcel = () => {
     if (leads.length === 0) {
       toast.error("No leads available to export");
       return;
     }
 
-    // Format leads data for Excel
     const formattedLeads = leads.map((lead) => ({
       ClientName: lead.clientName,
       PhoneNumber: lead.phoneNumber,
@@ -149,12 +213,11 @@ const LeadTableHeader = () => {
         field.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (statusFilter === "" || lead.status === statusFilter)
   );
-  console.log("Filtered leads",filteredLeads);
-  
+  console.log("Filtered leads", filteredLeads);
 
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col">
-      {loadingUser ? (
+      {loadingUser || loadingLeads || loadingSalesPersons ? (
         <div className="flex justify-center items-center py-8">
           <FullPageLoader />
         </div>
@@ -283,8 +346,48 @@ const LeadTableHeader = () => {
                             </div>
                           )}
                         </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                          {lead.salesPerson.name}
+                        <td className="px-3 md:px-4 py-2 relative whitespace-nowrap">
+                          {user?.role === "admin" ? (
+                            <>
+                              <span
+                                className="cursor-pointer font-semibold text-blue-600"
+                                onClick={() => setEditingAssignedId(lead._id)}
+                              >
+                                {lead.salesPerson.name}
+                              </span>
+                              {editingAssignedId === lead._id && (
+                                <div
+                                  ref={assignedDropdownRef}
+                                  className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-48 border z-10"
+                                >
+                                  {salesPersons.length > 0 ? (
+                                    salesPersons.map((salesPerson) => (
+                                      <div
+                                        key={salesPerson._id}
+                                        className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-200"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          reassignLead(
+                                            lead._id,
+                                            salesPerson._id,
+                                            salesPerson.name
+                                          );
+                                        }}
+                                      >
+                                        {salesPerson.name}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="px-3 py-2 text-sm text-gray-500">
+                                      No salespersons available
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            lead.salesPerson.name
+                          )}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap">
                           {lead.zip}
@@ -298,7 +401,7 @@ const LeadTableHeader = () => {
                     ))
                   ) : (
                     <tr>
-                      <td className="px-4 py-2 text-center" colSpan={7}>
+                      <td className="px-4 py-2 text-center" colSpan={8}>
                         No data available
                       </td>
                     </tr>
@@ -338,7 +441,7 @@ const LeadTableHeader = () => {
                 disabled={currentPage === totalPages}
               >
                 Next
-              </button> 
+              </button>
             </div>
           )}
         </>
