@@ -11,6 +11,7 @@ router.post('/logout',logout);
 
 router.get('/check', protect, (req, res) => {
     res.status(200).json({ user: req.user });
+    console.log("testing",req.user)
   });
 
 export default router;
