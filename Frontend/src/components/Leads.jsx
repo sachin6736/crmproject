@@ -6,11 +6,11 @@ import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
 import { confirmAlert } from "react-confirm-alert";
 import "react-confirm-alert/src/react-confirm-alert.css";
-import { useTheme } from "../context/ThemeContext"; // Import useTheme
+import { useTheme } from "../context/ThemeContext";
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme(); // Get current theme
+  const { theme } = useTheme();
   const [user, setUser] = useState(null);
   const [leads, setLeads] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
@@ -118,6 +118,7 @@ const LeadTableHeader = () => {
         setEditingLeadId(null);
       }
       if (
+        user?.role === "admin" &&
         assignedDropdownRef.current &&
         !assignedDropdownRef.current.contains(event.target)
       ) {
@@ -126,7 +127,7 @@ const LeadTableHeader = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [user?.role]);
 
   const showConfirmationModal = (leadId, newStatus) => {
     confirmAlert({
@@ -329,7 +330,7 @@ const LeadTableHeader = () => {
                       "Email ⬍",
                       "Part Requested ⬍",
                       "Status ⬍",
-                      "Assigned ⬍",
+                      ...(user?.role === "admin" ? ["Assigned ⬍"] : []),
                       "Zip ⬍",
                       "Created At ⬍",
                     ].map((header, i) => (
@@ -345,7 +346,10 @@ const LeadTableHeader = () => {
                 <tbody>
                   {leads.length > 0 ? (
                     leads.map((lead, index) => (
-                      <tr key={index} className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <tr
+                        key={index}
+                        className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
                         <td
                           className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer whitespace-nowrap"
                           onClick={() =>
@@ -402,36 +406,38 @@ const LeadTableHeader = () => {
                             </div>
                           )}
                         </td>
-                        <td className="px-3 md:px-4 py-2 relative">
-                          <span
-                            className="cursor-pointer text-gray-900 dark:text-gray-100"
-                            onClick={() => setEditingAssignedId(lead._id)}
-                          >
-                            {lead.salesPerson?.name || "Unassigned"}
-                          </span>
-                          {editingAssignedId === lead._id && (
-                            <div
-                              ref={assignedDropdownRef}
-                              className="absolute right-0 md:left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
+                        {user?.role === "admin" && (
+                          <td className="px-3 md:px-4 py-2 relative">
+                            <span
+                              className="cursor-pointer text-gray-900 dark:text-gray-100"
+                              onClick={() => setEditingAssignedId(lead._id)}
                             >
-                              {salesPersons.map((salesPerson) => (
-                                <div
-                                  key={salesPerson._id}
-                                  className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                  onClick={() =>
-                                    reassignLead(
-                                      lead._id,
-                                      salesPerson._id,
-                                      salesPerson.name
-                                    )
-                                  }
-                                >
-                                  {salesPerson.name}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </td>
+                              {lead.salesPerson?.name || "Unassigned"}
+                            </span>
+                            {editingAssignedId === lead._id && (
+                              <div
+                                ref={assignedDropdownRef}
+                                className="absolute right-0 md:left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
+                              >
+                                {salesPersons.map((salesPerson) => (
+                                  <div
+                                    key={salesPerson._id}
+                                    className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                    onClick={() =>
+                                      reassignLead(
+                                        lead._id,
+                                        salesPerson._id,
+                                        salesPerson.name
+                                      )
+                                    }
+                                  >
+                                    {salesPerson.name}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        )}
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {lead.zip || "N/A"}
                         </td>
@@ -444,7 +450,10 @@ const LeadTableHeader = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="text-center py-4 text-gray-900 dark:text-gray-100">
+                      <td
+                        colSpan={user?.role === "admin" ? 8 : 7}
+                        className="text-center py-4 text-gray-900 dark:text-gray-100"
+                      >
                         No leads found
                       </td>
                     </tr>
