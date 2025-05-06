@@ -118,7 +118,8 @@ const LeadTableHeader = () => {
         setEditingLeadId(null);
 
         if (newStatus === "Ordered" && goToOrderPage) {
-          navigate("/home/order");
+          console.log("leadid",leadId);
+          navigate(`/home/order/${leadId}`);
         }
       } else {
         toast.error("Failed to update status");
