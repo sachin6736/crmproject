@@ -39,7 +39,7 @@ function App() {
             <Route path="/home/sales/lead/:id" element={<Lead />} />
           </Route>
           <Route path="/home/userform" element={<Userfrom />} />
-          <Route path="/home/order" element={<OrderForm/>}/>
+          <Route path="/home/order/:id" element={<OrderForm/>}/>
           <Route path="/home/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/home/salesdashboard" element={<SalesDashboard/>}></Route>
         </Route>
