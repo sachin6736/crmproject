@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import FullPageLoader from './utilities/FullPageLoader';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { exportToExcel } from './utilities/exportToExcel';
-import { confirmAlert } from 'react-confirm-alert';
-import 'react-confirm-alert/src/react-confirm-alert.css';
+import FullPageLoader from "./utilities/FullPageLoader";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { exportToExcel } from "./utilities/exportToExcel";
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -128,18 +128,21 @@ const LeadTableHeader = () => {
 
   const showConfirmationModal = (leadId, newStatus) => {
     confirmAlert({
-      title: 'Confirm Status Change',
-      message: "Status will be changed to 'Ordered'. Do you want to go to the Order Page?",
+      title: "Confirm Status Change",
+      message:
+        "Status will be changed to 'Ordered'. Do you want to go to the Order Page?",
       buttons: [
         {
-          label: 'Yes, go to Order Page',
+          label: "Yes, go to Order Page",
           onClick: () => updateStatus(leadId, newStatus, true),
-          className: "text-white bg-green-600 px-4 py-2 rounded hover:bg-green-700",
+          className:
+            "text-white bg-green-600 px-4 py-2 rounded hover:bg-green-700",
         },
         {
-          label: 'No, just change status',
+          label: "No, just change status",
           onClick: () => updateStatus(leadId, newStatus, false),
-          className: "text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-700",
+          className:
+            "text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-700",
         },
       ],
       closeOnClickOutside: true,
@@ -148,12 +151,15 @@ const LeadTableHeader = () => {
 
   const updateStatus = async (leadId, newStatus, goToOrderPage = false) => {
     try {
-      const response = await fetch(`http://localhost:3000/Lead/editstatus/${leadId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Lead/editstatus/${leadId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
 
       if (response.ok) {
         toast.success("Status changed");
@@ -187,7 +193,7 @@ const LeadTableHeader = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials : "include",
+          credentials: "include",
           body: JSON.stringify({ salesPersonId }),
         }
       );
@@ -228,7 +234,9 @@ const LeadTableHeader = () => {
       PartRequested: lead.partRequested || "N/A",
       Status: lead.status || "N/A",
       Zip: lead.zip || "N/A",
-      CreatedAt: lead.createdAt ? new Date(lead.createdAt).toLocaleString() : "N/A",
+      CreatedAt: lead.createdAt
+        ? new Date(lead.createdAt).toLocaleString()
+        : "N/A",
     }));
 
     try {
@@ -275,9 +283,13 @@ const LeadTableHeader = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">All</option>
-                {Object.keys(statusTextColors).filter((key) => key !== "default").map((status) => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
+                {Object.keys(statusTextColors)
+                  .filter((key) => key !== "default")
+                  .map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
               </select>
               {user?.role === "admin" && (
                 <button
@@ -310,95 +322,114 @@ const LeadTableHeader = () => {
                       "Zip ⬍",
                       "Created At ⬍",
                     ].map((header, i) => (
-                      <th key={i} className="px-3 md:px-4 py-2 border-b whitespace-nowrap">
+                      <th
+                        key={i}
+                        className="px-3 md:px-4 py-2 border-b whitespace-nowrap"
+                      >
                         {header}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {leads.length > 0 ? leads.map((lead, index) => (
-                    <tr key={index} className="border-t hover:bg-gray-100">
-                      <td
-                        className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
-                        onClick={() => navigate(`/home/sales/lead/${lead._id}`)}
-                      >
-                        {lead.clientName || "N/A"}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                        {lead.phoneNumber || "N/A"}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                        {lead.email || "N/A"}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                        {lead.partRequested || "N/A"}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 relative">
-                        <span
-                          className={`cursor-pointer font-semibold ${
-                            statusTextColors[lead.status] || statusTextColors.default
-                          }`}
-                          onClick={() => setEditingLeadId(lead._id)}
+                  {leads.length > 0 ? (
+                    leads.map((lead, index) => (
+                      <tr key={index} className="border-t hover:bg-gray-100">
+                        <td
+                          className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] cursor-pointer whitespace-nowrap"
+                          onClick={() =>
+                            navigate(`/home/sales/lead/${lead._id}`)
+                          }
                         >
-                          {lead.status || "Unknown"}
-                        </span>
-                        {editingLeadId === lead._id && (
-                          <div
-                            ref={dropdownRef}
-                            className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
+                          {lead.clientName || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.phoneNumber || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.email || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.partRequested || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 relative">
+                          <span
+                            className={`cursor-pointer font-semibold ${
+                              statusTextColors[lead.status] ||
+                              statusTextColors.default
+                            }`}
+                            onClick={() => setEditingLeadId(lead._id)}
                           >
-                            {Object.keys(statusTextColors).filter((key) => key !== "default").map((status) => (
-                              <div
-                                key={status}
-                                className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  status === "Ordered"
-                                    ? showConfirmationModal(lead._id, status)
-                                    : updateStatus(lead._id, status);
-                                }}
-                              >
-                                {status}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 relative">
-                        <span
-                          className="cursor-pointer"
-                          onClick={() => setEditingAssignedId(lead._id)}
-                        >
-                          {lead.salesPerson?.name || "Unassigned"}
-                        </span>
-                        {editingAssignedId === lead._id && (
-                          <div
-                            ref={assignedDropdownRef}
-                            className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
+                            {lead.status || "Unknown"}
+                          </span>
+                          {editingLeadId === lead._id && (
+                            <div
+                              ref={dropdownRef}
+                              className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
+                            >
+                              {Object.keys(statusTextColors)
+                                .filter((key) => key !== "default")
+                                .map((status) => (
+                                  <div
+                                    key={status}
+                                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 ${statusTextColors[status]}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      status === "Ordered"
+                                        ? showConfirmationModal(
+                                            lead._id,
+                                            status
+                                          )
+                                        : updateStatus(lead._id, status);
+                                    }}
+                                  >
+                                    {status}
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 relative">
+                          <span
+                            className="cursor-pointer"
+                            onClick={() => setEditingAssignedId(lead._id)}
                           >
-                            {salesPersons.map((salesPerson) => (
-                              <div
-                                key={salesPerson._id}
-                                className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-200"
-                                onClick={() =>
-                                  reassignLead(lead._id, salesPerson._id, salesPerson.name)
-                                }
-                              >
-                                {salesPerson.name}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                        {lead.zip || "N/A"}
-                      </td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
-                        {lead.createdAt ? new Date(lead.createdAt).toLocaleString() : "N/A"}
-                      </td>
-                    </tr>
-                  )) : (
+                            {lead.salesPerson?.name || "Unassigned"}
+                          </span>
+                          {editingAssignedId === lead._id && (
+                            <div
+                              ref={assignedDropdownRef}
+                              className="absolute right-0 md:left-0 mt-1 bg-white shadow-lg rounded-md w-40 border z-10"
+                            >
+                              {salesPersons.map((salesPerson) => (
+                                <div
+                                  key={salesPerson._id}
+                                  className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-200"
+                                  onClick={() =>
+                                    reassignLead(
+                                      lead._id,
+                                      salesPerson._id,
+                                      salesPerson.name
+                                    )
+                                  }
+                                >
+                                  {salesPerson.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.zip || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                          {lead.createdAt
+                            ? new Date(lead.createdAt).toLocaleString()
+                            : "N/A"}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
                     <tr>
                       <td colSpan="8" className="text-center py-4">
                         No leads found
