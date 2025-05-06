@@ -291,7 +291,7 @@ const LeadTableHeader = () => {
             </div>
           </div>
 
-          <div className="mt-4 bg-white rounded-md shadow-md overflow-x-auto flex-grow relative">
+          <div className="mt-4 bg-white rounded-md shadow-md overflow-x-auto h-[720px] flex-grow relative">
             {loadingLeads ? (
               <div className="flex justify-center items-center py-8">
                 <FullPageLoader />
