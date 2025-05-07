@@ -15,15 +15,54 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import FullPageLoader from "./utilities/FullPageLoader";
-import { useTheme } from "../context/ThemeContext"; // Import useTheme
+import { useTheme } from "../context/ThemeContext";
+
+const ConfirmationModal = ({ isOpen, onConfirm, onCancel, action, userName }) => {
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-sm"
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+      >
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Confirm {action}</h3>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">
+          Are you sure you want to {action.toLowerCase()} for {userName}?
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            className="px-4 py-1 border rounded-lg text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            className="px-4 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
+            onClick={onConfirm}
+          >
+            Confirm
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme(); // Get current theme
+  const { theme } = useTheme();
   const [totalClients, setTotalClients] = useState(0);
   const [countbystatus, setCountbystatus] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [ teamUsers, setTeamUsers] = useState([]);
+  const [teamUsers, setTeamUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newMember, setNewMember] = useState({ name: "", email: "", role: "" });
@@ -34,6 +73,10 @@ const Dashboard = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
   const [currentRole, setCurrentRole] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState("");
+  const [confirmUserId, setConfirmUserId] = useState("");
+  const [confirmUserName, setConfirmUserName] = useState("");
 
   const statusColor = {
     Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
@@ -252,11 +295,21 @@ const Dashboard = () => {
           setCurrentRole(user.role);
           setShowRoleModal(true);
         }
+      } else if (action === "Password") {
+        setSelectedUserId(userId);
+        setShowPasswordModal(true);
       }
     } catch (error) {
       console.error(error);
       toast.error(`Failed to perform action: ${action}`);
     }
+  };
+
+  const showConfirmation = (action, userId, userName) => {
+    setConfirmAction(action);
+    setConfirmUserId(userId);
+    setConfirmUserName(userName);
+    setShowConfirmModal(true);
   };
 
   if (loading) {
@@ -378,11 +431,11 @@ const Dashboard = () => {
                         <button
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
-                            if (member.isPaused) {
-                              handleUserAction("Resume", member._id);
-                            } else {
-                              handleUserAction("Pause", member._id);
-                            }
+                            showConfirmation(
+                              member.isPaused ? "Resume" : "Pause",
+                              member._id,
+                              member.name
+                            );
                             setDropdownOpen(null);
                           }}
                         >
@@ -391,7 +444,7 @@ const Dashboard = () => {
                         <button
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
-                            handleUserAction("Reassign Leads", member._id);
+                            showConfirmation("Reassign Leads", member._id, member.name);
                             setDropdownOpen(null);
                           }}
                         >
@@ -400,7 +453,7 @@ const Dashboard = () => {
                         <button
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
-                            handleUserAction("Change Role", member._id);
+                            showConfirmation("Change Role", member._id, member.name);
                             setDropdownOpen(null);
                           }}
                         >
@@ -409,8 +462,7 @@ const Dashboard = () => {
                         <button
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => {
-                            setSelectedUserId(member._id);
-                            setShowPasswordModal(true);
+                            showConfirmation("Password", member._id, member.name);
                             setDropdownOpen(null);
                           }}
                         >
@@ -688,6 +740,16 @@ const Dashboard = () => {
             </motion.div>
           </motion.div>
         )}
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onConfirm={() => {
+            handleUserAction(confirmAction, confirmUserId);
+            setShowConfirmModal(false);
+          }}
+          onCancel={() => setShowConfirmModal(false)}
+          action={confirmAction}
+          userName={confirmUserName}
+        />
       </AnimatePresence>
 
       <div className="flex flex-wrap gap-6 p-6 sm:px-20">
