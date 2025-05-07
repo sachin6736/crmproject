@@ -495,35 +495,35 @@ export const leadquatation = async (req, res) => {
 
     // Email content
     const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
       <div style="text-align: center;">
-        <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746259616/Screenshot_2025-05-03_133627_eymhnw.png" alt="First Used Autoparts" style="max-width: 200px; margin-bottom: 20px;" />
+        <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598236/Picsart_24-04-02_10-36-01-714_xpnbgi.png" alt="First Used Autoparts Logo" style="max-width: 250px; margin-bottom: 24px;" />
       </div>
       
       <h2 style="color: #2a2a2a;">Welcome to First Used Autoparts!</h2>
       <p style="color: #555;">
         Dear ${lead.clientName},<br />
-        Thank you for your inquiry. We’re excited to provide you with a quotation for the part you requested.
+        Thank you for your inquiry. Below is your quotation for the requested part. To ensure our emails reach your inbox, please add <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF; text-decoration: none;">contact@firstusedautoparts.com</a> to your contacts. If images are not displaying, please enable images in your email client.
       </p>
   
-      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Quotation Summary</h3>
-      <ul style="list-style: none; padding-left: 0; color: #333;">
-        <li><strong>Part Requested:</strong> ${lead.partRequested}</li>
-        <li><strong>Make:</strong> ${lead.make}</li>
-        <li><strong>Model:</strong> ${lead.model}</li>
-        <li><strong>Year:</strong> ${lead.year}</li>
-        <li><strong>Trim:</strong> ${lead.trim}</li>
-        <li><strong>Total Cost (including shipping):</strong> $${lead.totalCost}</li>
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Quotation Details</h3>
+      <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Part:</strong> ${lead.partRequested}</li>
+        <li style="margin-bottom: 8px;"><strong>Make:</strong> ${lead.make}</li>
+        <li style="margin-bottom: 8px;"><strong>Model:</strong> ${lead.model}</li>
+        <li style="margin-bottom: 8px;"><strong>Year:</strong> ${lead.year}</li>
+        <li style="margin-bottom: 8px;"><strong>Trim:</strong> ${lead.trim}</li>
+        <li style="margin-bottom: 8px;"><strong>Estimated Cost (with shipping):</strong> $${lead.totalCost}</li>
       </ul>
   
       <p style="color: #555;">
-        Please let us know if you have any questions or if you're ready to proceed with the order.
+        To proceed or ask questions, reply to this email or call +1 888-282-7476.
       </p>
   
       <p style="color: #555;">Best regards,<br />
       <strong>First Used Autoparts Team</strong></p>
   
-      <hr style="margin: 30px 0;" />
+      <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;" />
   
       <div style="font-size: 14px; color: #888;">
         <p><strong>Address:</strong><br />
@@ -532,23 +532,39 @@ export const leadquatation = async (req, res) => {
   
         <p><strong>Contact:</strong><br />
         +1 888-282-7476<br />
-        <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF;">contact@firstusedautoparts.com</a></p>
+        <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF; text-decoration: none;">contact@firstusedautoparts.com</a></p>
       </div>
   
       <div style="text-align: center; margin-top: 20px;">
-        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_366f7fdbcafc4effaeddb0dba92014c1~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_366f7fdbcafc4effaeddb0dba92014c1~mv2.png" alt="Facebook" /></a>
-        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_60c5fc4a3ecd49f2a697206b09eeace1~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_60c5fc4a3ecd49f2a697206b09eeace1~mv2.png " alt="LinkedIn" /></a>
-        <a href="https://www.instagram.com/first_used_auto_parts/" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_084cbbff6ae446c1b03dc3637193e77a~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_084cbbff6ae446c1b03dc3637193e77a~mv2.png " alt="Instagram" /></a>
-        <a href="https://twitter.com/parts54611" style="margin: 0 10px;"><img src="https://static.wixstatic.com/media/11062b_81cefb1bd2e2490d892a1cad5cc1cd8a~mv2.png/v1/fill/w_44,h_44,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_81cefb1bd2e2490d892a1cad5cc1cd8a~mv2.png" alt="X" /></a>
+        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599473/fb_n6h6ja.png" alt="Facebook" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599377/linkedin_v3pufc.png" alt="LinkedIn" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://www.instagram.com/first_used_auto_parts/" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598983/10462345_g4oluw.png" alt="Instagram" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://twitter.com/parts54611" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599225/twitter_kivbi6.png" alt="X" style="width: 32px; height: 32px;" />
+        </a>
       </div>
+      
+      <p style="text-align: center; margin-top: 10px;">
+        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="color: #007BFF; margin: 0 5px;">Facebook</a> |
+        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="color: #007BFF; margin: 0 5px;">LinkedIn</a> |
+        <a href="https://www.instagram.com/first_used_auto_parts/" style="color: #007BFF; margin: 0 5px;">Instagram</a> |
+        <a href="https://twitter.com/parts54611" style="color: #007BFF; margin: 0 5px;">X</a>
+      </p>
   
       <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
-        © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.
+        © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.<br />
+        <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(lead.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
       </p>
     </div>
-  `;
+    `;
 
-    await sendEmail(lead.email, `Quotation for ${lead.partRequested}`, htmlContent);
+    await sendEmail(lead.email, `${lead.partRequested} Quotation`, htmlContent);
     res.status(200).json({ message: "Quotation sent successfully" });
   } catch (error) {
     console.error("Error sending quotation:", error);
@@ -556,23 +572,30 @@ export const leadquatation = async (req, res) => {
   }
 };
 
-
 export const changeowner = async (req, res) => {
   try {
+    // Restrict to admins only
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
-    const {id} = req.params;
-    console.log("lle",req.params)
+
+    const { id } = req.params;
     const { salesPersonId } = req.body;
-    console.log("rerre",req.body)
+    console.log("Lead ID:", id);
+    console.log("Salesperson ID:", salesPersonId);
+
+    // Validate input
     if (!id || !salesPersonId) {
       return res.status(400).json({ message: "Lead ID and Salesperson ID are required." });
     }
+
+    // Find the lead
     const lead = await Lead.findById(id);
     if (!lead) {
       return res.status(404).json({ message: "Lead not found." });
     }
+
+    // Find and validate the salesperson
     const salesPerson = await User.findById(salesPersonId);
     if (!salesPerson) {
       return res.status(404).json({ message: "Salesperson not found." });
@@ -583,14 +606,20 @@ export const changeowner = async (req, res) => {
     if (salesPerson.isPaused) {
       return res.status(405).json({ message: "Cannot assign lead to a paused salesperson." });
     }
+    if (salesPerson.status !== "Available") {
+      return res.status(405).json({ message: "Cannot assign lead to a salesperson who is unavailable." });
+    }
     if (lead.salesPerson && lead.salesPerson.toString() === salesPersonId) {
       return res.status(400).json({ message: "Lead is already assigned to this salesperson." });
     }
+
+    // Reassign the lead
     lead.salesPerson = salesPersonId;
     await lead.save();
+
     res.status(200).json({ message: "Lead reassigned successfully" });
   } catch (error) {
-    console.log("Error reassigning lead:", error);
+    console.error("Error reassigning lead:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
