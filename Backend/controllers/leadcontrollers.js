@@ -503,7 +503,7 @@ export const leadquatation = async (req, res) => {
       <h2 style="color: #2a2a2a;">Welcome to First Used Autoparts!</h2>
       <p style="color: #555;">
         Dear ${lead.clientName},<br />
-        Thank you for your inquiry. Below is your quotation for the requested part. To ensure our emails reach your inbox, please add <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF; text-decoration: none;">contact@firstusedautoparts.com</a> to your contacts. If images are not displaying, please enable images in your email client.
+        Thank you for your inquiry. Below is your quotation for the requested part.    
       </p>
   
       <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Quotation Details</h3>

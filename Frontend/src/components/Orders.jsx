@@ -28,6 +28,7 @@ const OrderForm = () => {
     shippingState: '',
     shippingZip: '',
     amount: '',
+    partRequested: ''
   });
   const [isLoading, setIsLoading] = useState(true);
   const [sameAsBilling, setSameAsBilling] = useState(false);
@@ -63,6 +64,7 @@ const OrderForm = () => {
           shippingState: data.shippingState || '',
           shippingZip: data.shippingZip || '',
           amount: data.totalCost?.toString() || '',
+          partRequested: data.partRequested || ''
         });
         setIsLoading(false);
       })
@@ -74,7 +76,19 @@ const OrderForm = () => {
   }, [id]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Limit cardNumber to 16 digits
+    if (name === 'cardNumber' && value.length > 16) return;
+    // Limit cardMonth to 2 digits
+    if (name === 'cardMonth' && value.length > 2) return;
+    // Limit cardYear to 4 digits
+    if (name === 'cardYear' && value.length > 4) return;
+    // Limit cvv to 4 digits
+    if (name === 'cvv' && value.length > 4) return;
+    // Limit zip to 5 digits
+    if (name === 'zip' && value.length > 5) return;
+    if (name === 'shippingZip' && value.length > 5) return;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSameAsBilling = (e) => {
@@ -86,23 +100,90 @@ const OrderForm = () => {
         shippingAddress: formData.billingAddress,
         shippingCity: formData.city,
         shippingState: formData.state,
-        shippingZip: formData.zip,
+        shippingZip: formData.zip
       });
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const validateForm = () => {
+    // Card Number: 16 digits
+    if (!/^\d{16}$/.test(formData.cardNumber)) {
+      toast.error('Card number must be 16 digits');
+      return false;
+    }
+    // Card Month: 01–12
+    if (!/^(0[1-9]|1[0-2])$/.test(formData.cardMonth)) {
+      toast.error('Card month must be 01–12');
+      return false;
+    }
+    // Card Year: 2025–2035
+    if (!/^(202[5-9]|203[0-5])$/.test(formData.cardYear)) {
+      toast.error('Card year must be 2025–2035');
+      return false;
+    }
+    // CVV: 3 or 4 digits
+    if (!/^\d{3,4}$/.test(formData.cvv)) {
+      toast.error('CVV must be 3 or 4 digits');
+      return false;
+    }
+    // Billing Address: Non-empty
+    if (!formData.billingAddress.trim()) {
+      toast.error('Billing address is required');
+      return false;
+    }
+    // City: Non-empty
+    if (!formData.city.trim()) {
+      toast.error('Billing city is required');
+      return false;
+    }
+    // State: Non-empty
+    if (!formData.state.trim()) {
+      toast.error('Billing state is required');
+      return false;
+    }
+    // Zip: 5 digits
+    if (!/^\d{5}$/.test(formData.zip)) {
+      toast.error('Billing zip must be 5 digits');
+      return false;
+    }
+    // Shipping Address: Non-empty
+    if (!formData.shippingAddress.trim()) {
+      toast.error('Shipping address is required');
+      return false;
+    }
+    // Shipping City: Non-empty
+    if (!formData.shippingCity.trim()) {
+      toast.error('Shipping city is required');
+      return false;
+    }
+    // Shipping State: Non-empty
+    if (!formData.shippingState.trim()) {
+      toast.error('Shipping state is required');
+      return false;
+    }
+    // Shipping Zip: 5 digits
+    if (!/^\d{5}$/.test(formData.shippingZip)) {
+      toast.error('Shipping zip must be 5 digits');
+      return false;
+    }
+    // Amount: Positive
     if (parseFloat(formData.amount) <= 0) {
       toast.error('Amount must be greater than 0');
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
     try {
       const response = await fetch('http://localhost:3000/Order/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ ...formData, leadId: id }),
+        body: JSON.stringify({ ...formData, leadId: id })
       });
       if (response.ok) {
         toast.success('Order submitted successfully');
@@ -112,7 +193,17 @@ const OrderForm = () => {
           cardMonth: '',
           cardYear: '',
           cvv: '',
+          billingAddress: '',
+          city: '',
+          state: '',
+          zip: '',
+          shippingAddress: '',
+          shippingCity: '',
+          shippingState: '',
+          shippingZip: '',
+          sameAsBilling: false
         });
+        setSameAsBilling(false);
       } else {
         const errorData = await response.json();
         toast.error(errorData.message || 'Failed to submit order');
@@ -144,71 +235,72 @@ const OrderForm = () => {
       <section>
         <h2 className="text-2xl font-bold">Order Information</h2>
         <p className="mb-4 text-gray-600 dark:text-gray-400">
-          Provide your product selection and personal details to complete your order.
+          Review your product selection and personal details.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <select
-            name="make"
-            value={formData.make}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
-          >
-            <option value="">Make *</option>
-            <option value="Toyota">Toyota</option>
-            <option value="Honda">Honda</option>
-          </select>
-          <select
-            name="model"
-            value={formData.model}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
-          >
-            <option value="">Model *</option>
-            <option value="Corolla">Corolla</option>
-            <option value="Civic">Civic</option>
-          </select>
-          <select
-            name="year"
-            value={formData.year}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
-          >
-            <option value="">Year *</option>
-            <option value="2020">2020</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-          </select>
-          <input
-            name="clientName"
-            placeholder="Client Name *"
-            value={formData.clientName}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
-          />
-          <input
-            name="phone"
-            placeholder="Phone *"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
-          />
-          <input
-            name="email"
-            placeholder="Email *"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
-          />
+          <div>
+            <label className="block font-semibold">Make</label>
+            <input
+              name="make"
+              value={formData.make}
+              disabled
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold">Model</label>
+            <input
+              name="model"
+              value={formData.model}
+              disabled
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold">Year</label>
+            <input
+              name="year"
+              value={formData.year}
+              disabled
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold">Part Requested</label>
+            <input
+              name="partRequested"
+              value={formData.partRequested}
+              disabled
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold">Client Name</label>
+            <input
+              name="clientName"
+              value={formData.clientName}
+              disabled
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold">Phone</label>
+            <input
+              name="phone"
+              value={formData.phone}
+              disabled
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold">Email</label>
+            <input
+              name="email"
+              value={formData.email}
+              disabled
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
+            />
+          </div>
         </div>
       </section>
 
@@ -229,7 +321,7 @@ const OrderForm = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <input
             name="cardMonth"
-            placeholder="Month *"
+            placeholder="Month (MM) *"
             value={formData.cardMonth}
             onChange={handleChange}
             required
@@ -237,14 +329,15 @@ const OrderForm = () => {
           />
           <input
             name="cardYear"
-            placeholder="Year *"
+            placeholder="Year (YYYY) *"
             value={formData.cardYear}
             onChange={handleChange}
+            required
             className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
           />
           <input
             name="cvv"
-            placeholder="CVV Number *"
+            placeholder="CVV *"
             value={formData.cvv}
             onChange={handleChange}
             required
@@ -257,7 +350,7 @@ const OrderForm = () => {
       <section>
         <h2 className="text-2xl font-bold">Billing Address</h2>
         <p className="mb-4 text-gray-600 dark:text-gray-400">
-          Please provide the address associated with your payment method.
+          Provide the address associated with your payment method.
         </p>
         <input
           name="billingAddress"
@@ -356,18 +449,13 @@ const OrderForm = () => {
       {/* Amount */}
       <section>
         <label className="block font-semibold text-lg mt-4 mb-2">
-          Amount $ :
+          Amount $:
         </label>
         <input
           name="amount"
-          placeholder="Amount"
-          type="number"
           value={formData.amount}
-          onChange={handleChange}
-          required
-          min="0"
-          step="0.01"
-          className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none"
+          disabled
+          className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 opacity-70"
         />
       </section>
 
