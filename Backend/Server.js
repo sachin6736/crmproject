@@ -10,6 +10,7 @@ import dashboardrotes from './routes/dashboardroute.js';
 import authroutes from './routes/authroutes.js';
 import sindashroutes from './routes/sindashroutes.js';
 import userroutes from './routes/userroutes.js';
+import orderroutes from './routes/orderroutes.js'
 
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use('/Admin', dashboardrotes); // Dashboard
 app.use('/Auth', authroutes); // Authentication routes
 app.use('/Sales',sindashroutes); //salesperson dasboard
 app.use('/User',userroutes);//userrotes
+app.use('/Order',orderroutes);//orderroutes
 
 
 
