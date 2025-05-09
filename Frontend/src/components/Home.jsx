@@ -223,12 +223,12 @@ function Home() {
           </div>
           <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Commerce</span>
         </div>
-        <div className='flex flex-col items-center space-y-1 cursor-pointer'>
+        <div className='flex flex-col items-center space-y-1 cursor-pointer' onClick={() => navigate('/home/orders')}>
           <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
             <PenTool className='h-6 w-6 text-white dark:text-gray-300' />
           </div>
           <span className='text-white dark:text-gray-300 text-[10px] font-bold'>
-            Generative Canvas
+            View Orders
           </span>
         </div>
         <div className='flex flex-col items-center space-y-1 cursor-pointer'>
