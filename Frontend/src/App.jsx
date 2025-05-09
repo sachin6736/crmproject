@@ -15,6 +15,7 @@ import LeadTableHeader from './components/Leads';
 import Userfrom from './components/Userfrom';
 import OrderForm from './components/Orders';
 import ProtectedRoute from './components/ProtectedRoute';
+import OrdersHistory from './components/Ordersshow'; 
 
 function App() {
   const { theme } = useTheme();
@@ -40,6 +41,7 @@ function App() {
           </Route>
           <Route path='/home/userform' element={<Userfrom />} />
           <Route path='/home/order/:id' element={<OrderForm />} />
+          <Route path='/home/orders' element={<OrdersHistory />} />
           <Route path='/home/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path='/home/salesdashboard' element={<SalesDashboard />} />
         </Route>
