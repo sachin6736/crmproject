@@ -1,134 +1,293 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import FullPageLoader from "./utilities/FullPageLoader";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { exportToExcel } from "./utilities/exportToExcel";
+import { useTheme } from "../context/ThemeContext";
 
 const OrdersHistory = () => {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const [user, setUser] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const itemsPerPage = 10;
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch("http://localhost:3000/Order/getallorders", {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
-                }
-                const data = await response.json();
-                setOrders(data);
-                setLoading(false);
-            } catch (error) {
-                console.error("Error fetching orders:", error);
-                let errorMessage = "Failed to fetch orders. Please try again later.";
-                if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-                    errorMessage = "Network error: Unable to connect to the server. Check if the backend is running at http://localhost:3000.";
-                } else if (error.message.includes("CORS")) {
-                    errorMessage = "CORS error: The server does not allow requests from this origin. Check backend CORS configuration.";
-                } else if (error.message.includes("404")) {
-                    errorMessage = "Endpoint not found: Verify the URL http://localhost:3000/Order/getallorders is correct.";
-                }
-                setError(errorMessage);
-                setLoading(false);
-            }
-        };
+  const statusTextColors = {
+    Delivered: "text-green-600 dark:text-green-400",
+    Shipped: "text-blue-600 dark:text-blue-400",
+    Pending: "text-yellow-600 dark:text-yellow-400",
+    default: "text-gray-600 dark:text-gray-400",
+  };
 
-        fetchOrders();
-    }, []);
-
-    // Log orders when they update
-    useEffect(() => {
-        if (orders.length > 0) {
-            console.log("Updated orders:", orders);
-        }
-    }, [orders]);
-
-    // Function to format date without time
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/Auth/check", {
+          credentials: "include",
         });
+        if (!response.ok) {
+          if (response.status === 401) {
+            navigate("/login");
+            return;
+          }
+          throw new Error("Failed to fetch user");
+        }
+        const data = await response.json();
+        setUser(data.user);
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+        toast.error("Failed to load user data");
+      } finally {
+        setLoadingUser(false);
+      }
     };
+    fetchUser();
+  }, [navigate]);
 
-    // Function to get last 4 digits of order ID
-    const getLastFourDigits = (orderId) => {
-        return orderId.slice(-4);
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <p className="text-lg text-gray-600">Loading orders...</p>
-            </div>
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setLoadingOrders(true);
+      try {
+        const isAdmin = user?.role === "admin";
+        const endpoint = isAdmin ? "/getallorders" : "/getmyorders";
+        const response = await fetch(
+          `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}&status=${statusFilter}`,
+          { credentials: "include" }
         );
+        if (!response.ok) throw new Error("Failed to fetch orders");
+        const data = await response.json();
+        setOrders(data.orders || data);
+        setTotalPages(data.totalPages || 1);
+        setCurrentPage(data.currentPage || 1);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        toast.error("Failed to load orders");
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+    if (user) fetchOrders();
+  }, [user?.role, searchQuery, statusFilter, currentPage]);
+
+  const handleExportToExcel = () => {
+    if (orders.length === 0) {
+      toast.error("No orders available to export");
+      return;
     }
 
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <p className="text-lg text-red-600">{error}</p>
-            </div>
-        );
-    }
+    const formattedOrders = orders.map((order) => ({
+      OrderID: order._id || "N/A",
+      ClientName: order.clientName || "N/A",
+      Date: order.createdAt
+        ? new Date(order.createdAt).toLocaleString()
+        : "N/A",
+      PartRequested: order.leadId?.partRequested || "N/A",
+      TotalCost: order.leadId?.totalCost
+        ? `$${order.leadId.totalCost}`
+        : "N/A",
+      Status: order.status || "N/A",
+    }));
 
-    return (
-        <div className="min-h-screen bg-gray-100 p-6">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6">Orders History</h1>
-                <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {orders.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                                        No orders found.
-                                    </td>
-                                </tr>
-                            ) : (
-                                orders.map((order) => (
-                                    <tr key={order.id}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{getLastFourDigits(order._id)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.clientName}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(order.createdAt)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.leadId.partRequested}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.leadId.totalCost}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span
-                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                    order.status === "Delivered"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : order.status === "Shipped"
-                                                        ? "bg-blue-100 text-blue-800"
-                                                        : "bg-yellow-100 text-yellow-800"
-                                                }`}
-                                            >
-                                                {order.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    try {
+      exportToExcel(formattedOrders, "orders.xlsx");
+      toast.success("Orders exported to Excel successfully");
+    } catch (error) {
+      toast.error("Error exporting orders to Excel");
+      console.error("Error exporting to Excel:", error);
+    }
+  };
+
+  return (
+    <div className="p-4 md:p-6 min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      {loadingUser || loadingOrders ? (
+        <div className="flex justify-center items-center py-8">
+          <FullPageLoader
+            size="w-10 h-10"
+            color="text-blue-500 dark:text-blue-400"
+            fill="fill-blue-300 dark:fill-blue-600"
+          />
         </div>
-    );
+      ) : (
+        <>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-1/2 rounded-md">
+              {["New"].map((btn, i) => (
+                <button
+                  key={i}
+                  className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 hover:bg-[#032d60] dark:hover:bg-gray-700 hover:text-white dark:hover:text-gray-100"
+                  onClick={() => btn === "New" && navigate("/home/userform")}
+                >
+                  {btn}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <input
+                type="text"
+                placeholder="Search by Client Name, Order ID..."
+                className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <select
+                className="border px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All</option>
+                {Object.keys(statusTextColors)
+                  .filter((key) => key !== "default")
+                  .map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+              </select>
+              {user?.role === "admin" && (
+                <button
+                  onClick={handleExportToExcel}
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600"
+                  disabled={loadingOrders || orders.length === 0}
+                >
+                  Download as Excel
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 bg-white dark:bg-gray-800 rounded-md shadow-md overflow-x-auto h-[720px] flex-grow relative">
+            {loadingOrders ? (
+              <div className="flex justify-center items-center py-8">
+                <FullPageLoader
+                  size="w-10 h-10"
+                  color="text-blue-500 dark:text-blue-400"
+                  fill="fill-blue-300 dark:fill-blue-600"
+                />
+              </div>
+            ) : (
+              <table className="w-full text-left text-sm md:text-base">
+                <thead className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                  <tr>
+                    {[
+                      "Order ID ⬍",
+                      "Client Name ⬍",
+                      "Date ⬍",
+                      "Part Requested ⬍",
+                      "Total Cost ⬍",
+                      "Status ⬍",
+                    ].map((header, i) => (
+                      <th
+                        key={i}
+                        className="px-3 md:px-4 py-2 border-b border-gray-300 dark:border-gray-600 whitespace-nowrap"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.length > 0 ? (
+                    orders.map((order, index) => (
+                      <tr
+                        key={index}
+                        className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <td
+                          className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer whitespace-nowrap"
+                          onClick={() =>
+                            navigate(`/home/order/${order._id}`)
+                          }
+                        >
+                          {order._id || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.clientName || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.createdAt
+                            ? new Date(order.createdAt).toLocaleString()
+                            : "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.leadId?.partRequested || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.leadId?.totalCost
+                            ? `$${order.leadId.totalCost}`
+                            : "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2">
+                          <span
+                            className={`font-semibold ${
+                              statusTextColors[order.status] ||
+                              statusTextColors.default
+                            }`}
+                          >
+                            {order.status || "Unknown"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-4 text-gray-900 dark:text-gray-100"
+                      >
+                        No orders found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 z-20 relative">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                className="px-3 py-1 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500"
+                disabled={currentPage === 1}
+              >
+                Prev
+              </button>
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPage(index + 1)}
+                  className={`px-3 py-1 border rounded ${
+                    currentPage === index + 1
+                      ? "bg-blue-500 dark:bg-blue-600 text-white"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  } hover:bg-blue-100 dark:hover:bg-blue-500 border-gray-300 dark:border-gray-600`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                className="px-3 py-1 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500"
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 };
 
 export default OrdersHistory;
