@@ -96,3 +96,20 @@ export const createOrder = async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   };
+
+
+  export const getMyOrders = async (req, res,next) => {
+    console.log("etmyordes working")
+    try {
+      //const id = req.user.id; 
+      const id = req.user.id
+      console.log("id",id)
+      const orders = await Order.find({ salesPerson: id })
+        .populate('leadId', 'make model year partRequested clientName email totalCost')
+        .populate('salesPerson', 'name email');
+      res.status(200).json(orders);
+    } catch (error) {
+      console.error('Error fetching my orders:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
