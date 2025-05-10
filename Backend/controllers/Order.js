@@ -113,3 +113,24 @@ export const createOrder = async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   };
+
+
+  export const orderbyid = async (req, res) => {
+    console.log("order working")
+    try {
+      const {id} = req.params;
+      console.log("id",id)
+     // Fetch order with populated leadId and salesPerson
+      const order = await Order.findById(id)
+        .populate('leadId') // Populate lead details
+        .populate('salesPerson', 'name email'); // Populate salesperson name and email (adjust fields as needed)
+  
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+      res.status(200).json(order);
+    } catch (error) {
+      console.error('Error fetching order:', error);
+      res.status(500).json({ message: 'Server error while fetching order details' });
+    }
+  };

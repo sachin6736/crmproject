@@ -117,10 +117,10 @@ const OrderForm = () => {
       return false;
     }
     // Card Year: 2025–2035
-    if (!/^(202[5-9]|203[0-5])$/.test(formData.cardYear)) {
-      toast.error('Card year must be 2025–2035');
-      return false;
-    }
+    // if (!/^(202[5-9]|203[0-5])$/.test(formData.cardYear)) {
+    //   toast.error('Card year must be 2025–2035');
+    //   return false;
+    // }
     // CVV: 3 or 4 digits
     if (!/^\d{3,4}$/.test(formData.cvv)) {
       toast.error('CVV must be 3 or 4 digits');
