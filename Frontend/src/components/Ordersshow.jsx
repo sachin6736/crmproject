@@ -147,7 +147,7 @@ const OrdersHistory = () => {
       ) : (
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-1/2 rounded-md">
+            {/* <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-1/2 rounded-md">
               {["New"].map((btn, i) => (
                 <button
                   key={i}
@@ -157,7 +157,7 @@ const OrdersHistory = () => {
                   {btn}
                 </button>
               ))}
-            </div>
+            </div> */}
 
             <div className="flex items-center space-x-4">
               <input
