@@ -3,86 +3,131 @@ import Lead from "../models/lead.js";
 import Order from '../models/order.js';
 
 export const createOrder = async (req, res) => {
-    try {
-      const {
-        leadId,
-        make,
-        model,
-        year,
-        clientName,
-        phone,
-        email,
-        cardNumber,
-        cardMonth,
-        cardYear,
-        cvv,
-        billingAddress,
-        city,
-        state,
-        zip,
-        shippingAddress,
-        shippingCity,
-        shippingState,
-        shippingZip,
-        amount
-      } = req.body;
-  
-      if (!leadId || !make || !model || !year || !clientName || !phone || !email ||
-          !cardNumber || !cardMonth || !cardYear || !cvv ||
-          !billingAddress || !city || !state || !zip ||
-          !shippingAddress || !shippingCity || !shippingState || !shippingZip || !amount) {
-        return res.status(400).json({ message: 'All fields are required' });
-      }
-  
-      if (parseFloat(amount) <= 0) {
-        return res.status(400).json({ message: 'Amount must be greater than 0' });
-      }
-  
-      if (!/^\d{16}$/.test(cardNumber)) {
-        return res.status(400).json({ message: 'Card number must be 16 digits' });
-      }
-  
-      const cardLastFour = cardNumber.slice(-4);
-  
-      const lead = await Lead.findById(leadId);
-      if (!lead) {
-        return res.status(404).json({ message: 'Lead not found' });
-      }
-      if (!lead.salesPerson) {
-        return res.status(400).json({ message: 'Lead has no assigned salesperson' });
-      }
-  
-      const order = new Order({
-        leadId,
-        salesPerson: lead.salesPerson,
-        make,
-        model,
-        year,
-        clientName,
-        phone,
-        email,
-        cardLastFour,
-        cardMonth,
-        cardYear,
-        billingAddress,
-        city,
-        state,
-        zip,
-        shippingAddress,
-        shippingCity,
-        shippingState,
-        shippingZip,
-        amount: parseFloat(amount)
-      });
-  
-      await order.save();
-  
-      res.status(201).json({ message: 'Order created successfully' });
-    } catch (error) {
-      console.error('Error creating order:', error);
-      res.status(500).json({ message: 'Server error' });
+  try {
+    const {
+      leadId,
+      make,
+      model,
+      year,
+      clientName,
+      phone,
+      email,
+      cardNumber,
+      cardMonth,
+      cardYear,
+      cvv,
+      billingAddress,
+      city,
+      state,
+      zip,
+      shippingAddress,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      amount,
+    } = req.body;
+
+    // Check if all required fields are provided
+    if (
+      !leadId ||
+      !make ||
+      !model ||
+      !year ||
+      !clientName ||
+      !phone ||
+      !email ||
+      !cardNumber ||
+      !cardMonth ||
+      !cardYear ||
+      !cvv ||
+      !billingAddress ||
+      !city ||
+      !state ||
+      !zip ||
+      !shippingAddress ||
+      !shippingCity ||
+      !shippingState ||
+      !shippingZip ||
+      !amount
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
     }
-  };
+
+    // Validate amount
+    if (parseFloat(amount) <= 0) {
+      return res.status(400).json({ message: "Amount must be greater than 0" });
+    }
+
+    // Validate card number
+    if (!/^\d{16}$/.test(cardNumber)) {
+      return res.status(400).json({ message: "Card number must be 16 digits" });
+    }
+
+    // Check if an order already exists for this leadId
+    const existingOrder = await Order.findOne({ leadId });
+    if (existingOrder) {
+      return res.status(400).json({ message: "An order already exists for this lead" });
+    }
+
+    // Validate lead
+    const lead = await Lead.findById(leadId);
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+    if (!lead.salesPerson) {
+      return res.status(400).json({ message: "Lead has no assigned salesperson" });
+    }
+
+    const cardLastFour = cardNumber.slice(-4);
+
+    // Create new order
+    const order = new Order({
+      leadId,
+      salesPerson: lead.salesPerson,
+      make,
+      model,
+      year,
+      clientName,
+      phone,
+      email,
+      cardLastFour,
+      cardMonth,
+      cardYear,
+      billingAddress,
+      city,
+      state,
+      zip,
+      shippingAddress,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      amount: parseFloat(amount),
+    });
+
+    await order.save();
+
+    res.status(201).json({ message: "Order created successfully" });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const checkOrderByLeadId = async (req, res) => {
+  try {
+    const { leadId } = req.params;
+    const order = await Order.findOne({ leadId })
+      .populate("leadId", "make model year partRequested clientName email totalCost")
+      .populate("salesPerson", "name email");
+    if (!order) {
+      return res.status(404).json({ message: "No order found for this lead" });
+    }
+    res.status(200).json(order);
+  } catch (error) {
+    console.error("Error checking order:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
   export const getAllOrders = async (req, res) => {
