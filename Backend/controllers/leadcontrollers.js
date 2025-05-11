@@ -9,7 +9,7 @@ import { io } from '../socket.js'
 const ADMIN_EMAIL = "sachinpradeepan27@gmail.com";
 
 // creating leads
-export const createleads = async (req, res, next) => {
+export const createleads =  async (req, res, next) => {
   console.log("Lead creation working");
   const errors = validationResult(req);
   console.log("errors:", errors);
@@ -93,19 +93,19 @@ export const createleads = async (req, res, next) => {
         recipient: salesNotification.recipient,
         message: salesNotification.message,
         type: salesNotification.type,
-        lead: salesNotification.lead,
-        createdAt: salesNotification.createdAt.toISOString(), // Explicitly include createdAt
+        lead: { _id: salesNotification.lead.toString() }, // Send lead as object
+        createdAt: salesNotification.createdAt.toISOString(),
         isRead: salesNotification.isRead,
       });
 
-      const now = new Date(); // Current timestamp for admin notifications
+      const now = new Date();
       admins.forEach(admin => {
         io.to(admin._id.toString()).emit('newNotification', {
           recipient: admin._id,
           message: `New lead: ${clientName} - ${partRequested} to ${salesPerson.name}`,
           type: 'new_lead',
-          lead: newLead._id,
-          createdAt: now.toISOString(), // Add createdAt
+          lead: { _id: newLead._id.toString() }, // Send lead as object
+          createdAt: now.toISOString(),
           isRead: false,
         });
       });
@@ -211,7 +211,7 @@ export const createLeadBySalesperson = async (req, res, next) => {
       recipient: salesNotification.recipient,
       message: salesNotification.message,
       type: salesNotification.type,
-      lead: salesNotification.lead,
+      lead: { _id: salesNotification.lead.toString() }, // Send lead as object
       createdAt: salesNotification.createdAt.toISOString(),
       isRead: salesNotification.isRead,
     });
@@ -222,7 +222,7 @@ export const createLeadBySalesperson = async (req, res, next) => {
         recipient: admin._id,
         message: `New lead created by ${salesperson.name}: ${clientName} - ${partRequested}`,
         type: 'new_lead',
-        lead: newLead._id,
+        lead: { _id: newLead._id.toString() }, // Send lead as object
         createdAt: now.toISOString(),
         isRead: false,
       });
