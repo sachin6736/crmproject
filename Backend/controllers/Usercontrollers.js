@@ -1,6 +1,8 @@
 import User from '../models/user.js';
 import Lead from "../models/lead.js";
 import bcrypt from 'bcrypt';
+import Notification from '../models/notificationSchema.js';
+import { io } from '../socket.js'
 
 export const resetpassword = async(req,res,next)=>{
     try {
@@ -77,17 +79,28 @@ export const rolechange = async(req,res,next)=>{
   }
 }
 
-export const reassign = async (req, res, next) => {// reassignthe leads all at once
-  console.log("reassign");
+export const reassign = async (req, res, next) => {
+  console.log("Reassigning leads");
   const { id } = req.params;
 
   try {
-    // Find active salespersons (role: sales, not the target user, not paused, and status is Available)
+    // Restrict to admins only
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+
+    // Find the old salesperson
+    const oldSalesPerson = await User.findById(id);
+    if (!oldSalesPerson) {
+      return res.status(404).json({ message: "Salesperson not found." });
+    }
+
+    // Find active salespersons
     const salespersons = await User.find({
       role: "sales",
       _id: { $ne: id },
-      isPaused: { $ne: true },
-      status: "Available"
+      isPaused: false,
+      status: "Available",
     });
 
     if (salespersons.length === 0) {
@@ -99,18 +112,70 @@ export const reassign = async (req, res, next) => {// reassignthe leads all at o
     if (leads.length === 0) {
       return res.status(200).json({ message: "No leads to reassign." });
     }
-    // Reassign leads to available salespersons in a round-robin fashion
+
+    // Track salespersons receiving leads
+    const assignedSalesPersons = new Set();
     const updatedLeads = [];
     let index = 0;
 
+    // Reassign leads
     for (const lead of leads) {
       const newSalesPerson = salespersons[index % salespersons.length];
       lead.salesPerson = newSalesPerson._id;
+      assignedSalesPersons.add(newSalesPerson._id.toString());
       updatedLeads.push(lead.save());
       index++;
     }
 
+    // Save all lead updates
     await Promise.all(updatedLeads);
+
+    // Create notifications for new salespersons
+    const salesNotifications = Array.from(assignedSalesPersons).map(salesPersonId => ({
+      recipient: salesPersonId,
+      message: "You have been transferred new leads. Please review your lead list.",
+      type: 'lead_reassign',
+      isRead: false,
+      createdAt: new Date(),
+    }));
+
+    // Create notifications for admins
+    const admins = await User.find({ role: 'admin' });
+    const adminNotifications = admins.map(admin => ({
+      recipient: admin._id,
+      message: `Leads have been successfully transferred from ${oldSalesPerson.name} to other team members.`,
+      type: 'lead_reassign',
+      isRead: false,
+      createdAt: new Date(),
+    }));
+
+    // Save notifications
+    const savedSalesNotifications = await Notification.insertMany(salesNotifications);
+    const savedAdminNotifications = await Notification.insertMany(adminNotifications);
+
+    // Emit notifications to new salespersons
+    savedSalesNotifications.forEach(notification => {
+      io.to(notification.recipient.toString()).emit('newNotification', {
+        _id: notification._id.toString(),
+        recipient: notification.recipient,
+        message: notification.message,
+        type: notification.type,
+        createdAt: notification.createdAt.toISOString(),
+        isRead: notification.isRead,
+      });
+    });
+
+    // Emit notifications to admins
+    savedAdminNotifications.forEach(notification => {
+      io.to(notification.recipient.toString()).emit('newNotification', {
+        _id: notification._id.toString(),
+        recipient: notification.recipient,
+        message: notification.message,
+        type: notification.type,
+        createdAt: notification.createdAt.toISOString(),
+        isRead: notification.isRead,
+      });
+    });
 
     res.status(200).json({ message: `Reassigned ${leads.length} leads to other salespersons.` });
   } catch (error) {

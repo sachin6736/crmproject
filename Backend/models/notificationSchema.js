@@ -5,7 +5,7 @@ const notificationSchema = new mongoose.Schema({
   message: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ['new_lead', 'status_update', 'order_update'], 
+    enum: ['new_lead', 'status_update', 'order_update' , 'lead_reassign'], 
     default: 'new_lead' 
   },
   lead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },

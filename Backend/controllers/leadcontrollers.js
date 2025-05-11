@@ -143,7 +143,7 @@ export const createleads =  async (req, res, next) => {
 };
 
 
-export const createLeadBySalesperson = async (req, res, next) => {
+export const createLeadBySalesperson = async (req, res, next) => {  //manual creation of leads
   console.log("Salesperson creating a lead");
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -204,7 +204,6 @@ export const createLeadBySalesperson = async (req, res, next) => {
       lead: newLead._id,
     }));
     await Notification.insertMany(adminNotifications);
-
     // Emit socket events
     io.to(salesPersonId.toString()).emit('newNotification', {
       _id: salesNotification._id,
@@ -227,7 +226,6 @@ export const createLeadBySalesperson = async (req, res, next) => {
         isRead: false,
       });
     });
-
     // Send email to admin
     const emailContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
@@ -663,13 +661,12 @@ export const leadquatation = async (req, res) => {
   }
 };
 
-export const changeowner = async (req, res) => {
+export const changeowner =  async (req, res) => {
   try {
     // Restrict to admins only
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
-
     const { id } = req.params;
     const { salesPersonId } = req.body;
     console.log("Lead ID:", id);
@@ -704,9 +701,57 @@ export const changeowner = async (req, res) => {
       return res.status(400).json({ message: "Lead is already assigned to this salesperson." });
     }
 
+    // Fetch the admin who is reassigning
+    const admin = await User.findById(req.user.id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found." });
+    }
+
     // Reassign the lead
     lead.salesPerson = salesPersonId;
     await lead.save();
+
+    // Create salesperson notification
+    const salesNotification = new Notification({
+      recipient: salesPersonId,
+      message: `Lead  ${lead.clientName} has been assigned to you`,
+      type: 'lead_reassign',
+      lead: lead._id,
+    });
+    await salesNotification.save();
+
+    // Notify all admins
+    const admins = await User.find({ role: 'admin' });
+    const adminNotifications = admins.map(adminUser => ({
+      recipient: adminUser._id,
+      message: `Lead for ${lead.clientName} reassigned to ${salesPerson.name} by ${admin.name}`,
+      type: 'lead_reassign',
+      lead: lead._id,
+    }));
+    await Notification.insertMany(adminNotifications);
+
+    // Emit socket events
+    io.to(salesPersonId.toString()).emit('newNotification', {
+      _id: salesNotification._id,
+      recipient: salesNotification.recipient,
+      message: salesNotification.message,
+      type: salesNotification.type,
+      lead: { _id: salesNotification.lead.toString() },
+      createdAt: salesNotification.createdAt.toISOString(),
+      isRead: salesNotification.isRead,
+    });
+
+    const now = new Date();
+    admins.forEach(adminUser => {
+      io.to(adminUser._id.toString()).emit('newNotification', {
+        recipient: adminUser._id,
+        message: `Lead for ${lead.clientName} reassigned to ${salesPerson.name} by ${admin.name}`,
+        type: 'lead_reassign',
+        lead: { _id: lead._id.toString() },
+        createdAt: now.toISOString(),
+        isRead: false,
+      });
+    });
 
     res.status(200).json({ message: "Lead reassigned successfully" });
   } catch (error) {
