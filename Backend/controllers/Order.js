@@ -1,6 +1,8 @@
 import User from '../models/user.js';
 import Lead from "../models/lead.js";
 import Order from '../models/order.js';
+import Notification from '../models/notificationSchema.js';
+import { io } from '../socket.js'
 
 export const createOrder = async (req, res) => {
   try {
@@ -78,6 +80,12 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Lead has no assigned salesperson" });
     }
 
+    // Find the salesperson
+    const salesPerson = await User.findById(lead.salesPerson);
+    if (!salesPerson) {
+      return res.status(404).json({ message: "Salesperson not found" });
+    }
+
     const cardLastFour = cardNumber.slice(-4);
 
     // Create new order
@@ -105,6 +113,49 @@ export const createOrder = async (req, res) => {
     });
 
     await order.save();
+
+    // Format amount for notifications
+    const formattedAmount = `$${parseFloat(amount).toFixed(2)}`;
+
+    // Create notification for salesperson
+    const salesNotification = new Notification({
+      recipient: salesPerson._id,
+      message: `Order created for the amount ${formattedAmount} against ${clientName}.`,
+      type: 'order_update',
+    });
+    await salesNotification.save();
+
+    // Create notifications for admins
+    const admins = await User.find({ role: 'admin' });
+    const adminNotifications = admins.map(admin => ({
+      recipient: admin._id,
+      message: `Order created for the amount ${formattedAmount} against ${clientName}.`,
+      type: 'order_update',
+    }));
+    await Notification.insertMany(adminNotifications);
+
+    // Emit notification to salesperson
+    io.to(salesPerson._id.toString()).emit('newNotification', {
+      _id: salesNotification._id.toString(),
+      recipient: salesNotification.recipient,
+      message: salesNotification.message,
+      type: salesNotification.type,
+      createdAt: salesNotification.createdAt.toISOString(),
+      isRead: salesNotification.isRead,
+    });
+
+    // Emit notifications to admins
+    const now = new Date();
+    admins.forEach((admin, index) => {
+      io.to(admin._id.toString()).emit('newNotification', {
+        _id: adminNotifications[index]._id.toString(),
+        recipient: admin._id,
+        message: `Order created for the amount ${formattedAmount} against ${clientName}.`,
+        type: 'order_update',
+        createdAt: now.toISOString(),
+        isRead: false,
+      });
+    });
 
     res.status(201).json({ message: "Order created successfully" });
   } catch (error) {

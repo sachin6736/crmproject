@@ -15,7 +15,7 @@ import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
-import { useTheme } from "../context/ThemeContext"; // Import useTheme
+import { useTheme } from "../context/ThemeContext";
 
 const statusOptions = [
   "Quoted",
@@ -40,7 +40,7 @@ const statusTextColors = {
 const Lead = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { theme } = useTheme(); // Get current theme
+  const { theme } = useTheme();
   const [singleLead, setSingleLead] = useState(null);
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
@@ -93,11 +93,29 @@ const Lead = () => {
   }, [id]);
 
   useEffect(() => {
-    const part = parseFloat(partCost) || 0;
-    const shipping = parseFloat(shippingCost) || 0;
-    const gp = parseFloat(grossProfit) || 0;
-    setTotalCost((part + shipping + gp).toFixed(2));
+    const part = parseFloat(partCost);
+    const shipping = parseFloat(shippingCost);
+    const gp = parseFloat(grossProfit);
+    if (!isNaN(part) && !isNaN(shipping) && !isNaN(gp)) {
+      setTotalCost((part + shipping + gp).toFixed(2));
+    } else {
+      setTotalCost("");
+    }
   }, [partCost, shippingCost, grossProfit]);
+
+  // Check if all costs are valid and present
+  const areCostsValid = () => {
+    const part = parseFloat(partCost);
+    const shipping = parseFloat(shippingCost);
+    const gp = parseFloat(grossProfit);
+    const total = parseFloat(totalCost);
+    return (
+      !isNaN(part) && part > 0 &&
+      !isNaN(shipping) && shipping > 0 &&
+      !isNaN(gp) && gp > 0 &&
+      !isNaN(total) && total > 0
+    );
+  };
 
   const handleSaveNotes = async () => {
     if (!newNote.trim()) return;
@@ -222,11 +240,9 @@ const Lead = () => {
   };
 
   const handleSubmitCosts = async () => {
-    const part = parseFloat(partCost) || 0;
-    const shipping = parseFloat(shippingCost) || 0;
-    const gp = parseFloat(grossProfit) || 0;
-    if (part < 0 || shipping < 0 || gp < 0) {
-      toast.error("Costs cannot be negative");
+    // Check if all costs are valid before submitting
+    if (!areCostsValid()) {
+      toast.error("Please fill in all cost fields (Part Cost, Shipping Cost, Gross Profit) with valid positive numbers.");
       return;
     }
 
@@ -239,10 +255,10 @@ const Lead = () => {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            partCost: part,
-            shippingCost: shipping,
-            grossProfit: gp,
-            totalCost: parseFloat(totalCost) || 0,
+            partCost: parseFloat(partCost),
+            shippingCost: parseFloat(shippingCost),
+            grossProfit: parseFloat(grossProfit),
+            totalCost: parseFloat(totalCost),
           }),
         }
       );
@@ -264,6 +280,12 @@ const Lead = () => {
   };
 
   const handleSendQuote = async () => {
+    // Prevent sending quote if costs are not added
+    if (!areCostsValid()) {
+      toast.error("Please add and submit all cost details before sending a quotation.");
+      return;
+    }
+
     setIsSendingQuote(true);
     try {
       const response = await fetch(
@@ -278,7 +300,6 @@ const Lead = () => {
       const data = await response.json();
       if (response.ok) {
         toast.success(data.message);
-        // Optionally update status to "Quoted" after sending
         await updateStatus(id, "Quoted");
       } else {
         toast.error(data.message || "Failed to send quotation");
@@ -295,15 +316,16 @@ const Lead = () => {
     navigate(`/home/order/${id}`);
   };
 
-  if (!singleLead) return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <FullPageLoader
-        size="w-10 h-10"
-        color="text-blue-500 dark:text-blue-400"
-        fill="fill-blue-300 dark:fill-blue-600"
-      />
-    </div>
-  );
+  if (!singleLead)
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <FullPageLoader
+          size="w-10 h-10"
+          color="text-blue-500 dark:text-blue-400"
+          fill="fill-blue-300 dark:fill-blue-600"
+        />
+      </div>
+    );
 
   return (
     <div className="p-4 md:p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -321,7 +343,7 @@ const Lead = () => {
           <button
             onClick={handleSendQuote}
             className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm border-r border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50"
-            disabled={isSendingQuote}
+            disabled={isSendingQuote || !areCostsValid()}
           >
             {isSendingQuote ? "Sending..." : "Send Quote"}
           </button>
@@ -366,21 +388,19 @@ const Lead = () => {
         {/* Lead Details */}
         <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50 dark:bg-gray-700 p-4">
           <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{singleLead.clientName}</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {singleLead.clientName}
+            </h2>
             <div className="flex gap-2">
               <button
                 onClick={() => setIsEditingLead(!isEditingLead)}
                 className={`flex items-center gap-1 text-sm ${
-                  isEditingLead ? "text-red-500 dark:text-red-400" : "text-blue-500 dark:text-blue-400"
+                  isEditingLead
+                    ? "text-red-500 dark:text-red-400"
+                    : "text-blue-500 dark:text-blue-400"
                 }`}
               >
-                {isEditingLead ? (
-                  <>Cancel</>
-                ) : (
-                  <>
-                    <Edit size={18} /> Edit
-                  </>
-                )}
+                {isEditingLead ? <>Cancel</> : <><Edit size={18} /> Edit</>}
               </button>
               {isEditingLead && (
                 <button
@@ -413,7 +433,9 @@ const Lead = () => {
                 key={index}
                 className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-1 text-sm"
               >
-                <span className="text-gray-600 dark:text-gray-400 font-medium">{item.label}</span>
+                <span className="text-gray-600 dark:text-gray-400 font-medium">
+                  {item.label}
+                </span>
                 <div className="flex items-center gap-2 w-1/2">
                   {isEditingLead && item.key !== "status" ? (
                     <input
@@ -432,7 +454,9 @@ const Lead = () => {
                       {singleLead[item.key]}
                     </a>
                   ) : (
-                    <span className="truncate text-gray-900 dark:text-gray-100">{singleLead[item.key]}</span>
+                    <span className="truncate text-gray-900 dark:text-gray-100">
+                      {singleLead[item.key]}
+                    </span>
                   )}
                 </div>
               </div>
@@ -449,7 +473,9 @@ const Lead = () => {
             }}
           >
             <div className="w-full flex-shrink-0 flex flex-col">
-              <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">Notes</h2>
+              <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">
+                Notes
+              </h2>
               <div className="p-2 mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-wrap overflow-y-auto flex-1">
                 {notes.length > 0 ? (
                   notes.map((note, index) => (
@@ -529,9 +555,13 @@ const Lead = () => {
                   key={index}
                   className="w-full h-20 bg-[#f3f4f6] dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
                 >
-                  <p className="text-base font-medium text-gray-900 dark:text-gray-100">{item.label}</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+                    {item.label}
+                  </p>
                   {item.readonly ? (
-                    <p className="text-base font-semibold text-gray-900 dark:text-gray-100">${item.value}</p>
+                    <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                      {item.value ? `$${item.value}` : "-"}
+                    </p>
                   ) : (
                     <input
                       type="number"
@@ -549,7 +579,7 @@ const Lead = () => {
                 <button
                   onClick={handleSubmitCosts}
                   className="bg-green-800 dark:bg-green-600 text-gray-50 dark:text-gray-100 w-20 disabled:opacity-50 hover:bg-green-900 dark:hover:bg-green-700"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !areCostsValid()}
                 >
                   {isSubmitting ? "Saving..." : "Submit"}
                 </button>
@@ -576,7 +606,7 @@ const Lead = () => {
                   ? "bg-blue-500 dark:bg-blue-600 text-white rounded-full"
                   : ""
               }
-              className={theme === 'dark' ? 'dark-calendar' : ''}
+              className={theme === "dark" ? "dark-calendar" : ""}
             />
           </div>
         </div>
