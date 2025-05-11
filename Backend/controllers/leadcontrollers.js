@@ -3,6 +3,8 @@ import User from "../models/user.js";
 import RoundRobinState from "../models/RoundRobinState.js";
 import sendEmail from "../sendEmail.js";
 import { validationResult } from "express-validator";
+import Notification from '../models/notificationSchema.js';
+import { io } from '../socket.js'
 
 const ADMIN_EMAIL = "sachinpradeepan27@gmail.com";
 
@@ -28,13 +30,17 @@ export const createleads = async (req, res, next) => {
       } = req.body;
       console.log("requestbody", req.body);
 
-      const salesTeam = await User.find({ role: "sales", isPaused: false });
+      const salesTeam = await User.find({
+        role: "sales",
+        isPaused: false,
+        status: "Available",
+      });
       console.log("salesteam", salesTeam);
       if (salesTeam.length === 0) {
-        return res.status(400).json({ message: "No sales team members found" });
+        return res.status(400).json({ message: "No available sales team members found" });
       }
-      let roundRobinState = await RoundRobinState.findOne();
 
+      let roundRobinState = await RoundRobinState.findOne();
       if (!roundRobinState) {
         roundRobinState = new RoundRobinState({ currentIndex: 0 });
         await roundRobinState.save();
@@ -61,38 +67,81 @@ export const createleads = async (req, res, next) => {
         salesPerson: salesPerson._id,
       });
       await newLead.save();
+
+      // Create notifications
+      const salesNotification = new Notification({
+        recipient: salesPerson._id,
+        message: `New lead assigned: ${clientName} - ${partRequested}`,
+        type: 'new_lead',
+        lead: newLead._id,
+      });
+      await salesNotification.save();
+
+      // Notify all admins
+      const admins = await User.find({ role: 'admin' });
+      const adminNotifications = admins.map(admin => ({
+        recipient: admin._id,
+        message: `New lead: ${clientName} - ${partRequested} to ${salesPerson.name}`,
+        type: 'new_lead',
+        lead: newLead._id,
+      }));
+      await Notification.insertMany(adminNotifications);
+
+      // Emit socket events
+      io.to(salesPerson._id.toString()).emit('newNotification', {
+        _id: salesNotification._id,
+        recipient: salesNotification.recipient,
+        message: salesNotification.message,
+        type: salesNotification.type,
+        lead: salesNotification.lead,
+        createdAt: salesNotification.createdAt.toISOString(), // Explicitly include createdAt
+        isRead: salesNotification.isRead,
+      });
+
+      const now = new Date(); // Current timestamp for admin notifications
+      admins.forEach(admin => {
+        io.to(admin._id.toString()).emit('newNotification', {
+          recipient: admin._id,
+          message: `New lead: ${clientName} - ${partRequested} to ${salesPerson.name}`,
+          type: 'new_lead',
+          lead: newLead._id,
+          createdAt: now.toISOString(), // Add createdAt
+          isRead: false,
+        });
+      });
+
       const nextIndex = (currentIndex + 1) % salesTeam.length;
       roundRobinState.currentIndex = nextIndex;
       await roundRobinState.save();
-      // const emailContent = `
-      //     <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
-      //         <h2 style="color: #333;">New Quotation Request</h2>
-      //         <p><strong>Name:</strong> ${clientName}</p>
-      //         <p><strong>Phone:</strong> ${phoneNumber}</p>
-      //         <p><strong>Email:</strong> ${email}</p>
-      //         <p><strong>Zip Code:</strong> ${zip}</p>
-      //         <p><strong>Part Requested:</strong> ${partRequested}</p>
-      //         <p><strong>Make:</strong> ${make}</p>
-      //         <p><strong>Model:</strong> ${model}</p>
-      //         <p><strong>Year:</strong> ${year}</p>
-      //         <p><strong>Trim:</strong> ${trim}</p>
-      //         <hr>
-      //         <p style="color: gray;">This is an automated email from your CRM system.</p>
-      //     </div>
-      // `;
+      const emailContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
+              <h2 style="color: #333;">New Quotation Request</h2>
+              <p><strong>Name:</strong> ${clientName}</p>
+              <p><strong>Phone:</strong> ${phoneNumber}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Zip Code:</strong> ${zip}</p>
+              <p><strong>Part Requested:</strong> ${partRequested}</p>
+              <p><strong>Make:</strong> ${make}</p>
+              <p><strong>Model:</strong> ${model}</p>
+              <p><strong>Year:</strong> ${year}</p>
+              <p><strong>Trim:</strong> ${trim}</p>
+              <hr>
+              <p style="color: gray;">This is an automated email from your CRM system.</p>
+          </div>
+      `;
 
-      // // Send Email to Admin
-      // await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
-
+      // Send Email to Admin
+      await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
       res
         .status(201)
-        .json({ message: "Lead created successfully and email sent" });
+        .json({ message: "Lead created successfully and notifications sent" });
     } catch (error) {
       console.log("An error occurred", error);
       res.status(500).json({ message: "Error creating lead" });
     }
   }
 };
+
 
 export const createLeadBySalesperson = async (req, res, next) => {
   console.log("Salesperson creating a lead");
@@ -116,6 +165,13 @@ export const createLeadBySalesperson = async (req, res, next) => {
 
     const salesPersonId = req.user.id;
 
+    // Fetch salesperson details
+    const salesperson = await User.findById(salesPersonId);
+    if (!salesperson) {
+      return res.status(404).json({ message: 'Salesperson not found' });
+    }
+
+    // Create the new lead
     const newLead = new Lead({
       clientName,
       phoneNumber,
@@ -128,36 +184,71 @@ export const createLeadBySalesperson = async (req, res, next) => {
       trim,
       salesPerson: salesPersonId,
     });
-
     await newLead.save();
 
+    // Create salesperson notification
+    const salesNotification = new Notification({
+      recipient: salesPersonId,
+      message: `You created a new lead: ${clientName} - ${partRequested}`,
+      type: 'new_lead',
+      lead: newLead._id,
+    });
+    await salesNotification.save();
+
+    // Notify all admins
+    const admins = await User.find({ role: 'admin' });
+    const adminNotifications = admins.map(admin => ({
+      recipient: admin._id,
+      message: `New lead created by ${salesperson.name}: ${clientName} - ${partRequested}`,
+      type: 'new_lead',
+      lead: newLead._id,
+    }));
+    await Notification.insertMany(adminNotifications);
+
+    // Emit socket events
+    io.to(salesPersonId.toString()).emit('newNotification', {
+      _id: salesNotification._id,
+      recipient: salesNotification.recipient,
+      message: salesNotification.message,
+      type: salesNotification.type,
+      lead: salesNotification.lead,
+      createdAt: salesNotification.createdAt.toISOString(),
+      isRead: salesNotification.isRead,
+    });
+
+    const now = new Date();
+    admins.forEach(admin => {
+      io.to(admin._id.toString()).emit('newNotification', {
+        recipient: admin._id,
+        message: `New lead created by ${salesperson.name}: ${clientName} - ${partRequested}`,
+        type: 'new_lead',
+        lead: newLead._id,
+        createdAt: now.toISOString(),
+        isRead: false,
+      });
+    });
+
+    // Send email to admin
     const emailContent = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
-              <h2 style="color: #333;">New Quotation Request</h2>
-              <p><strong>Name:</strong> ${clientName}</p>
-              <p><strong>Phone:</strong> ${phoneNumber}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Zip Code:</strong> ${zip}</p>
-              <p><strong>Part Requested:</strong> ${partRequested}</p>
-              <p><strong>Make:</strong> ${make}</p>
-              <p><strong>Model:</strong> ${model}</p>
-              <p><strong>Year:</strong> ${year}</p>
-              <p><strong>Trim:</strong> ${trim}</p>
-              <hr>
-              <p style="color: gray;">This is an automated email from your CRM system.</p>
-          </div>
-      `;
+      <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
+        <h2 style="color: #333;">New Quotation Request</h2>
+        <p><strong>Name:</strong> ${clientName}</p>
+        <p><strong>Phone:</strong> ${phoneNumber}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Zip Code:</strong> ${zip}</p>
+        <p><strong>Part Requested:</strong> ${partRequested}</p>
+        <p><strong>Make:</strong> ${make}</p>
+        <p><strong>Model:</strong> ${model}</p>
+        <p><strong>Year:</strong> ${year}</p>
+        <p><strong>Trim:</strong> ${trim}</p>
+        <hr>
+        <p style="color: gray;">This is an automated email from your CRM system.</p>
+      </div>
+    `;
 
-    // Send Email to Admin
-    await sendEmail(
-      ADMIN_EMAIL,
-      "New Quotation Request Received",
-      emailContent
-    );
+    await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
 
-    res
-      .status(201)
-      .json({ message: "Lead created by salesperson successfully" });
+    res.status(201).json({ message: "Lead created by salesperson successfully" });
   } catch (error) {
     console.log("An error occurred", error);
     res.status(500).json({ message: "Error creating lead by salesperson" });

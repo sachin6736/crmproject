@@ -57,7 +57,6 @@ function UserForm() {
 
       const data = await response.json();
       if (response.ok) {
-        toast.success('Form has been uploaded', { icon: '💾' });
         setFormData({
           clientName: '',
           phoneNumber: '',
@@ -69,7 +68,8 @@ function UserForm() {
           year: '',
           trim: '',
         });
-        navigate('/home/sales/leads');
+        //navigate('/home/sales/leads');
+        toast.success('Form has been uploaded', { icon: '💾' });
       } else {
         toast.error(data.message || 'Failed to create lead');
       }
@@ -93,7 +93,7 @@ function UserForm() {
       year: '',
       trim: '',
     });
-    navigate('/home/sales/leads');
+    navigate('/home/userform');
   };
 
   // Static options

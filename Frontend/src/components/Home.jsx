@@ -16,18 +16,40 @@ import {
   Utensils,
   Calendar,
   LogOut,
+  Bell,
+  Menu,
+  X,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import ThemeToggle from './ThemeToggle'; // Import ThemeToggle
+import ThemeToggle from './ThemeToggle';
+import io from 'socket.io-client';
 
 function Home() {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false); // For mobile sidebar toggle
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState([]);
   const statusDropdownRef = useRef(null);
+  const notificationDropdownRef = useRef(null);
+  const socketRef = useRef(null);
+
+  // Helper function to format date with fallback
+  const formatDate = (date) => {
+    try {
+      const parsedDate = new Date(date);
+      if (isNaN(parsedDate.getTime())) {
+        return 'Unknown Date';
+      }
+      return parsedDate.toLocaleString();
+    } catch {
+      return 'Unknown Date';
+    }
+  };
 
   const fetchUser = async () => {
     try {
@@ -48,9 +70,45 @@ function Home() {
     }
   };
 
+  const fetchNotifications = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await fetch(`http://localhost:3000/Notification/user/${user._id}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch notifications');
+      const data = await res.json();
+      setNotifications(data);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+      toast.error('Failed to load notifications');
+    }
+  };
+
   useEffect(() => {
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (user?._id) {
+      fetchNotifications();
+      socketRef.current = io('http://localhost:3000', {
+        withCredentials: true,
+      });
+
+      socketRef.current.emit('joinRoom', user._id);
+
+      socketRef.current.on('newNotification', (notification) => {
+        console.log('Received notification:', notification);
+        setNotifications((prev) => [notification, ...prev]);
+        toast.info(notification.message);
+      });
+
+      return () => {
+        socketRef.current.disconnect();
+      };
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -59,6 +117,12 @@ function Home() {
         !statusDropdownRef.current.contains(event.target)
       ) {
         setShowStatusDropdown(false);
+      }
+      if (
+        notificationDropdownRef.current &&
+        !notificationDropdownRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -106,7 +170,7 @@ function Home() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || `HTTP error! Status: ${res.status}`);
+        throw new Error(data.message || `HTTP error! Status: ${res.status}`);
       }
 
       await fetchUser();
@@ -116,6 +180,24 @@ function Home() {
       toast.error(err.message || 'Failed to update status');
     } finally {
       setShowStatusDropdown(false);
+    }
+  };
+
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      const res = await fetch(`http://localhost:3000/Notification/${notificationId}/read`, {
+        method: 'PUT',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to mark notification as read');
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif._id === notificationId ? { ...notif, isRead: true } : notif
+        )
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+      toast.error('Failed to mark notification as read');
     }
   };
 
@@ -147,6 +229,59 @@ function Home() {
     },
   ];
 
+  const navItems = [
+    {
+      label: 'Home',
+      icon: <HomeIcon className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        if (loading) return;
+        if (user?.role === 'admin') {
+          navigate('/home/dashboard');
+        } else {
+          navigate('/home/salesdashboard');
+        }
+        setShowSidebar(false);
+      },
+    },
+    {
+      label: 'Sales',
+      icon: <LineChart className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        navigate('/home/sales');
+        setShowSidebar(false);
+      },
+    },
+    {
+      label: 'Dashboard',
+      icon: <Megaphone className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        if (loading) return;
+        if (user?.role === 'admin') {
+          navigate('/home/dashboard');
+        } else {
+          navigate('/home/salesdashboard');
+        }
+        setShowSidebar(false);
+      },
+    },
+    {
+      label: 'View Orders',
+      icon: <PenTool className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        navigate('/home/orders');
+        setShowSidebar(false);
+      },
+    },
+    {
+      label: 'Your Account',
+      icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        // Placeholder for account navigation
+        setShowSidebar(false);
+      },
+    },
+  ];
+
   if (loading) {
     return (
       <div className='flex justify-center items-center h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100'>
@@ -155,100 +290,135 @@ function Home() {
     );
   }
 
+  const unreadCount = notifications.filter((notif) => !notif.isRead).length;
+
   return (
     <div className='w-screen h-screen bg-gray-100 dark:bg-gray-900 flex text-gray-900 dark:text-gray-100'>
-      <div className='w-20 h-screen bg-[#002775] dark:bg-gray-800 fixed left-0 top-0 border-r-[2px] border-r-white dark:border-r-gray-700 flex flex-col items-center pt-3 space-y-3 overflow-y-scroll'>
-        <div
-          className='flex flex-col items-center space-y-1 cursor-pointer'
-          onClick={() => {
-            if (loading) return;
-            if (user?.role === 'admin') {
-              navigate('/home/dashboard');
-            } else {
-              navigate('/home/salesdashboard');
-            }
-          }}
-        >
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <HomeIcon className='h-6 w-6 text-white dark:text-gray-300' />
+      {/* Desktop Sidebar */}
+      <div className='hidden md:flex w-20 h-screen bg-[#002775] dark:bg-gray-800 fixed left-0 top-0 border-r-[2px] border-r-white dark:border-r-gray-700 flex-col items-center pt-3 space-y-3 overflow-hidden'>
+        {navItems.map((item, index) => (
+          <div
+            key={index}
+            className='flex flex-col items-center space-y-1 cursor-pointer'
+            onClick={item.onClick}
+          >
+            <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
+              {item.icon}
+            </div>
+            <span className='text-white dark:text-gray-300 text-[10px] font-bold text-center'>
+              {item.label}
+            </span>
           </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Home</span>
-        </div>
-        {/* <div className='flex flex-col items-center space-y-1 cursor-pointer'>
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <Users className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Contacts</span>
-        </div> */}
-        {/* <div className='flex flex-col items-center space-y-1 cursor-pointer'>
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <Briefcase className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Accounts</span>
-        </div> */}
-        <div
-          className='flex flex-col items-center space-y-1 cursor-pointer'
-          onClick={() => navigate('/home/sales')}
-        >
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <LineChart className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Sales</span>
-        </div>
-        {/* <div className='flex flex-col items-center space-y-1 cursor-pointer'>
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <Headset className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Service</span>
-        </div> */}
-        <div
-          className='flex flex-col items-center space-y-1 cursor-pointer'
-          onClick={() => {
-            if (loading) return;
-            if (user?.role === 'admin') {
-              navigate('/home/dashboard');
-            } else {
-              navigate('/home/salesdashboard');
-            }
-          }}
-        >
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <Megaphone className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Dashboard</span>
-        </div>
-        {/* <div className='flex flex-col items-center space-y-1 cursor-pointer'>
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <LucideShoppingCart className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>Commerce</span>
-        </div> */}
-        <div className='flex flex-col items-center space-y-1 cursor-pointer' onClick={() => navigate('/home/orders')}>
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <PenTool className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>
-            View Orders
-          </span>
-        </div>
-        <div className='flex flex-col items-center space-y-1 cursor-pointer'>
-          <div className='w-12 h-12 bg-[#002775] dark:bg-gray-800 rounded-md border border-[#002775] dark:border-gray-700 hover:border-white dark:hover:border-gray-500 transition duration-300 flex items-center justify-center'>
-            <User className='h-6 w-6 text-white dark:text-gray-300' />
-          </div>
-          <span className='text-white dark:text-gray-300 text-[10px] font-bold'>
-            Your Account
-          </span>
-        </div>
+        ))}
       </div>
-      <div className='flex-1 h-screen ml-20 flex flex-col'>
-        <div className='w-full h-24 bg-[#066afe] dark:bg-gray-800 flex items-center justify-between px-4'>
+
+      {/* Mobile Sidebar (Hamburger Menu) */}
+      {showSidebar && (
+        <div className='md:hidden fixed inset-0 bg-[#002775] dark:bg-gray-800 z-50 flex flex-col items-center pt-6 space-y-6'>
+          <button
+            onClick={() => setShowSidebar(false)}
+            className='absolute top-4 right-4 text-white dark:text-gray-300'
+          >
+            <X className='w-8 h-8' />
+          </button>
+          {navItems.map((item, index) => (
+            <div
+              key={index}
+              className='flex items-center space-x-4 cursor-pointer'
+              onClick={item.onClick}
+            >
+              <div className='w-10 h-10 flex items-center justify-center'>
+                {item.icon}
+              </div>
+              <span className='text-white dark:text-gray-300 text-lg font-bold'>
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className='flex-1 h-screen md:ml-20 flex flex-col'>
+        {/* Header */}
+        <div className='w-full h-16 md:h-24 bg-[#066afe] dark:bg-gray-800 flex items-center justify-between px-4'>
           <div className='flex items-center space-x-2'>
-            {/* Uncomment if using logo */}
-            {/* <img src={logo} alt='Equivise Logo' className='w-20 h-20' /> */}
-            {/* <span className='text-white dark:text-gray-100 font-serif text-lg'>| Equivise</span> */}
+            <button
+              className='md:hidden text-white dark:text-gray-300'
+              onClick={() => setShowSidebar(true)}
+            >
+              <Menu className='w-8 h-8' />
+            </button>
+            {/* <img src={logo} alt='Equivise Logo' className='w-16 h-16 md:w-20 md:h-20' /> */}
+            {/* <span className='text-white dark:text-gray-100 font-serif text-base md:text-lg'>| Equivise</span> */}
           </div>
           <div className='relative flex items-center space-x-4'>
-            <ThemeToggle /> {/* Add ThemeToggle */}
+            <ThemeToggle />
+            <div className='relative'>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                type='button'
+                className='w-8 h-8 bg-white dark:bg-gray-700 text-[#066afe] dark:text-gray-100 rounded-full flex items-center justify-center relative'
+              >
+                <Bell className='w-5 h-5' />
+                {unreadCount > 0 && (
+                  <span className='absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center'>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div
+                  ref={notificationDropdownRef}
+                  className='absolute top-12 right-0 w-80 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2 max-h-96 overflow-y-auto'
+                >
+                  <h3 className='text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200'>
+                    Notifications
+                  </h3>
+                  {notifications.length === 0 ? (
+                    <p className='text-sm text-gray-500 dark:text-gray-400'>
+                      No notifications
+                    </p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification._id}
+                        className={`flex items-center justify-between p-2 text-sm border-b border-gray-200 dark:border-gray-700 cursor-pointer ${
+                          notification.isRead
+                            ? 'bg-gray-200 dark:bg-gray-600'
+                            : 'bg-blue-100 dark:bg-blue-900'
+                        }`}
+                        onClick={() => {
+                          if (notification.lead) {
+                            navigate(`/home/sales/lead/${notification.lead._id}`);
+                          }
+                        }}
+                      >
+                        <div className='flex-1'>
+                          <p className='text-gray-700 dark:text-gray-200 text-sm'>
+                            {notification.message}
+                          </p>
+                          <p className='text-xs text-gray-500 dark:text-gray-400'>
+                            {formatDate(notification.createdAt)}
+                          </p>
+                        </div>
+                        {!notification.isRead && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markNotificationAsRead(notification._id);
+                            }}
+                            className='ml-2 text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-500'
+                          >
+                            <CheckCircle className='w-4 h-4' />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
               type='button'
@@ -259,7 +429,7 @@ function Home() {
               )}
             </button>
             {showDropdown && (
-              <div className='absolute top-12 right-4 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2'>
+              <div className='absolute top-12 right-4 w-48 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2'>
                 <div className='mb-2'>
                   <label className='text-sm font-semibold block mb-1 text-gray-700 dark:text-gray-200'>
                     Status
@@ -315,7 +485,7 @@ function Home() {
             )}
           </div>
         </div>
-        <div className='flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900'>
+        <div className='flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-4'>
           <Outlet />
         </div>
       </div>

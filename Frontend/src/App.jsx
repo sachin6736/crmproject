@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Slide } from 'react-toastify';
@@ -8,14 +8,12 @@ import SalesDashboard from './components/SalesDashboard';
 import Login from './components/Login';
 import SignUp from './components/Signup';
 import Home from './components/Home';
-import Homepage from './components/Homepage';
-import Sales from './components/Sales';
 import Lead from './components/Lead';
 import LeadTableHeader from './components/Leads';
 import Userfrom from './components/Userfrom';
 import OrderForm from './components/Orders';
 import ProtectedRoute from './components/ProtectedRoute';
-import OrdersHistory from './components/Ordersshow'; 
+import OrdersHistory from './components/Ordersshow';
 
 function App() {
   const { theme } = useTheme();
@@ -35,7 +33,7 @@ function App() {
         <Route path='/signup' element={<SignUp />} />
         <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
-          <Route path='/home/sales' element={<ProtectedRoute><Sales /></ProtectedRoute>}>
+          <Route path='/home/sales' element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
             <Route index element={<LeadTableHeader />} />
             <Route path='/home/sales/lead/:id' element={<Lead />} />
           </Route>
