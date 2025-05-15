@@ -533,10 +533,8 @@ export const editlead = async (req, res, next) => {
 };
 
 export const updatecost = async (req, res, next) => {
-  //console.log("updatecostworking");
   const { id } = req.params;
-  console.log("leadd", id);
-  const { partCost, shippingCost, grossProfit, totalCost } = req.body;
+  const { partCost, shippingCost, grossProfit, warranty, totalCost } = req.body;
 
   try {
     const lead = await Lead.findById(id);
@@ -548,6 +546,7 @@ export const updatecost = async (req, res, next) => {
     lead.partCost = partCost || lead.partCost;
     lead.shippingCost = shippingCost || lead.shippingCost;
     lead.grossProfit = grossProfit || lead.grossProfit;
+    lead.warranty = warranty || lead.warranty;
     lead.totalCost = totalCost || lead.totalCost;
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     lead.notes.push({
@@ -563,7 +562,6 @@ export const updatecost = async (req, res, next) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const leadquatation = async (req, res) => {
   const { id } = req.params;

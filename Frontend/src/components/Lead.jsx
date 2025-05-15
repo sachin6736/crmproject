@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Triangle,
   Pencil,
   Save,
   Edit,
@@ -52,6 +51,7 @@ const Lead = () => {
   const [partCost, setPartCost] = useState("");
   const [shippingCost, setShippingCost] = useState("");
   const [grossProfit, setGrossProfit] = useState("");
+  const [warranty, setWarranty] = useState("");
   const [totalCost, setTotalCost] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingQuote, setIsSendingQuote] = useState(false);
@@ -82,43 +82,57 @@ const Lead = () => {
         setPartCost(data.partCost?.toString() || "");
         setShippingCost(data.shippingCost?.toString() || "");
         setGrossProfit(data.grossProfit?.toString() || "");
+        setWarranty(data.warranty?.toString() || "");
         setTotalCost(data.totalCost?.toString() || "");
       } catch (error) {
         console.error("Error fetching single lead:", error);
         toast.error("Failed to load lead data");
+        navigate("/home");
       }
     };
 
-    fetchSingleLead();
-  }, [id]);
+    if (id) {
+      fetchSingleLead();
+    } else {
+      toast.error("Invalid lead ID");
+      navigate("/home");
+    }
+  }, [id, navigate]);
 
   useEffect(() => {
-    const part = parseFloat(partCost);
-    const shipping = parseFloat(shippingCost);
-    const gp = parseFloat(grossProfit);
-    if (!isNaN(part) && !isNaN(shipping) && !isNaN(gp)) {
-      setTotalCost((part + shipping + gp).toFixed(2));
-    } else {
-      setTotalCost("");
-    }
+    const part = parseFloat(partCost) || 0;
+    const shipping = parseFloat(shippingCost) || 0;
+    const gp = parseFloat(grossProfit) || 0;
+    
+    const total = part + shipping + gp;
+    setTotalCost(total > 0 ? total.toFixed(2) : "");
   }, [partCost, shippingCost, grossProfit]);
 
-  // Check if all costs are valid and present
   const areCostsValid = () => {
     const part = parseFloat(partCost);
     const shipping = parseFloat(shippingCost);
     const gp = parseFloat(grossProfit);
+    const warrantyCost = parseFloat(warranty);
     const total = parseFloat(totalCost);
     return (
-      !isNaN(part) && part > 0 &&
-      !isNaN(shipping) && shipping > 0 &&
-      !isNaN(gp) && gp > 0 &&
-      !isNaN(total) && total > 0
+      !isNaN(part) &&
+      part > 0 &&
+      !isNaN(shipping) &&
+      shipping >= 0 &&
+      !isNaN(gp) &&
+      gp >= 0 &&
+      !isNaN(warrantyCost) &&
+      warrantyCost >= 0 &&
+      !isNaN(total) &&
+      total > 0
     );
   };
 
   const handleSaveNotes = async () => {
-    if (!newNote.trim()) return;
+    if (!newNote.trim()) {
+      toast.warning("Please enter a note");
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -157,9 +171,7 @@ const Lead = () => {
           method: isDateSelected ? "DELETE" : "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: isDateSelected
-            ? null
-            : JSON.stringify({ selectedDate: dateStr }),
+          body: isDateSelected ? null : JSON.stringify({ selectedDate: dateStr }),
         }
       );
 
@@ -236,13 +248,16 @@ const Lead = () => {
   };
 
   const handleDownload = () => {
-    exportToExcel([singleLead], "LeadData.xlsx");
+    if (singleLead) {
+      exportToExcel([singleLead], "LeadData.xlsx");
+    } else {
+      toast.error("No lead data available to download");
+    }
   };
 
   const handleSubmitCosts = async () => {
-    // Check if all costs are valid before submitting
     if (!areCostsValid()) {
-      toast.error("Please fill in all cost fields (Part Cost, Shipping Cost, Gross Profit) with valid positive numbers.");
+      toast.error("Please fill in all cost fields with valid positive numbers.");
       return;
     }
 
@@ -258,6 +273,7 @@ const Lead = () => {
             partCost: parseFloat(partCost),
             shippingCost: parseFloat(shippingCost),
             grossProfit: parseFloat(grossProfit),
+            warranty: parseFloat(warranty),
             totalCost: parseFloat(totalCost),
           }),
         }
@@ -280,7 +296,6 @@ const Lead = () => {
   };
 
   const handleSendQuote = async () => {
-    // Prevent sending quote if costs are not added
     if (!areCostsValid()) {
       toast.error("Please add and submit all cost details before sending a quotation.");
       return;
@@ -316,7 +331,7 @@ const Lead = () => {
     navigate(`/home/order/${id}`);
   };
 
-  if (!singleLead)
+  if (!singleLead) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
         <FullPageLoader
@@ -326,16 +341,18 @@ const Lead = () => {
         />
       </div>
     );
+  }
 
   return (
     <div className="p-4 md:p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {/* Action Buttons */}
-      <div className="flex justify-end">
-        <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 md:w-1/2 w-full">
+      <div className="flex justify-end mb-4">
+        <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2 md:w-1/2 w-full">
           {["Convert", "Change Owner"].map((button, index) => (
             <button
               key={index}
               className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300"
+              disabled
             >
               {button}
             </button>
@@ -365,15 +382,15 @@ const Lead = () => {
       </div>
 
       {/* Active Status Row */}
-      <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full m-2 h-14 space-x-2 overflow-x-auto">
-        <div className="flex gap-14 px-2">
+      <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full h-14 space-x-2 overflow-x-auto">
+        <div className="flex gap-4 px-2">
           {statusOptions.map((status, index) => (
             <button
               key={index}
               onClick={() => updateStatus(singleLead._id, status)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
                 singleLead.status === status
-                  ? "bg-[#032d60] dark:bg-blue-600 text-white"
+                  ? "bg-blue-600 dark:bg-blue-500 text-white"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
               }`}
             >
@@ -384,9 +401,9 @@ const Lead = () => {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-300 dark:bg-gray-800 p-4 rounded-xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-200 dark:bg-gray-800 p-4 rounded-xl">
         {/* Lead Details */}
-        <div className="w-full md:w-auto h-auto md:h-96 rounded-2xl bg-slate-50 dark:bg-gray-700 p-4">
+        <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-700 p-4 shadow-md">
           <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-2">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {singleLead.clientName}
@@ -433,9 +450,9 @@ const Lead = () => {
                 key={index}
                 className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-1 text-sm"
               >
-                <span className="text-gray-600 dark:text-gray-400 font-medium">
+                <div className="text-gray-600 dark:text-gray-400 font-medium">
                   {item.label}
-                </span>
+                </div>
                 <div className="flex items-center gap-2 w-1/2">
                   {isEditingLead && item.key !== "status" ? (
                     <input
@@ -454,9 +471,14 @@ const Lead = () => {
                       {singleLead[item.key]}
                     </a>
                   ) : (
-                    <span className="truncate text-gray-900 dark:text-gray-100">
+                    <div
+                      className={`truncate ${
+                        statusTextColors[singleLead[item.key]] ||
+                        "text-gray-900 dark:text-gray-100"
+                      }`}
+                    >
                       {singleLead[item.key]}
-                    </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -464,7 +486,7 @@ const Lead = () => {
           </div>
         </div>
 
-        {/* Notes Section */}
+        {/* Notes and Costs Section */}
         <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md overflow-hidden relative">
           <div
             className="w-full h-full flex transition-transform duration-500 ease-in-out"
@@ -484,7 +506,9 @@ const Lead = () => {
                       className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex justify-between items-center"
                     >
                       <div>
-                        <p className="text-gray-900 dark:text-gray-100">{note.text}</p>
+                        <p className="text-gray-900 dark:text-gray-100">
+                          {note.text}
+                        </p>
                         <small className="text-gray-500 dark:text-gray-400">
                           {new Date(note.createdAt).toLocaleString()}
                         </small>
@@ -531,12 +555,12 @@ const Lead = () => {
               )}
               <button
                 onClick={() => setShowNotes(false)}
-                className="text-sm text-[#032d60] dark:text-blue-400 mt-4"
+                className="text-sm text-blue-600 dark:text-blue-400 mt-4"
               >
-                Go →
+                View Costs →
               </button>
             </div>
-            <div className="w-5/6 flex-shrink-0 flex flex-col items-center justify-center gap-3 ml-8">
+            <div className="w-full flex-shrink-0 flex flex-col items-center justify-center gap-3">
               {[
                 { label: "Part Cost", value: partCost, setter: setPartCost },
                 {
@@ -549,11 +573,12 @@ const Lead = () => {
                   value: grossProfit,
                   setter: setGrossProfit,
                 },
+                { label: "Warranty", value: warranty, setter: setWarranty },
                 { label: "Total Cost", value: totalCost, readonly: true },
               ].map((item, index) => (
                 <div
                   key={index}
-                  className="w-full h-20 bg-[#f3f4f6] dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
+                  className="w-full h-20 bg-gray-100 dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
                 >
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                     {item.label}
@@ -578,7 +603,7 @@ const Lead = () => {
               <div className="flex justify-end w-full pr-6">
                 <button
                   onClick={handleSubmitCosts}
-                  className="bg-green-800 dark:bg-green-600 text-gray-50 dark:text-gray-100 w-20 disabled:opacity-50 hover:bg-green-900 dark:hover:bg-green-700"
+                  className="bg-green-600 dark:bg-green-500 text-white w-20 disabled:opacity-50 hover:bg-green-700 dark:hover:bg-green-600 rounded-md"
                   disabled={isSubmitting || !areCostsValid()}
                 >
                   {isSubmitting ? "Saving..." : "Submit"}
@@ -586,14 +611,15 @@ const Lead = () => {
               </div>
               <button
                 onClick={() => setShowNotes(true)}
-                className="text-sm text-[#032d60] dark:text-blue-400 mt-4"
+                className="text-sm text-blue-600 dark:text-blue-400 mt-4"
               >
-                ← Back
+                ← Back to Notes
               </button>
             </div>
           </div>
         </div>
 
+        {/* Important Dates */}
         <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md">
           <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">
             Important Dates
