@@ -1,6 +1,18 @@
 import mongoose from 'mongoose';
 
+// Schema for storing the sequence value
+const counterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 123456 } // Start at 123456
+});
+
+const Counter = mongoose.model('Counter', counterSchema);
+
 const orderSchema = new mongoose.Schema({
+  order_id: {
+    type: Number,
+    unique: true
+  },
   leadId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Lead',
@@ -96,5 +108,24 @@ const orderSchema = new mongoose.Schema({
   }
 });
 
+// Pre-save hook to assign auto-incrementing order_id
+orderSchema.pre('save', async function (next) {
+  if (this.isNew) {
+    try {
+      const counter = await Counter.findOneAndUpdate(
+        { _id: 'order_id' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.order_id = counter.seq;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    next();
+  }
+});
+
 const Order = mongoose.model('Order', orderSchema);
-export default Order; 
+export  {Order,Counter};

@@ -12,7 +12,7 @@ const OrdersHistory = () => {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1); 
+  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
@@ -66,6 +66,8 @@ const OrdersHistory = () => {
         );
         if (!response.ok) throw new Error("Failed to fetch orders");
         const data = await response.json();
+        console.log("Data",data);
+        
         setOrders(data.orders || data);
         setTotalPages(data.totalPages || 1);
         setCurrentPage(data.currentPage || 1);
@@ -84,9 +86,10 @@ const OrdersHistory = () => {
       toast.error("No orders available to export");
       return;
     }
+    
 
     const formattedOrders = orders.map((order) => ({
-      OrderID: order._id || "N/A",
+      OrderID: order.order_id || "N/A",
       ClientName: order.clientName || "N/A",
       Date: order.createdAt
         ? new Date(order.createdAt).toLocaleString()
@@ -97,6 +100,7 @@ const OrdersHistory = () => {
         : "N/A",
       Status: order.status || "N/A",
     }));
+    
 
     try {
       exportToExcel(formattedOrders, "orders.xlsx");
@@ -233,7 +237,7 @@ const OrdersHistory = () => {
                           className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer whitespace-nowrap"
                           onClick={() => handleOrderClick(order._id)}
                         >
-                          {order._id || "N/A"}
+                          {order.order_id || "N/A"}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.clientName || "N/A"}
