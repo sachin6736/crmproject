@@ -1,6 +1,6 @@
 import User from '../models/user.js';
 import Lead from "../models/lead.js";
-import Order from '../models/order.js';
+import { Order } from '../models/order.js';
 import Notification from '../models/notificationSchema.js';
 import { io } from '../socket.js'
 

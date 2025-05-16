@@ -244,23 +244,10 @@ function Home() {
       },
     },
     {
-      label: 'Sales',
+      label: 'Leads',
       icon: <LineChart className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         navigate('/home/sales');
-        setShowSidebar(false);
-      },
-    },
-    {
-      label: 'Dashboard',
-      icon: <Megaphone className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
-      onClick: () => {
-        if (loading) return;
-        if (user?.role === 'admin') {
-          navigate('/home/dashboard');
-        } else {
-          navigate('/home/salesdashboard');
-        }
         setShowSidebar(false);
       },
     },
