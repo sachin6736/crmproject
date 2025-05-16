@@ -555,7 +555,6 @@ export const updatecost = async (req, res, next) => {
       addedBy: userIdentity,
       createdAt: new Date(),
     });
-
     await lead.save();
     res.status(200).json(lead);
   } catch (error) {
@@ -581,7 +580,6 @@ export const leadquatation = async (req, res) => {
     if (!lead.totalCost || lead.totalCost <= 0) {
       return res.status(400).json({ message: "Quotation cannot be sent without a valid total cost" });
     }
-
     // Email content
     const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
@@ -603,8 +601,7 @@ export const leadquatation = async (req, res) => {
         <li style="margin-bottom: 8px;"><strong>Year:</strong> ${lead.year}</li>
         <li style="margin-bottom: 8px;"><strong>Trim:</strong> ${lead.trim}</li>
         <li style="margin-bottom: 8px;"><strong>Estimated Cost (with shipping):</strong> $${lead.totalCost}</li>
-      </ul>
-  
+      </ul> 
       <p style="color: #555;">
         To proceed or ask questions, reply to this email or call +1 888-282-7476.
       </p>
