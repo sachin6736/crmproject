@@ -10,9 +10,27 @@ const OrderDetails = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [order, setOrder] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/User/me', {
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        const data = await res.json();
+        console.log('Fetched user data:', data);
+        setUser(data.user);
+      } catch (err) {
+        console.error('Error fetching user info:', err);
+        toast.error('Failed to load user data');
+      }
+    };
+
     const fetchOrder = async () => {
       setLoading(true);
       try {
@@ -23,17 +41,18 @@ const OrderDetails = () => {
           throw new Error("Failed to fetch order data");
         }
         const data = await response.json();
-        console.log("Orderdata",data);
+        console.log("Orderdata", data);
         setOrder(data);
       } catch (error) {
         console.error("Error fetching order data:", error);
         toast.error("Failed to load order details");
-        navigate("/home/orders"); // Redirect back to orders history on error
+        navigate("/home/orders");
       } finally {
         setLoading(false);
       }
     };
-    fetchOrder();
+
+    Promise.all([fetchUser(), fetchOrder()]);
   }, [orderId, navigate]);
 
   return (
@@ -53,10 +72,10 @@ const OrderDetails = () => {
               Order Details
             </h2>
             <button
-             onClick={() => navigate("/home/orders")}
-             className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              onClick={() => navigate("/home/orders")}
+              className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             >
-            Back to Orders
+              Back to Orders
             </button>
           </div>
           <div className="space-y-8 text-gray-900 dark:text-gray-100">
@@ -327,6 +346,41 @@ const OrderDetails = () => {
                 </div>
               </div>
             </section>
+
+            {/* Card Details (Visible only to admins) */}
+            {user?.role === "admin" && (
+              <section>
+                <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+                  Card Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      Card Number
+                    </strong>
+                    <span>{order.cardNumber || "N/A"}</span>
+                  </div>
+                  <div>
+                    <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      Card Month
+                    </strong>
+                    <span>{order.cardMonth || "N/A"}</span>
+                  </div>
+                  <div>
+                    <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      Card Year
+                    </strong>
+                    <span>{order.cardYear || "N/A"}</span>
+                  </div>
+                  <div>
+                    <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      CVV
+                    </strong>
+                    <span>{order.cvv || "N/A"}</span>
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         </div>
       ) : (
