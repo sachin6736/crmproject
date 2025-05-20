@@ -17,9 +17,6 @@ const OrdersHistory = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [loadingOrder, setLoadingOrder] = useState(false);
   const itemsPerPage = 10;
 
   const statusTextColors = {
@@ -66,8 +63,6 @@ const OrdersHistory = () => {
         );
         if (!response.ok) throw new Error("Failed to fetch orders");
         const data = await response.json();
-        console.log("Data",data);
-        
         setOrders(data.orders || data);
         setTotalPages(data.totalPages || 1);
         setCurrentPage(data.currentPage || 1);
@@ -86,7 +81,6 @@ const OrdersHistory = () => {
       toast.error("No orders available to export");
       return;
     }
-    
 
     const formattedOrders = orders.map((order) => ({
       OrderID: order.order_id || "N/A",
@@ -100,7 +94,6 @@ const OrdersHistory = () => {
         : "N/A",
       Status: order.status || "N/A",
     }));
-    
 
     try {
       exportToExcel(formattedOrders, "orders.xlsx");
@@ -111,30 +104,8 @@ const OrdersHistory = () => {
     }
   };
 
-  const handleOrderClick = async (orderId) => {
-    setLoadingOrder(true);
-    setIsModalOpen(true);
-    try {
-      const response = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch order data");
-      }
-      const data = await response.json();
-      setSelectedOrder(data);
-    } catch (error) {
-      console.error("Error fetching order data:", error);
-      toast.error("Failed to load order details");
-      setIsModalOpen(false);
-    } finally {
-      setLoadingOrder(false);
-    }
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedOrder(null);
+  const handleOrderClick = (orderId) => {
+    navigate(`/home/order/details/${orderId}`);
   };
 
   return (
@@ -150,18 +121,6 @@ const OrdersHistory = () => {
       ) : (
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
-            {/* <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-1/2 rounded-md">
-              {["New"].map((btn, i) => (
-                <button
-                  key={i}
-                  className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 hover:bg-[#032d60] dark:hover:bg-gray-700 hover:text-white dark:hover:text-gray-100"
-                  onClick={() => btn === "New" && navigate("/home/userform")}
-                >
-                  {btn}
-                </button>
-              ))}
-            </div> */}
-
             <div className="flex items-center space-x-4">
               <input
                 type="text"
@@ -279,7 +238,9 @@ const OrdersHistory = () => {
                   )}
                 </tbody>
               </table>
-            )}
+           
+
+ )}
           </div>
 
           {totalPages > 1 && (
@@ -313,341 +274,6 @@ const OrdersHistory = () => {
               >
                 Next
               </button>
-            </div>
-          )}
-
-          {/* Modal for Order Details */}
-          {isModalOpen && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
-              role="dialog"
-              aria-labelledby="modal-title"
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-3xl max-h-[85vh] overflow-y-auto transform transition-all">
-                <div className="flex justify-between items-center mb-6">
-                  <h2
-                    id="modal-title"
-                    className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-gray-100"
-                  >
-                    Order Details
-                  </h2>
-                  <button
-                    onClick={closeModal}
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none transition-colors"
-                    aria-label="Close modal"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                {loadingOrder ? (
-                  <div className="flex justify-center items-center py-8">
-                    <FullPageLoader
-                      size="w-8 h-8"
-                      color="text-blue-500 dark:text-blue-400"
-                      fill="fill-blue-300 dark:fill-blue-600"
-                    />
-                  </div>
-                ) : selectedOrder ? (
-                  <div className="space-y-8 text-gray-900 dark:text-gray-100">
-                    {/* Customer Information */}
-                    <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                      <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                        Customer Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Client Name
-                          </strong>
-                          <span>{selectedOrder.clientName || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Phone
-                          </strong>
-                          <span>{selectedOrder.phone || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Email
-                          </strong>
-                          <span>{selectedOrder.email || "N/A"}</span>
-                        </div>
-                      </div>
-                    </section>
-
-                    {/* Vehicle Information */}
-                    <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                      <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                        Vehicle Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Make
-                          </strong>
-                          <span>{selectedOrder.make || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Model
-                          </strong>
-                          <span>{selectedOrder.model || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Year
-                          </strong>
-                          <span>{selectedOrder.year || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Trim
-                          </strong>
-                          <span>{selectedOrder.leadId?.trim || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Part Requested
-                          </strong>
-                          <span>{selectedOrder.leadId?.partRequested || "N/A"}</span>
-                        </div>
-                      </div>
-                    </section>
-
-                    {/* Payment Information */}
-                    <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                      <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                        Payment Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Card Last Four
-                          </strong>
-                          <span>{selectedOrder.cardLastFour || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Card Expiry
-                          </strong>
-                          <span>
-                            {selectedOrder.cardMonth && selectedOrder.cardYear
-                              ? `${selectedOrder.cardMonth}/${selectedOrder.cardYear}`
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Part Cost
-                          </strong>
-                          <span>
-                            {selectedOrder.leadId?.partCost
-                              ? `$${selectedOrder.leadId.partCost.toFixed(2)}`
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Shipping Cost
-                          </strong>
-                          <span>
-                            {selectedOrder.leadId?.shippingCost
-                              ? `$${selectedOrder.leadId.shippingCost.toFixed(2)}`
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Gross Profit
-                          </strong>
-                          <span>
-                            {selectedOrder.leadId?.grossProfit
-                              ? `$${selectedOrder.leadId.grossProfit.toFixed(2)}`
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Total Cost
-                          </strong>
-                          <span>
-                            {selectedOrder.leadId?.totalCost
-                              ? `$${selectedOrder.leadId.totalCost.toFixed(2)}`
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Amount
-                          </strong>
-                          <span>
-                            {selectedOrder.amount
-                              ? `$${selectedOrder.amount.toFixed(2)}`
-                              : "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                    </section>
-
-                    {/* Billing Information */}
-                    <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                      <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                        Billing Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Billing Address
-                          </strong>
-                          <span>{selectedOrder.billingAddress || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            City
-                          </strong>
-                          <span>{selectedOrder.city || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            State
-                          </strong>
-                          <span>
-                            {selectedOrder.state
-                              ? selectedOrder.state.toUpperCase()
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Zip
-                          </strong>
-                          <span>{selectedOrder.zip || "N/A"}</span>
-                        </div>
-                      </div>
-                    </section>
-
-                    {/* Shipping Information */}
-                    <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                      <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                        Shipping Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Shipping Address
-                          </strong>
-                          <span>{selectedOrder.shippingAddress || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Shipping City
-                          </strong>
-                          <span>{selectedOrder.shippingCity || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Shipping State
-                          </strong>
-                          <span>
-                            {selectedOrder.shippingState
-                              ? selectedOrder.shippingState.toUpperCase()
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Shipping Zip
-                          </strong>
-                          <span>{selectedOrder.shippingZip || "N/A"}</span>
-                        </div>
-                      </div>
-                    </section>
-
-                    {/* Order Information */}
-                    <section>
-                      <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                        Order Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Order ID
-                          </strong>
-                          <span>{selectedOrder._id || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Order Status
-                          </strong>
-                          <span>{selectedOrder.status || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Lead Status
-                          </strong>
-                          <span>{selectedOrder.leadId?.status || "N/A"}</span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Sales Person
-                          </strong>
-                          <span>
-                            {selectedOrder.salesPerson?.name ||
-                              selectedOrder.salesPerson?._id ||
-                              "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Order Created At
-                          </strong>
-                          <span>
-                            {selectedOrder.createdAt
-                              ? new Date(selectedOrder.createdAt).toLocaleString()
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                            Lead Created At
-                          </strong>
-                          <span>
-                            {selectedOrder.leadId?.createdAt
-                              ? new Date(selectedOrder.leadId.createdAt).toLocaleString()
-                              : "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                ) : (
-                  <p className="text-gray-900 dark:text-gray-100 text-center">
-                    No order details available
-                  </p>
-                )}
-                <div className="mt-8 flex justify-end">
-                  <button
-                    onClick={closeModal}
-                    className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </>
