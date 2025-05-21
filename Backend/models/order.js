@@ -1,119 +1,128 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-// Schema for storing the sequence value
 const counterSchema = new mongoose.Schema({
   _id: { type: String, required: true },
-  seq: { type: Number, default: 123456 } // Start at 123456
+  seq: { type: Number, default: 123456 },
 });
 
-const Counter = mongoose.model('Counter', counterSchema);
+const Counter = mongoose.model("Counter", counterSchema);
 
 const orderSchema = new mongoose.Schema({
   order_id: {
     type: Number,
-    unique: true
+    unique: true,
   },
   leadId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Lead',
-    required: true
+    ref: "Lead",
+    required: true,
   },
   salesPerson: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
+  },
+  customerRelationsPerson: {
+    // New field
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
   },
   make: {
     type: String,
-    required: true
+    required: true,
   },
   model: {
     type: String,
-    required: true
+    required: true,
   },
   year: {
     type: String,
-    required: true
+    required: true,
   },
   clientName: {
     type: String,
-    required: true
+    required: true,
   },
   phone: {
     type: String,
-    required: true
+    required: true,
   },
   email: {
     type: String,
-    required: true
+    required: true,
   },
-  cardLastFour: {
+  cardNumber: {
     type: String,
     required: true,
-    match: /^\d{4}$/ 
+    match: /^\d{16}$/,
   },
   cardMonth: {
     type: String,
-    required: true
+    required: true,
   },
   cardYear: {
     type: String,
-    required: true
+    required: true,
+  },
+  cvv: {
+    type: String,
+    required: true,
+    match: /^\d{3,4}$/,
   },
   billingAddress: {
     type: String,
-    required: true
+    required: true,
   },
   city: {
     type: String,
-    required: true
+    required: true,
   },
   state: {
     type: String,
-    required: true
+    required: true,
   },
   zip: {
     type: String,
-    required: true
+    required: true,
   },
   shippingAddress: {
     type: String,
-    required: true
+    required: true,
   },
   shippingCity: {
     type: String,
-    required: true
+    required: true,
   },
   shippingState: {
     type: String,
-    required: true
+    required: true,
   },
   shippingZip: {
     type: String,
-    required: true
+    required: true,
   },
   amount: {
     type: Number,
     required: true,
-    min: 0.01
+    min: 0.01,
   },
   status: {
     type: String,
-    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-    default: 'Pending'
+    enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+    default: "Pending",
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 // Pre-save hook to assign auto-incrementing order_id
-orderSchema.pre('save', async function (next) {
+orderSchema.pre("save", async function (next) {
   if (this.isNew) {
     try {
       const counter = await Counter.findOneAndUpdate(
-        { _id: 'order_id' },
+        { _id: "order_id" },
         { $inc: { seq: 1 } },
         { new: true, upsert: true }
       );
@@ -127,5 +136,5 @@ orderSchema.pre('save', async function (next) {
   }
 });
 
-const Order = mongoose.model('Order', orderSchema);
-export  {Order,Counter};
+const Order = mongoose.model("Order", orderSchema);
+export { Order, Counter };
