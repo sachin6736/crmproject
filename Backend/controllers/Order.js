@@ -3,7 +3,7 @@ import Lead from "../models/lead.js";
 import { Order } from '../models/order.js';
 import Notification from '../models/notificationSchema.js';
 import { io } from '../socket.js'
-import RoundRobinState from '../models/RoundRobinState.js';
+import CustomerRelationsRoundRobinState from '../models/customerRelationsRoundRobinState.js';
 
 export const createOrder = async (req, res) => {
   try {
@@ -66,6 +66,20 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Card number must be 16 digits" });
     }
 
+    // Validate card month and year
+    if (cardMonth < 1 || cardMonth > 12) {
+      return res.status(400).json({ message: "Invalid card month" });
+    }
+    // const currentYear = new Date().getFullYear();
+    // if (cardYear < currentYear || cardYear > currentYear + 10) {
+    //   return res.status(400).json({ message: "Invalid or expired card year" });
+    // }
+
+    // Validate CVV
+    if (!/^\d{3,4}$/.test(cvv)) {
+      return res.status(400).json({ message: "CVV must be 3 or 4 digits" });
+    }
+
     // Check if an order already exists for this leadId
     const existingOrder = await Order.findOne({ leadId });
     if (existingOrder) {
@@ -93,29 +107,29 @@ export const createOrder = async (req, res) => {
       isPaused: false,
       status: "Available",
     });
+    console.log("Customer Relations Team:", customerRelationsTeam.map(u => ({ id: u._id, name: u.name })));
 
     if (customerRelationsTeam.length === 0) {
       return res.status(400).json({ message: "No available customer relations team members found" });
     }
 
     // Get or initialize round-robin state for customer relations
-    let roundRobinState = await RoundRobinState.findOne({ type: "customer_relations" });
+    let roundRobinState = await CustomerRelationsRoundRobinState.findOne();
     if (!roundRobinState) {
-      roundRobinState = new RoundRobinState({ type: "customer_relations", currentIndex: 0 });
+      roundRobinState = new CustomerRelationsRoundRobinState({ currentIndex: 0 });
       await roundRobinState.save();
     }
+    console.log("Customer Relations RoundRobinState before assignment:", roundRobinState);
 
-    if (roundRobinState.currentIndex >= customerRelationsTeam.length) {
-      roundRobinState.currentIndex = 0;
-    }
-
+    // Ensure currentIndex is within bounds
     const currentIndex = roundRobinState.currentIndex % customerRelationsTeam.length;
     const customerRelationsPerson = customerRelationsTeam[currentIndex];
+    console.log("Assigned Customer Relations Person:", { id: customerRelationsPerson._id, name: customerRelationsPerson.name });
 
     const order = new Order({
       leadId,
       salesPerson: lead.salesPerson,
-      customerRelationsPerson: customerRelationsPerson._id, // Add customer relations person
+      customerRelationsPerson: customerRelationsPerson._id,
       make,
       model,
       year,
@@ -145,7 +159,7 @@ export const createOrder = async (req, res) => {
     // Create notification for salesperson
     const salesNotification = new Notification({
       recipient: salesPerson._id,
-      message: `Order created for the amount ${formattedAmount} against ${clientName}.`,
+      message: `Order created for ${clientName} for ${formattedAmount}.`,
       type: "order_update",
       order: order._id,
     });
@@ -155,7 +169,7 @@ export const createOrder = async (req, res) => {
     const customerRelationsNotification = new Notification({
       recipient: customerRelationsPerson._id,
       message: `New order assigned: ${clientName} - ${formattedAmount}`,
-      type: "new_order",
+      type: "order_update",
       order: order._id,
     });
     await customerRelationsNotification.save();
@@ -165,10 +179,10 @@ export const createOrder = async (req, res) => {
     const adminNotifications = admins.map((admin) => ({
       recipient: admin._id,
       message: `New order: ${clientName} - ${formattedAmount} assigned to ${customerRelationsPerson.name}`,
-      type: "new_order",
+      type: "order_update",
       order: order._id,
     }));
-    await Notification.insertMany(adminNotifications);
+    const savedAdminNotifications = await Notification.insertMany(adminNotifications);
 
     // Emit notification to salesperson
     io.to(salesPerson._id.toString()).emit("newNotification", {
@@ -196,10 +210,10 @@ export const createOrder = async (req, res) => {
     const now = new Date();
     admins.forEach((admin, index) => {
       io.to(admin._id.toString()).emit("newNotification", {
-        _id: adminNotifications[index]._id.toString(),
+        _id: savedAdminNotifications[index]._id.toString(),
         recipient: admin._id,
-        message: adminNotifications[index].message,
-        type: adminNotifications[index].type,
+        message: savedAdminNotifications[index].message,
+        type: savedAdminNotifications[index].type,
         order: { _id: order._id.toString() },
         createdAt: now.toISOString(),
         isRead: false,
@@ -210,6 +224,23 @@ export const createOrder = async (req, res) => {
     const nextIndex = (currentIndex + 1) % customerRelationsTeam.length;
     roundRobinState.currentIndex = nextIndex;
     await roundRobinState.save();
+    console.log("Updated Customer Relations RoundRobinState:", roundRobinState);
+
+    // Send email to admins
+    // const emailContent = `
+    //   <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
+    //     <h2 style="color: #333;">New Order Created</h2>
+    //     <p><strong>Client Name:</strong> ${clientName}</p>
+    //     <p><strong>Amount:</strong> ${formattedAmount}</p>
+    //     <p><strong>Assigned to:</strong> ${customerRelationsPerson.name}</p>
+    //     <p><strong>Make:</strong> ${make}</p>
+    //     <p><strong>Model:</strong> ${model}</p>
+    //     <p><strong>Year:</strong> ${year}</p>
+    //     <hr>
+    //     <p style="color: gray;">This is an automated email from your CRM system.</p>
+    //   </div>
+    // `;
+    // await sendEmail(ADMIN_EMAIL, "New Order Created", emailContent);
 
     res.status(201).json({ message: "Order created successfully and notifications sent" });
   } catch (error) {
@@ -217,6 +248,8 @@ export const createOrder = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 export const checkOrderByLeadId = async (req, res) => {
   try {
