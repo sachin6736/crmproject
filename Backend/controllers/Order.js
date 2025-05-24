@@ -1,8 +1,9 @@
 import User from '../models/user.js';
 import Lead from "../models/lead.js";
-import { Order } from '../models/order.js';
+import { Order ,Counter} from '../models/order.js';
 import Notification from '../models/notificationSchema.js';
 import { io } from '../socket.js'
+import Vendor from '../models/vendor.js';
 import CustomerRelationsRoundRobinState from '../models/customerRelationsRoundRobinState.js';
 
 export const createOrder = async (req, res) => {
@@ -265,7 +266,7 @@ export const checkOrderByLeadId = async (req, res) => {
     console.error("Error checking order:", error);
     res.status(500).json({ message: "Server error" });
   }
-};
+};///getting salespersonsorder
 
 
   export const getAllOrders = async (req, res) => {
@@ -299,21 +300,127 @@ export const checkOrderByLeadId = async (req, res) => {
 
 
   export const orderbyid = async (req, res) => {
-    console.log("order working")
-    try {
-      const {id} = req.params;
-      console.log("id",id)
-     // Fetch order with populated leadId and salesPerson
-      const order = await Order.findById(id)
-        .populate('leadId') // Populate lead details
-        .populate('salesPerson', 'name email'); // Populate salesperson name and email (adjust fields as needed)
-  
-      if (!order) {
-        return res.status(404).json({ message: 'Order not found' });
-      }
-      res.status(200).json(order);
-    } catch (error) {
-      console.error('Error fetching order:', error);
-      res.status(500).json({ message: 'Server error while fetching order details' });
+  console.log("order working");
+  try {
+    const { id } = req.params;
+    console.log("id", id);
+    // Fetch order with populated leadId, salesPerson, customerRelationsPerson, and vendors
+    const order = await Order.findById(id)
+      .populate('leadId') // Populate lead details
+      .populate('salesPerson', 'name email') // Populate salesperson name and email
+      .populate('customerRelationsPerson', 'name email') // Populate customer relations person
+      .populate('vendors'); // Populate vendor details
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
     }
-  };
+    res.status(200).json(order);
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({ message: 'Server error while fetching order details' });
+  }
+};
+
+
+ export const addVendorToOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const {
+      businessName,
+      phoneNumber,
+      email,
+      agentName,
+      costPrice,
+      shippingCost,
+      corePrice,
+      totalCost,
+      rating = 0,
+      warranty = '',
+      mileage = 0,
+    } = req.body;
+
+    // Validate required fields
+    if (!businessName || !phoneNumber || !email || !agentName || !costPrice || !shippingCost || !corePrice || !totalCost) {
+      return res.status(400).json({ message: 'All required vendor fields must be provided' });
+    }
+
+    // Validate numeric fields
+    if (isNaN(costPrice) || costPrice < 0 || isNaN(shippingCost) || shippingCost < 0 || isNaN(corePrice) || corePrice < 0 || isNaN(totalCost) || totalCost < 0) {
+      return res.status(400).json({ message: 'Cost fields must be non-negative numbers' });
+    }
+
+    // Validate rating
+    if (rating < 0 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 0 and 5' });
+    }
+
+    // Create new vendor
+    const vendor = new Vendor({
+      businessName,
+      phoneNumber,
+      email,
+      agentName,
+      costPrice,
+      shippingCost,
+      corePrice,
+      totalCost,
+      rating,
+      warranty,
+      mileage,
+    });
+
+    // Save vendor
+    await vendor.save();
+
+    // Find order and add vendor to it
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Add vendor ID to order's vendors array
+    order.vendors.push(vendor._id);
+    await order.save();
+
+    // Populate the vendors field in the response
+    const updatedOrder = await Order.findById(orderId).populate('vendors');
+    res.status(201).json({ message: 'Vendor added successfully', order: updatedOrder });
+  } catch (error) {
+    console.error('Error adding vendor to order:', error);
+    res.status(500).json({ message: 'Server error while adding vendor' });
+  }
+};
+
+
+export const addNoteToOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { note } = req.body;
+
+    // Validate note
+    if (!note || typeof note !== 'string' || note.trim() === '') {
+      return res.status(400).json({ message: 'Note is required and must be a non-empty string' });
+    }
+
+    // Find order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Add note to order
+    order.notes.push({ text: note.trim(), createdAt: new Date() });
+    await order.save();
+
+    // Populate relevant fields in the response
+    const updatedOrder = await Order.findById(orderId)
+      .populate('leadId')
+      .populate('salesPerson', 'name email')
+      .populate('customerRelationsPerson', 'name email')
+      .populate('vendors');
+    res.status(201).json({ message: 'Note added successfully', order: updatedOrder });
+  } catch (error) {
+    console.error('Error adding note to order:', error);
+    res.status(500).json({ message: 'Server error while adding note' });
+  }
+};

@@ -56,7 +56,7 @@ const OrderDetails = () => {
           throw new Error("Failed to fetch order data");
         }
         const data = await response.json();
-        console.log("Orderdata", data);
+        console.log("Order data:", data);
         setOrder(data);
       } catch (error) {
         console.error("Error fetching order data:", error);
@@ -104,6 +104,14 @@ const OrderDetails = () => {
         corePrice: "",
         totalCost: "",
       });
+      // Refresh order data to show new vendor
+      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+        credentials: "include",
+      });
+      if (responseOrder.ok) {
+        const data = await responseOrder.json();
+        setOrder(data);
+      }
     } catch (error) {
       console.error("Error submitting vendor details:", error);
       toast.error("Failed to submit vendor details");
@@ -295,9 +303,9 @@ const OrderDetails = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Card Last Four
+                        Card Number
                       </strong>
-                      <span>{order.cardLastFour || "N/A"}</span>
+                      <span>{user?.role === "admin" ? order.cardNumber || "N/A" : "**** **** **** ****"}</span>
                     </div>
                     <div>
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -442,7 +450,7 @@ const OrderDetails = () => {
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
                         Order ID
                       </strong>
-                      <span>{order._id || "N/A"}</span>
+                      <span>{order.order_id|| "N/A"}</span>
                     </div>
                     <div>
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -487,6 +495,104 @@ const OrderDetails = () => {
                       </span>
                     </div>
                   </div>
+                </section>
+
+                {/* Vendor Information */}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+                    Vendor Information
+                  </h3>
+                  {order.vendors && order.vendors.length > 0 ? (
+                    <ul className="space-y-4">
+                      {order.vendors.map((vendor, index) => (
+                        <li
+                          key={vendor._id || index}
+                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100"
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Business Name
+                              </strong>
+                              <span>{vendor.businessName || "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Agent Name
+                              </strong>
+                              <span>{vendor.agentName || "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Phone Number
+                              </strong>
+                              <span>{vendor.phoneNumber || "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Email
+                              </strong>
+                              <span>{vendor.email || "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Cost Price
+                              </strong>
+                              <span>{vendor.costPrice ? `$${vendor.costPrice.toFixed(2)}` : "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Shipping Cost
+                              </strong>
+                              <span>{vendor.shippingCost ? `$${vendor.shippingCost.toFixed(2)}` : "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Core Price
+                              </strong>
+                              <span>{vendor.corePrice ? `$${vendor.corePrice.toFixed(2)}` : "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Total Cost
+                              </strong>
+                              <span>{vendor.totalCost ? `$${vendor.totalCost.toFixed(2)}` : "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Rating
+                              </strong>
+                              <span>{vendor.rating || "0"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Warranty
+                              </strong>
+                              <span>{vendor.warranty || "N/A"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Mileage
+                              </strong>
+                              <span>{vendor.mileage || "0"}</span>
+                            </div>
+                            <div>
+                              <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                Created At
+                              </strong>
+                              <span>
+                                {vendor.createdAt
+                                  ? new Date(vendor.createdAt).toLocaleString()
+                                  : "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-400">No vendor details available</p>
+                  )}
                 </section>
 
                 {/* Notes Section */}
@@ -568,7 +674,7 @@ const OrderDetails = () => {
           <button
             ref={notesButtonRef}
             onClick={() => setShowNotesForm(!showNotesForm)}
-            className="w-full px-6 py-2 bg-[#3b82f6] dark:bg-[#3b82f6] text-white rounded-md hover:bg-blue-600 dark:hover:bg-ue-600 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition-colors"
+            className="w-full px-6 py-2 bg-[#3b82f6] dark:bg-[#3b82f6] text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition-colors"
           >
             Add Note
           </button>

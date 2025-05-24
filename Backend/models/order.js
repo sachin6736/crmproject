@@ -23,7 +23,6 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   customerRelationsPerson: {
-    // New field
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
@@ -111,6 +110,14 @@ const orderSchema = new mongoose.Schema({
     enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
     default: "Pending",
   },
+  vendors: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Vendor",
+  }],
+  notes: [{
+    text: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
