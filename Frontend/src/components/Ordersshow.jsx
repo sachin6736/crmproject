@@ -50,13 +50,25 @@ const OrdersHistory = () => {
     };
     fetchUser();
   }, [navigate]);
+  
+  console.log("User:",user);
+  
 
   useEffect(() => {
     const fetchOrders = async () => {
       setLoadingOrders(true);
       try {
-        const isAdmin = user?.role === "admin";
-        const endpoint = isAdmin ? "/getallorders" : "/getmyorders";
+        let endpoint;
+        if (user?.role === "admin") {
+          endpoint = "/getallorders";
+        } else if (user?.role === "sales") {
+          endpoint = "/getmyorders";
+        } else if (user?.role === "customer_relations") {
+          endpoint = "/getcustomerorders";
+        } else {
+          throw new Error("Unauthorized role");
+        }
+
         const response = await fetch(
           `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}&status=${statusFilter}`,
           { credentials: "include" }
@@ -238,9 +250,7 @@ const OrdersHistory = () => {
                   )}
                 </tbody>
               </table>
-           
-
- )}
+            )}
           </div>
 
           {totalPages > 1 && (

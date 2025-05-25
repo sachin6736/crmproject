@@ -283,7 +283,7 @@ export const checkOrderByLeadId = async (req, res) => {
 
 
   export const getMyOrders = async (req, res,next) => {
-    console.log("etmyordes working")
+    console.log("getmyorders working")
     try {
       //const id = req.user.id; 
       const id = req.user.id
@@ -291,6 +291,22 @@ export const checkOrderByLeadId = async (req, res) => {
       const orders = await Order.find({ salesPerson: id })
         .populate('leadId', 'make model year partRequested clientName email totalCost')
         .populate('salesPerson', 'name email');
+      res.status(200).json(orders);
+    } catch (error) {
+      console.error('Error fetching my orders:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
+
+  export const getCustomerOrders = async (req, res,next) => {
+    console.log("getCustomerorders working")
+    try {
+      //const id = req.user.id; 
+      const id = req.user.id
+      console.log("id",id)
+      const orders = await Order.find({ customerRelationsPerson: id })
+        .populate('leadId', 'make model year partRequested clientName email totalCost')
+        .populate('customerRelationsPerson', 'name email');
       res.status(200).json(orders);
     } catch (error) {
       console.error('Error fetching my orders:', error);
