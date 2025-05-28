@@ -36,7 +36,7 @@ const leadSchema = new mongoose.Schema({
   shippingCost: { type: Number, default: 0 },
   grossProfit: { type: Number, default: 0 },
   totalCost: { type: Number, default: 0 },
-  warranty: { type: Number, default: 0 },
+  warranty: { type: String, default: "0 months" }, // Changed to String
   createdAt: { type: Date, default: Date.now },
 });
 

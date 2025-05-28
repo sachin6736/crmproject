@@ -545,19 +545,19 @@ export const updatecost = async (req, res, next) => {
     }
 
     // Update cost fields
-    lead.partCost = partCost || lead.partCost;
-    lead.shippingCost = shippingCost || lead.shippingCost;
-    lead.grossProfit = grossProfit || lead.grossProfit;
-    lead.warranty = warranty || lead.warranty;
-    lead.totalCost = totalCost || lead.totalCost;
-    console.log("totalcost",lead.totalCost);
+    lead.partCost = partCost !== undefined ? parseFloat(partCost) : lead.partCost;
+    lead.shippingCost = shippingCost !== undefined ? parseFloat(shippingCost) : lead.shippingCost;
+    lead.grossProfit = grossProfit !== undefined ? parseFloat(grossProfit) : lead.grossProfit;
+    lead.warranty = warranty || lead.warranty; // Warranty is now a string
+    lead.totalCost = totalCost !== undefined ? parseFloat(totalCost) : lead.totalCost;
     
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     lead.notes.push({
-      text: `cost updated by  ${userIdentity}                          $ ${lead.totalCost}`,
+      text: `Costs updated by ${userIdentity}.Total:$${lead.totalCost},Warranty:${lead.warranty}`,
       addedBy: userIdentity,
       createdAt: new Date(),
     });
+    
     await lead.save();
     res.status(200).json(lead);
   } catch (error) {
