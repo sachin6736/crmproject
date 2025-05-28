@@ -375,6 +375,8 @@ export const getLeadById = async (req, res, next) => {
     console.log("id of single:", id);
 
     const lead = await Lead.findById(id);
+    console.log("Lead:",lead);
+    
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
     }
@@ -548,9 +550,11 @@ export const updatecost = async (req, res, next) => {
     lead.grossProfit = grossProfit || lead.grossProfit;
     lead.warranty = warranty || lead.warranty;
     lead.totalCost = totalCost || lead.totalCost;
+    console.log("totalcost",lead.totalCost);
+    
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     lead.notes.push({
-      text: `cost updated by ${userIdentity}`,
+      text: `cost updated by  ${userIdentity}                          $ ${lead.totalCost}`,
       addedBy: userIdentity,
       createdAt: new Date(),
     });

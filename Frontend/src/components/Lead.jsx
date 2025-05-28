@@ -98,6 +98,8 @@ const Lead = () => {
       navigate("/home");
     }
   }, [id, navigate]);
+  console.log("Singlelead:",singleLead);
+  
 
   useEffect(() => {
     const part = parseFloat(partCost) || 0;
