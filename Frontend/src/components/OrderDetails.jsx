@@ -11,6 +11,7 @@ const OrderDetails = () => {
   const { theme } = useTheme();
   const [order, setOrder] = useState(null);
   const [user, setUser] = useState(null);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showVendorForm, setShowVendorForm] = useState(false);
   const [vendorForm, setVendorForm] = useState({
@@ -22,9 +23,14 @@ const OrderDetails = () => {
     shippingCost: "",
     corePrice: "",
     totalCost: "",
+    rating: "",
+    warranty: "",
+    mileage: "",
   });
+  const [isNewVendor, setIsNewVendor] = useState(false);
   const [showNotesForm, setShowNotesForm] = useState(false);
   const [notesForm, setNotesForm] = useState({ note: "" });
+  const [hasVendor, setHasVendor] = useState(false);
   const vendorButtonRef = useRef(null);
   const notesButtonRef = useRef(null);
 
@@ -58,6 +64,7 @@ const OrderDetails = () => {
         const data = await response.json();
         console.log("Order data:", data);
         setOrder(data);
+        setHasVendor(data.vendors && data.vendors.length > 0);
       } catch (error) {
         console.error("Error fetching order data:", error);
         toast.error("Failed to load order details");
@@ -67,15 +74,56 @@ const OrderDetails = () => {
       }
     };
 
-    Promise.all([fetchUser(), fetchOrder()]);
+    const fetchVendors = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/Order/getallvendors', {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch vendors");
+        }
+        const data = await response.json();
+        console.log("Vendors data:", data);
+        setVendors(data);
+      } catch (error) {
+        console.error("Error fetching vendors:", error);
+        toast.error("Failed to load vendors");
+      }
+    };
+
+    Promise.all([fetchUser(), fetchOrder(), fetchVendors()]);
   }, [orderId, navigate]);
 
   const handleVendorFormChange = (e) => {
     const { name, value } = e.target;
-    setVendorForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    if (name === "businessName" && !isNewVendor) {
+      const selectedVendor = vendors.find((vendor) => vendor.businessName === value);
+      if (selectedVendor) {
+        setVendorForm({
+          businessName: selectedVendor.businessName || "",
+          phoneNumber: selectedVendor.phoneNumber || "",
+          email: selectedVendor.email || "",
+          agentName: selectedVendor.agentName || "",
+          costPrice: selectedVendor.costPrice || "",
+          shippingCost: selectedVendor.shippingCost || "",
+          corePrice: selectedVendor.corePrice || "",
+          totalCost: selectedVendor.totalCost || "",
+          rating: selectedVendor.rating || "",
+          warranty: selectedVendor.warranty || "",
+          mileage: selectedVendor.mileage || "",
+        });
+      } else {
+        setVendorForm((prev) => ({
+          ...prev,
+          businessName: value,
+        }));
+      }
+    } else {
+      setVendorForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleVendorFormSubmit = async (e) => {
@@ -94,6 +142,7 @@ const OrderDetails = () => {
       }
       toast.success("Vendor details submitted successfully");
       setShowVendorForm(false);
+      setHasVendor(true);
       setVendorForm({
         businessName: "",
         phoneNumber: "",
@@ -103,7 +152,11 @@ const OrderDetails = () => {
         shippingCost: "",
         corePrice: "",
         totalCost: "",
+        rating: "",
+        warranty: "",
+        mileage: "",
       });
+      setIsNewVendor(false);
       // Refresh order data to show new vendor
       const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
         credentials: "include",
@@ -111,6 +164,14 @@ const OrderDetails = () => {
       if (responseOrder.ok) {
         const data = await responseOrder.json();
         setOrder(data);
+      }
+      // Refresh vendor list to include new vendor if added
+      const responseVendors = await fetch('http://localhost:3000/Order/getallvendors', {
+        credentials: "include",
+      });
+      if (responseVendors.ok) {
+        const data = await responseVendors.json();
+        setVendors(data);
       }
     } catch (error) {
       console.error("Error submitting vendor details:", error);
@@ -129,7 +190,11 @@ const OrderDetails = () => {
       shippingCost: "",
       corePrice: "",
       totalCost: "",
+      rating: "",
+      warranty: "",
+      mileage: "",
     });
+    setIsNewVendor(false);
   };
 
   const handleNotesFormChange = (e) => {
@@ -302,7 +367,7 @@ const OrderDetails = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-征求400">
                         Card Number
                       </strong>
                       <span>{user?.role === "admin" ? order.cardNumber || "N/A" : "**** **** **** ****"}</span>
@@ -450,7 +515,7 @@ const OrderDetails = () => {
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
                         Order ID
                       </strong>
-                      <span>{order.order_id|| "N/A"}</span>
+                      <span>{order.order_id || "N/A"}</span>
                     </div>
                     <div>
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -562,7 +627,7 @@ const OrderDetails = () => {
                               <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
                                 Rating
                               </strong>
-                              <span>{vendor.rating || "0"}</span>
+                              <span>{vendor.rating || "N/A"}</span>
                             </div>
                             <div>
                               <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -574,7 +639,7 @@ const OrderDetails = () => {
                               <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
                                 Mileage
                               </strong>
-                              <span>{vendor.mileage || "0"}</span>
+                              <span>{vendor.mileage || "N/A"}</span>
                             </div>
                             <div>
                               <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -664,13 +729,15 @@ const OrderDetails = () => {
           )}
         </div>
         <div className="md:w-80 relative">
-          <button
-            ref={vendorButtonRef}
-            onClick={() => setShowVendorForm(!showVendorForm)}
-            className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-          >
-            Add Vendor Details
-          </button>
+          {!hasVendor && (
+            <button
+              ref={vendorButtonRef}
+              onClick={() => setShowVendorForm(!showVendorForm)}
+              className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+            >
+              Add Vendor Details
+            </button>
+          )}
           <button
             ref={notesButtonRef}
             onClick={() => setShowNotesForm(!showNotesForm)}
@@ -684,19 +751,63 @@ const OrderDetails = () => {
                 Add Vendor Details
               </h3>
               <form onSubmit={handleVendorFormSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                    Business Name
+                <div className="flex gap-4 mb-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="vendorType"
+                      checked={!isNewVendor}
+                      onChange={() => setIsNewVendor(false)}
+                      className="mr-2"
+                    />
+                    Select Existing Vendor
                   </label>
-                  <input
-                    type="text"
-                    name="businessName"
-                    value={vendorForm.businessName}
-                    onChange={handleVendorFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="vendorType"
+                      checked={isNewVendor}
+                      onChange={() => setIsNewVendor(true)}
+                      className="mr-2"
+                    />
+                    Add New Vendor
+                  </label>
                 </div>
+                {!isNewVendor ? (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      Select Vendor
+                    </label>
+                    <select
+                      name="businessName"
+                      value={vendorForm.businessName}
+                      onChange={handleVendorFormChange}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select a vendor</option>
+                      {vendors.map((vendor, index) => (
+                        <option key={vendor._id || index} value={vendor.businessName}>
+                          {vendor.businessName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      Business Name
+                    </label>
+                    <input
+                      type="text"
+                      name="businessName"
+                      value={vendorForm.businessName}
+                      onChange={handleVendorFormChange}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
                     Phone Number
@@ -789,6 +900,49 @@ const OrderDetails = () => {
                     onChange={handleVendorFormChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     step="0.01"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    Rating
+                  </label>
+                  <input
+                    type="number"
+                    name="rating"
+                    value={vendorForm.rating}
+                    onChange={handleVendorFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    Warranty
+                  </label>
+                  <input
+                    type="text"
+                    name="warranty"
+                    value={vendorForm.warranty}
+                    onChange={handleVendorFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    Mileage
+                  </label>
+                  <input
+                    type="number"
+                    name="mileage"
+                    value={vendorForm.mileage}
+                    onChange={handleVendorFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
                     required
                   />
                 </div>

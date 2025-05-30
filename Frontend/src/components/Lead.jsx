@@ -51,7 +51,7 @@ const Lead = () => {
   const [partCost, setPartCost] = useState("");
   const [shippingCost, setShippingCost] = useState("");
   const [grossProfit, setGrossProfit] = useState("");
-  const [warranty, setWarranty] = useState("");
+  const [warranty, setWarranty] = useState("0 months");
   const [totalCost, setTotalCost] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingQuote, setIsSendingQuote] = useState(false);
@@ -82,7 +82,7 @@ const Lead = () => {
         setPartCost(data.partCost?.toString() || "");
         setShippingCost(data.shippingCost?.toString() || "");
         setGrossProfit(data.grossProfit?.toString() || "");
-        setWarranty(data.warranty?.toString() || "");
+        setWarranty(data.warranty || "0 months");
         setTotalCost(data.totalCost?.toString() || "");
       } catch (error) {
         console.error("Error fetching single lead:", error);
@@ -98,8 +98,6 @@ const Lead = () => {
       navigate("/home");
     }
   }, [id, navigate]);
-  console.log("Singlelead:",singleLead);
-  
 
   useEffect(() => {
     const part = parseFloat(partCost) || 0;
@@ -114,8 +112,8 @@ const Lead = () => {
     const part = parseFloat(partCost);
     const shipping = parseFloat(shippingCost);
     const gp = parseFloat(grossProfit);
-    const warrantyCost = parseFloat(warranty);
     const total = parseFloat(totalCost);
+    const warrantyValid = warranty && ["0 months", "3 months", "6 months", "12 months", "24 months"].includes(warranty);
     return (
       !isNaN(part) &&
       part > 0 &&
@@ -123,10 +121,9 @@ const Lead = () => {
       shipping >= 0 &&
       !isNaN(gp) &&
       gp >= 0 &&
-      !isNaN(warrantyCost) &&
-      warrantyCost >= 0 &&
       !isNaN(total) &&
-      total > 0
+      total > 0 &&
+      warrantyValid
     );
   };
 
@@ -259,7 +256,7 @@ const Lead = () => {
 
   const handleSubmitCosts = async () => {
     if (!areCostsValid()) {
-      toast.error("Please fill in all cost fields with valid positive numbers.");
+      toast.error("Please fill in all cost fields with valid positive numbers and a valid warranty.");
       return;
     }
 
@@ -275,7 +272,7 @@ const Lead = () => {
             partCost: parseFloat(partCost),
             shippingCost: parseFloat(shippingCost),
             grossProfit: parseFloat(grossProfit),
-            warranty: parseFloat(warranty),
+            warranty,
             totalCost: parseFloat(totalCost),
           }),
         }
@@ -299,7 +296,7 @@ const Lead = () => {
 
   const handleSendQuote = async () => {
     if (!areCostsValid()) {
-      toast.error("Please add and submit all cost details before sending a quotation.");
+      toast.error("Please add and submit all cost details and a valid warranty before sending a quotation.");
       return;
     }
 
@@ -564,18 +561,20 @@ const Lead = () => {
             </div>
             <div className="w-full flex-shrink-0 flex flex-col items-center justify-center gap-3">
               {[
-                { label: "Part Cost", value: partCost, setter: setPartCost },
+                { label: "Part Cost", value: partCost, setter: setPartCost, type: "number" },
                 {
                   label: "Shipping Cost",
                   value: shippingCost,
                   setter: setShippingCost,
+                  type: "number",
                 },
                 {
                   label: "Gross Profit",
                   value: grossProfit,
                   setter: setGrossProfit,
+                  type: "number",
                 },
-                { label: "Warranty", value: warranty, setter: setWarranty },
+                { label: "Warranty", value: warranty, setter: setWarranty, type: "select" },
                 { label: "Total Cost", value: totalCost, readonly: true },
               ].map((item, index) => (
                 <div
@@ -589,9 +588,21 @@ const Lead = () => {
                     <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
                       {item.value ? `$${item.value}` : "-"}
                     </p>
+                  ) : item.type === "select" ? (
+                    <select
+                      value={warranty}
+                      onChange={(e) => setWarranty(e.target.value)}
+                      className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                    >
+                      {["0 months", "3 months", "6 months", "12 months", "24 months"].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <input
-                      type="number"
+                      type={item.type}
                       value={item.value}
                       onChange={(e) => item.setter(e.target.value)}
                       className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"

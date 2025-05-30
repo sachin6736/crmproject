@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,getAllVendors} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -12,5 +12,7 @@ router.get("/orderbyid/:id",protect ,orderbyid);
 router.get("/checkorderbylead/:leadId", protect, checkOrderByLeadId);
 router.post('/:orderId/vendor', addVendorToOrder);
 router.post('/:orderId/notes', addNoteToOrder);
+
+router.get('/getallvendors',getAllVendors);
 
 export default router;
