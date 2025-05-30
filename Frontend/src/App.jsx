@@ -15,6 +15,7 @@ import OrderForm from './components/Orders';
 import ProtectedRoute from './components/ProtectedRoute';
 import OrdersHistory from './components/Ordersshow';
 import OrderDetails from './components/OrderDetails';
+import AdminStatusLogs from './components/AdminStatusLogs';
 
 function App() {
   const { theme } = useTheme();
@@ -44,6 +45,7 @@ function App() {
           <Route path='/home/order/details/:orderId' element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
           <Route path='/home/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path='/home/salesdashboard' element={<SalesDashboard />} />
+          <Route path='/home/admin/status-logs' element={<ProtectedRoute><AdminStatusLogs /></ProtectedRoute>} />
         </Route>
       </Routes>
     </Router>
