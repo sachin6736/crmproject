@@ -179,6 +179,31 @@ const OrderDetails = () => {
     }
   };
 
+  const handleSendPurchaseOrder = async () => {
+  try {
+    const response = await fetch(`http://localhost:3000/Order/sendpurchaseorder/${orderId}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to send purchase order");
+    }
+    const data = await response.json();
+    toast.success(data.message || "Purchase order sent successfully");
+    // Refresh order data to reflect status change
+    const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+      credentials: "include",
+    });
+    if (responseOrder.ok) {
+      const updatedOrder = await responseOrder.json();
+      setOrder(updatedOrder);
+    }
+  } catch (error) {
+    console.error("Error sending purchase order:", error);
+    toast.error("Failed to send purchase order");
+  }
+};
+
   const closeVendorForm = () => {
     setShowVendorForm(false);
     setVendorForm({
@@ -367,7 +392,7 @@ const OrderDetails = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-征求400">
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
                         Card Number
                       </strong>
                       <span>{user?.role === "admin" ? order.cardNumber || "N/A" : "**** **** **** ****"}</span>
@@ -729,11 +754,18 @@ const OrderDetails = () => {
           )}
         </div>
         <div className="md:w-80 relative">
-          {!hasVendor && (
+          {hasVendor ? (
+            <button
+              onClick={handleSendPurchaseOrder}
+               className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+            >
+              Send Purchase Order
+            </button>
+          ) : (
             <button
               ref={vendorButtonRef}
               onClick={() => setShowVendorForm(!showVendorForm)}
-              className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+              className="w-full px-6 py-2 mb-4 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
             >
               Add Vendor Details
             </button>
