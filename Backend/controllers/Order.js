@@ -271,15 +271,19 @@ export const checkOrderByLeadId = async (req, res) => {
 };///getting ordersbyleadid
 
 
-  export const getAllOrders =  async (req, res) => {
+  export const getAllOrders = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', status = '' } = req.query;
     const query = {};
 
     if (search) {
+      const isNumericSearch = !isNaN(search) && search.trim() !== '';
       query.$or = [
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
         { clientName: { $regex: search, $options: 'i' } },
-        { order_id: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { 'leadId.partRequested': { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -307,26 +311,51 @@ export const checkOrderByLeadId = async (req, res) => {
     console.error('Error fetching orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};//controller to get allorders
+};//Controller for All orders
 
+export const getMyOrders = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', status = '' } = req.query;
+    const id = req.user.id;
+    const query = { salesPerson: id };
 
-  export const getMyOrders = async (req, res,next) => {
-    console.log("getmyorders working")
-    try {
-      //const id = req.user.id; 
-      const id = req.user.id
-      console.log("id",id)
-      const orders = await Order.find({ salesPerson: id })
-        .populate('leadId', 'make model year partRequested clientName email totalCost')
-        .populate('salesPerson', 'name email');
-      res.status(200).json(orders);
-    } catch (error) {
-      console.error('Error fetching my orders:', error);
-      res.status(500).json({ message: 'Server error' });
+    if (search) {
+      const isNumericSearch = !isNaN(search) && search.trim() !== '';
+      query.$or = [
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
+        { clientName: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { 'leadId.partRequested': { $regex: search, $options: 'i' } },
+      ];
     }
-  };//controller to see orders for salespersons
 
-  export const getCustomerOrders = async (req, res) => {
+    if (status) {
+      query.status = status;
+    }
+
+    const orders = await Order.find(query)
+      .populate('leadId', 'make model year partRequested clientName email totalCost')
+      .populate('salesPerson', 'name email')
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    const totalOrders = await Order.countDocuments(query);
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    res.status(200).json({
+      orders,
+      totalPages,
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error('Error fetching my orders:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};//controller for getmyorders
+
+export const getCustomerOrders = async (req, res) => {
   console.log("getCustomerOrders working");
   try {
     const userId = req.user.id;
@@ -335,9 +364,13 @@ export const checkOrderByLeadId = async (req, res) => {
     const query = {};
 
     if (search) {
+      const isNumericSearch = !isNaN(search) && search.trim() !== '';
       query.$or = [
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
         { clientName: { $regex: search, $options: 'i' } },
-        { order_id: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { 'leadId.partRequested': { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -372,8 +405,7 @@ export const checkOrderByLeadId = async (req, res) => {
     console.error('Error fetching customer orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};//controller to get ordersforcustomerrelation
-
+};//controller for customerrelation
 
   export const orderbyid = async (req, res) => {
   console.log("order working");

@@ -58,12 +58,12 @@ const OrdersHistory = () => {
       setLoadingOrders(true);
       try {
         let endpoint;
-        if (user?.role === "admin"  ) {
+        if (user?.role === "admin") {
           endpoint = "/getallorders";
         } else if (user?.role === "sales") {
           endpoint = "/getmyorders";
         } else if (user?.role === "customer_relations") {
-          endpoint = "/getcustomerorders"; // Use getcustomerorders for customer relations
+          endpoint = "/getcustomerorders";
         } else {
           throw new Error("Unauthorized role");
         }
@@ -87,6 +87,8 @@ const OrdersHistory = () => {
     if (user) fetchOrders();
   }, [user, searchQuery, statusFilter, currentPage]);
 
+  console.log("Orders list:", orders);
+
   const handleExportToExcel = () => {
     if (orders.length === 0) {
       toast.error("No orders available to export");
@@ -96,6 +98,8 @@ const OrdersHistory = () => {
     const formattedOrders = orders.map((order) => ({
       OrderID: order.order_id || "N/A",
       ClientName: order.clientName || "N/A",
+      Phone: order.phone || "N/A",
+      Email: order.email || "N/A",
       Date: order.createdAt
         ? new Date(order.createdAt).toLocaleString()
         : "N/A",
@@ -135,7 +139,7 @@ const OrdersHistory = () => {
             <div className="flex items-center space-x-4">
               <input
                 type="text"
-                placeholder="Search by Client Name, Order ID..."
+                placeholder="Search by Client Name, Order ID, Phone, Email, or Part Requested..."
                 className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -182,6 +186,8 @@ const OrdersHistory = () => {
                     {[
                       "Order ID ⬍",
                       "Client Name ⬍",
+                      "Phone ⬍",
+                      "Email ⬍",
                       "Date ⬍",
                       "Part Requested ⬍",
                       "Total Cost ⬍",
@@ -217,6 +223,12 @@ const OrdersHistory = () => {
                           {order.clientName || "N/A"}
                         </td>
                         <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.phone || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.email || "N/A"}
+                        </td>
+                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.createdAt
                             ? new Date(order.createdAt).toLocaleString()
                             : "N/A"}
@@ -244,7 +256,7 @@ const OrdersHistory = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={8}
                         className="text-center py-4 text-gray-900 dark:text-gray-100"
                       >
                         No orders found
