@@ -58,7 +58,7 @@ const OrdersHistory = () => {
       setLoadingOrders(true);
       try {
         let endpoint;
-        if (user?.role === "admin") {
+        if (user?.role === "admin"  ) {
           endpoint = "/getallorders";
         } else if (user?.role === "sales") {
           endpoint = "/getmyorders";
