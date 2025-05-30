@@ -19,6 +19,7 @@ import {
   Bell,
   Menu,
   X,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -170,7 +171,7 @@ function Home() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(data.message || `HTTP error! Status: ${res.status}`);
+        throw new Error(errorData.message || `HTTP error! Status: ${res.status}`);
       }
 
       await fetchUser();
@@ -340,6 +341,15 @@ function Home() {
             {/* <span className='text-white dark:text-gray-100 font-serif text-base md:text-lg'>| Equivise</span> */}
           </div>
           <div className='relative flex items-center space-x-4'>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => navigate('/home/admin/status-logs')}
+                className='w-8 h-8 bg-white dark:bg-gray-700 text-[#066afe] dark:text-gray-100 rounded-full flex items-center justify-center'
+                title='Track User Statuses'
+              >
+                <Clock className='w-5 h-5' />
+              </button>
+            )}
             <ThemeToggle />
             <div className='relative'>
               <button
@@ -454,7 +464,7 @@ function Home() {
                     </div>
                   )}
                 </div>
-                <ul className='py-1 text-sm text-gray-700 dark:text-gray-200'>
+                <ul className='py-1 text-sm text-gray-700 dark:text-white'>
                   <li className='px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'>
                     Profile
                   </li>

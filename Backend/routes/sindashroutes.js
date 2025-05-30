@@ -1,12 +1,14 @@
 import express from 'express';
-import { singleleads ,changestatus } from '../controllers/singledashboard.js';
+import { singleleads ,changestatus , getStatusDurations , getAllUsers } from '../controllers/singledashboard.js';
 import { protect } from '../middleware/authmiddleware.js';
 
 const router = express.Router();
 
 
 router.get('/getsingleleads',protect,singleleads);
-router.post('/changestatus/:id',protect,changestatus)
+router.get('/status-logs/:userId',protect, getStatusDurations);
+router.post('/changestatus/:id',protect,changestatus);
+router.get('/all', getAllUsers);
 
 
 
