@@ -440,3 +440,15 @@ export const addNoteToOrder = async (req, res) => {
     res.status(500).json({ message: 'Server error while adding note' });
   }
 };
+
+
+export const getAllVendors = async (req, res) => {
+    try {
+      const vendors = await Vendor.find();
+      console.log("Vendors list:",vendors);
+      res.status(200).json(vendors);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
