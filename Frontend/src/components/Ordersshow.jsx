@@ -22,7 +22,9 @@ const OrdersHistory = () => {
   const statusTextColors = {
     Delivered: "text-green-600 dark:text-green-400",
     Shipped: "text-blue-600 dark:text-blue-400",
+    Processing: "text-orange-600 dark:text-orange-400",
     Pending: "text-yellow-600 dark:text-yellow-400",
+    Cancelled: "text-red-600 dark:text-red-400",
     default: "text-gray-600 dark:text-gray-400",
   };
 
@@ -50,9 +52,6 @@ const OrdersHistory = () => {
     };
     fetchUser();
   }, [navigate]);
-  
-  console.log("User:",user);
-  
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -64,7 +63,7 @@ const OrdersHistory = () => {
         } else if (user?.role === "sales") {
           endpoint = "/getmyorders";
         } else if (user?.role === "customer_relations") {
-          endpoint = "/getcustomerorders";
+          endpoint = "/getcustomerorders"; // Use getcustomerorders for customer relations
         } else {
           throw new Error("Unauthorized role");
         }
@@ -86,7 +85,7 @@ const OrdersHistory = () => {
       }
     };
     if (user) fetchOrders();
-  }, [user?.role, searchQuery, statusFilter, currentPage]);
+  }, [user, searchQuery, statusFilter, currentPage]);
 
   const handleExportToExcel = () => {
     if (orders.length === 0) {
@@ -201,8 +200,12 @@ const OrdersHistory = () => {
                   {orders.length > 0 ? (
                     orders.map((order, index) => (
                       <tr
-                        key={index}
-                        className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        key={order._id || index}
+                        className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                          order.isOwnOrder && user?.role === "customer_relations"
+                            ? "bg-red-100 dark:bg-red-900"
+                            : ""
+                        }`}
                       >
                         <td
                           className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer whitespace-nowrap"

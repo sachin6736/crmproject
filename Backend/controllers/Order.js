@@ -266,20 +266,46 @@ export const checkOrderByLeadId = async (req, res) => {
     console.error("Error checking order:", error);
     res.status(500).json({ message: "Server error" });
   }
-};///getting salespersonsorder
+};///getting ordersbyleadid
 
 
-  export const getAllOrders = async (req, res) => {
-    try {
-      const orders = await Order.find()
-        .populate('leadId', 'make model year partRequested clientName email totalCost')
-        .populate('salesPerson', 'name email');
-      res.status(200).json(orders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      res.status(500).json({ message: 'Server error' });
+  export const getAllOrders =  async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', status = '' } = req.query;
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { clientName: { $regex: search, $options: 'i' } },
+        { order_id: { $regex: search, $options: 'i' } },
+      ];
     }
-  };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const orders = await Order.find(query)
+      .populate('leadId', 'make model year partRequested clientName email totalCost')
+      .populate('salesPerson', 'name email')
+      .populate('customerRelationsPerson', 'name email')
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    const totalOrders = await Order.countDocuments(query);
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    res.status(200).json({
+      orders,
+      totalPages,
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};//controller to get allorders
 
 
   export const getMyOrders = async (req, res,next) => {
@@ -296,23 +322,55 @@ export const checkOrderByLeadId = async (req, res) => {
       console.error('Error fetching my orders:', error);
       res.status(500).json({ message: 'Server error' });
     }
-  };
+  };//controller to see orders for salespersons
 
-  export const getCustomerOrders = async (req, res,next) => {
-    console.log("getCustomerorders working")
-    try {
-      //const id = req.user.id; 
-      const id = req.user.id
-      console.log("id",id)
-      const orders = await Order.find({ customerRelationsPerson: id })
-        .populate('leadId', 'make model year partRequested clientName email totalCost')
-        .populate('customerRelationsPerson', 'name email');
-      res.status(200).json(orders);
-    } catch (error) {
-      console.error('Error fetching my orders:', error);
-      res.status(500).json({ message: 'Server error' });
+  export const getCustomerOrders = async (req, res) => {
+  console.log("getCustomerOrders working");
+  try {
+    const userId = req.user.id;
+    console.log("id", userId);
+    const { page = 1, limit = 10, search = '', status = '' } = req.query;
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { clientName: { $regex: search, $options: 'i' } },
+        { order_id: { $regex: search, $options: 'i' } },
+      ];
     }
-  };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const orders = await Order.find(query)
+      .populate('leadId', 'make model year partRequested clientName email totalCost')
+      .populate('customerRelationsPerson', 'name email')
+      .populate('salesPerson', 'name email')
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .sort({ customerRelationsPerson: userId ? -1 : 1 }) // Prioritize user's orders
+      .lean();
+
+    // Add isOwnOrder flag to each order
+    const ordersWithFlag = orders.map(order => ({
+      ...order,
+      isOwnOrder: order.customerRelationsPerson?._id.toString() === userId.toString(),
+    }));
+
+    const totalOrders = await Order.countDocuments(query);
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    res.status(200).json({
+      orders: ordersWithFlag,
+      totalPages,
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error('Error fetching customer orders:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};//controller to get ordersforcustomerrelation
 
 
   export const orderbyid = async (req, res) => {
@@ -320,6 +378,7 @@ export const checkOrderByLeadId = async (req, res) => {
   try {
     const { id } = req.params;
     console.log("id", id);
+    const userId = req.user.id
     // Fetch order with populated leadId, salesPerson, customerRelationsPerson, and vendors
     const order = await Order.findById(id)
       .populate('leadId') // Populate lead details
@@ -330,12 +389,32 @@ export const checkOrderByLeadId = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
+    const user = await User.findById(userId).select('name role');
+    if (
+      user &&
+      user.role === 'customer_relations' &&
+      order.customerRelationsPerson &&
+      order.customerRelationsPerson._id.toString() !== userId.toString()
+    ) {
+      // Add a note to the order
+      const noteText = `Order accessed by ${user.name} on ${new Date().toLocaleString('en-US', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })}`;
+      order.notes.push({ text: noteText, createdAt: new Date() });
+      await order.save();
+    }
     res.status(200).json(order);
   } catch (error) {
     console.error('Error fetching order:', error);
     res.status(500).json({ message: 'Server error while fetching order details' });
   }
-};
+};//geting orderdetails by orderid
 
 
  export const addVendorToOrder = async (req, res) => {
