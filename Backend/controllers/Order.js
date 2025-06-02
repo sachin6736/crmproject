@@ -455,6 +455,60 @@ export const getCustomerOrders = async (req, res) => {
   }
 };//controller for customerrelation
 
+export const getProcurementOrders = async (req, res) => {
+  console.log("getProcurementOrders working");
+  try {
+    const userId = req.user.id;
+    console.log("id", userId);
+    const { page = 1, limit = 10, search = '', status = '' } = req.query;
+    const query = { procurementPerson: userId }; // Filter by procurementPerson
+
+    if (search) {
+      const isNumericSearch = !isNaN(search) && search.trim() !== '';
+      query.$or = [
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
+        { clientName: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { 'leadId.partRequested': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (status) {
+      query.status = status;
+    }
+
+    const orders = await Order.find(query)
+      .populate('leadId', 'make model year partRequested clientName email totalCost')
+      .populate('customerRelationsPerson', 'name email')
+      .populate('procurementPerson', 'name email')
+      .populate('salesPerson', 'name email')
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 }) // Sort by creation date, newest first
+      .lean();
+
+    // Add isOwnOrder flag to each order
+    const ordersWithFlag = orders.map(order => ({
+      ...order,
+      isOwnOrder: order.procurementPerson?._id.toString() === userId.toString(),
+    }));
+
+    const totalOrders = await Order.countDocuments(query);
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    res.status(200).json({
+      orders: ordersWithFlag,
+      totalPages,
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error('Error fetching procurement orders:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};// procurement team
+
+
   export const orderbyid = async (req, res) => {
   console.log("order working");
   try {

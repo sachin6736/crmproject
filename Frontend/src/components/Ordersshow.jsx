@@ -64,6 +64,8 @@ const OrdersHistory = () => {
           endpoint = "/getmyorders";
         } else if (user?.role === "customer_relations") {
           endpoint = "/getcustomerorders";
+        } else if (user?.role === "procurement") {
+          endpoint = "/getprocurementorders"; // Corrected assignment and endpoint name
         } else {
           throw new Error("Unauthorized role");
         }
@@ -104,9 +106,7 @@ const OrdersHistory = () => {
         ? new Date(order.createdAt).toLocaleString()
         : "N/A",
       PartRequested: order.leadId?.partRequested || "N/A",
-      TotalCost: order.leadId?.totalCost
-        ? `$${order.leadId.totalCost}`
-        : "N/A",
+      TotalCost: order.leadId?.totalCost ? `$${order.leadId.totalCost}` : "N/A",
       Status: order.status || "N/A",
     }));
 
@@ -208,7 +208,8 @@ const OrdersHistory = () => {
                       <tr
                         key={order._id || index}
                         className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                          order.isOwnOrder && user?.role === "customer_relations"
+                          order.isOwnOrder &&
+                          user?.role === "customer_relations"
                             ? "bg-red-100 dark:bg-red-900"
                             : ""
                         }`}
