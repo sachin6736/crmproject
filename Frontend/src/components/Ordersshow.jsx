@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
 import { useTheme } from "../context/ThemeContext";
+import debounce from "lodash/debounce";
 
 const OrdersHistory = () => {
   const navigate = useNavigate();
@@ -18,6 +19,14 @@ const OrdersHistory = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const itemsPerPage = 10;
+
+  // Debounced search handler
+  const debouncedSearch = useCallback(
+    debounce((value) => {
+      setSearchQuery(value);
+    }, 500),
+    []
+  );
 
   const statusTextColors = {
     Delivered: "text-green-600 dark:text-green-400",
@@ -141,8 +150,7 @@ const OrdersHistory = () => {
                 type="text"
                 placeholder="Search by Client Name, Order ID, Phone, Email, or Part Requested..."
                 className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => debouncedSearch(e.target.value)}
               />
               <select
                 className="border px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
