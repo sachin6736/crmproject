@@ -7,6 +7,7 @@ import Vendor from '../models/vendor.js';
 import { PurchaseOrder } from '../models/purchase.js';
 import sendEmail from '../sendEmail.js';
 import CustomerRelationsRoundRobinState from '../models/customerRelationsRoundRobinState.js';
+import ProcurementRoundRobinState from '../models/procurementRoundRobinState.js';
 
 export const createOrder = async (req, res) => {
   try {
@@ -73,10 +74,6 @@ export const createOrder = async (req, res) => {
     if (cardMonth < 1 || cardMonth > 12) {
       return res.status(400).json({ message: "Invalid card month" });
     }
-    // const currentYear = new Date().getFullYear();
-    // if (cardYear < currentYear || cardYear > currentYear + 10) {
-    //   return res.status(400).json({ message: "Invalid or expired card year" });
-    // }
 
     // Validate CVV
     if (!/^\d{3,4}$/.test(cvv)) {
@@ -116,23 +113,49 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "No available customer relations team members found" });
     }
 
-    // Get or initialize round-robin state for customer relations
-    let roundRobinState = await CustomerRelationsRoundRobinState.findOne();
-    if (!roundRobinState) {
-      roundRobinState = new CustomerRelationsRoundRobinState({ currentIndex: 0 });
-      await roundRobinState.save();
-    }
-    console.log("Customer Relations RoundRobinState before assignment:", roundRobinState);
+    // Find available procurement team members
+    const procurementTeam = await User.find({
+      role: "procurement",
+      isPaused: false,
+      status: "Available",
+    });
+    console.log("Procurement Team:", procurementTeam.map(u => ({ id: u._id, name: u.name })));
 
-    // Ensure currentIndex is within bounds
-    const currentIndex = roundRobinState.currentIndex % customerRelationsTeam.length;
-    const customerRelationsPerson = customerRelationsTeam[currentIndex];
+    if (procurementTeam.length === 0) {
+      return res.status(400).json({ message: "No available procurement team members found" });
+    }
+
+    // Get or initialize round-robin state for customer relations
+    let customerRelationsRoundRobinState = await CustomerRelationsRoundRobinState.findOne();
+    if (!customerRelationsRoundRobinState) {
+      customerRelationsRoundRobinState = new CustomerRelationsRoundRobinState({ currentIndex: 0 });
+      await customerRelationsRoundRobinState.save();
+    }
+    console.log("Customer Relations RoundRobinState before assignment:", customerRelationsRoundRobinState);
+
+    // Get or initialize round-robin state for procurement
+    let procurementRoundRobinState = await ProcurementRoundRobinState.findOne();
+    if (!procurementRoundRobinState) {
+      procurementRoundRobinState = new ProcurementRoundRobinState({ currentIndex: 0 });
+      await procurementRoundRobinState.save();
+    }
+    console.log("Procurement RoundRobinState before assignment:", procurementRoundRobinState);
+
+    // Ensure currentIndex is within bounds for customer relations
+    const customerRelationsIndex = customerRelationsRoundRobinState.currentIndex % customerRelationsTeam.length;
+    const customerRelationsPerson = customerRelationsTeam[customerRelationsIndex];
     console.log("Assigned Customer Relations Person:", { id: customerRelationsPerson._id, name: customerRelationsPerson.name });
+
+    // Ensure currentIndex is within bounds for procurement
+    const procurementIndex = procurementRoundRobinState.currentIndex % procurementTeam.length;
+    const procurementPerson = procurementTeam[procurementIndex];
+    console.log("Assigned Procurement Person:", { id: procurementPerson._id, name: procurementPerson.name });
 
     const order = new Order({
       leadId,
       salesPerson: lead.salesPerson,
       customerRelationsPerson: customerRelationsPerson._id,
+      procurementPerson: procurementPerson._id,
       make,
       model,
       year,
@@ -177,11 +200,20 @@ export const createOrder = async (req, res) => {
     });
     await customerRelationsNotification.save();
 
+    // Create notification for procurement person
+    const procurementNotification = new Notification({
+      recipient: procurementPerson._id,
+      message: `New order assigned: ${clientName} - ${formattedAmount}`,
+      type: "order_update",
+      order: order._id,
+    });
+    await procurementNotification.save();
+
     // Create notifications for admins
     const admins = await User.find({ role: "admin" });
     const adminNotifications = admins.map((admin) => ({
       recipient: admin._id,
-      message: `New order: ${clientName} - ${formattedAmount} assigned to ${customerRelationsPerson.name}`,
+      message: `New order: ${clientName} - ${formattedAmount} assigned to ${customerRelationsPerson.name} (Customer Relations) and ${procurementPerson.name} (Procurement)`,
       type: "order_update",
       order: order._id,
     }));
@@ -209,6 +241,17 @@ export const createOrder = async (req, res) => {
       isRead: customerRelationsNotification.isRead,
     });
 
+    // Emit notification to procurement person
+    io.to(procurementPerson._id.toString()).emit("newNotification", {
+      _id: procurementNotification._id.toString(),
+      recipient: procurementNotification.recipient,
+      message: procurementNotification.message,
+      type: procurementNotification.type,
+      order: { _id: order._id.toString() },
+      createdAt: procurementNotification.createdAt.toISOString(),
+      isRead: procurementNotification.isRead,
+    });
+
     // Emit notifications to admins
     const now = new Date();
     admins.forEach((admin, index) => {
@@ -223,19 +266,24 @@ export const createOrder = async (req, res) => {
       });
     });
 
-    // Update round-robin index
-    const nextIndex = (currentIndex + 1) % customerRelationsTeam.length;
-    roundRobinState.currentIndex = nextIndex;
-    await roundRobinState.save();
-    console.log("Updated Customer Relations RoundRobinState:", roundRobinState);
+    // Update round-robin indices
+    const nextCustomerRelationsIndex = (customerRelationsIndex + 1) % customerRelationsTeam.length;
+    customerRelationsRoundRobinState.currentIndex = nextCustomerRelationsIndex;
+    await customerRelationsRoundRobinState.save();
+    console.log("Updated Customer Relations RoundRobinState:", customerRelationsRoundRobinState);
 
-    // Send email to admins
+    const nextProcurementIndex = (procurementIndex + 1) % procurementTeam.length;
+    procurementRoundRobinState.currentIndex = nextProcurementIndex;
+    await procurementRoundRobinState.save();
+    console.log("Updated Procurement RoundRobinState:", procurementRoundRobinState);
+
     // const emailContent = `
     //   <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
     //     <h2 style="color: #333;">New Order Created</h2>
     //     <p><strong>Client Name:</strong> ${clientName}</p>
     //     <p><strong>Amount:</strong> ${formattedAmount}</p>
-    //     <p><strong>Assigned to:</strong> ${customerRelationsPerson.name}</p>
+    //     <p><strong>Assigned to Customer Relations:</strong> ${customerRelationsPerson.name}</p>
+    //     <p><strong>Assigned to Procurement:</strong> ${procurementPerson.name}</p>
     //     <p><strong>Make:</strong> ${make}</p>
     //     <p><strong>Model:</strong> ${model}</p>
     //     <p><strong>Year:</strong> ${year}</p>

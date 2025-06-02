@@ -26,6 +26,10 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
+  procurementPerson: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
   make: {
     type: String,
     required: true,
