@@ -257,16 +257,20 @@ export const getleads = async (req, res, next) => {
   console.log("getlist controller working");
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
-  const search = req.query.search || "";
+  const search = req.query.search?.trim() || ""; // Trim search input
   const status = req.query.status || "";
 
   const query = {};
-  // Search logic (on clientName, email, phoneNumber)
+
+  // Search logic (on clientName, email, phoneNumber, partRequested, zip)
   if (search) {
+    const isNumericSearch = !isNaN(search) && search !== "";
     query.$or = [
       { clientName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
       { phoneNumber: { $regex: search, $options: "i" } },
+      { partRequested: { $regex: search, $options: "i" } }, // Added partRequested
+      ...(isNumericSearch ? [{ zip: search }] : []), // Exact match for zip if numeric
     ];
   }
 
@@ -281,7 +285,8 @@ export const getleads = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 })
-      .populate("salesPerson", "name");
+      .populate("salesPerson", "name")
+      .lean(); // Use lean for better performance
     console.log("leads", leads);
     res.status(200).json({
       leads,
@@ -289,8 +294,8 @@ export const getleads = async (req, res, next) => {
       currentPage: page,
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json("Error while fetching leads.");
+    console.error("Error fetching leads:", error);
+    res.status(500).json({ message: "Error while fetching leads." });
   }
 };
 
@@ -306,16 +311,19 @@ export const leadbyperson = async (req, res, next) => {
 
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
-  const search = req.query.search || "";
+  const search = req.query.search?.trim() || ""; // Trim search input
   const status = req.query.status || "";
 
   const query = { salesPerson: userId };
 
   if (search) {
+    const isNumericSearch = !isNaN(search) && search !== "";
     query.$or = [
       { clientName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
       { phoneNumber: { $regex: search, $options: "i" } },
+      { partRequested: { $regex: search, $options: "i" } }, // Added partRequested
+      ...(isNumericSearch ? [{ zip: search }] : []), // Exact match for zip if numeric
     ];
   }
 
@@ -328,15 +336,15 @@ export const leadbyperson = async (req, res, next) => {
     const leads = await Lead.find(query)
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ createdAt: -1 });
-
+      .sort({ createdAt: -1 })
+      .lean(); // Use lean for better performance
     res.status(200).json({
       leads,
       totalPages: Math.ceil(totalLeads / limit),
       currentPage: page,
     });
   } catch (error) {
-    console.log("Error fetching user-specific leads:", error);
+    console.error("Error fetching user-specific leads:", error);
     res.status(500).json({ message: "Error while fetching your leads." });
   }
 }; //getting individual leads by each person

@@ -20,14 +20,6 @@ const OrdersHistory = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const itemsPerPage = 10;
 
-  // Debounced search handler
-  const debouncedSearch = useCallback(
-    debounce((value) => {
-      setSearchQuery(value);
-    }, 500),
-    []
-  );
-
   const statusTextColors = {
     Delivered: "text-green-600 dark:text-green-400",
     Shipped: "text-blue-600 dark:text-blue-400",
@@ -37,6 +29,7 @@ const OrdersHistory = () => {
     default: "text-gray-600 dark:text-gray-400",
   };
 
+  // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -62,8 +55,9 @@ const OrdersHistory = () => {
     fetchUser();
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
+  // Debounced fetch orders function
+  const fetchOrders = useCallback(
+    debounce(async (user, searchQuery, statusFilter, currentPage) => {
       setLoadingOrders(true);
       try {
         let endpoint;
@@ -74,18 +68,18 @@ const OrdersHistory = () => {
         } else if (user?.role === "customer_relations") {
           endpoint = "/getcustomerorders";
         } else if (user?.role === "procurement") {
-          endpoint = "/getprocurementorders"; // Corrected assignment and endpoint name
+          endpoint = "/getprocurementorders";
         } else {
           throw new Error("Unauthorized role");
         }
 
         const response = await fetch(
-          `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}&status=${statusFilter}`,
+          `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&status=${statusFilter}`,
           { credentials: "include" }
         );
         if (!response.ok) throw new Error("Failed to fetch orders");
         const data = await response.json();
-        setOrders(data.orders || data);
+        setOrders(data.orders || []);
         setTotalPages(data.totalPages || 1);
         setCurrentPage(data.currentPage || 1);
       } catch (error) {
@@ -94,11 +88,22 @@ const OrdersHistory = () => {
       } finally {
         setLoadingOrders(false);
       }
-    };
-    if (user) fetchOrders();
-  }, [user, searchQuery, statusFilter, currentPage]);
+    }, 500),
+    []
+  );
 
-  console.log("Orders list:", orders);
+  // Trigger fetchOrders when dependencies change
+  useEffect(() => {
+    if (user) {
+      fetchOrders(user, searchQuery, statusFilter, currentPage);
+    }
+    return () => fetchOrders.cancel(); // Cleanup debounce on unmount
+  }, [user, searchQuery, statusFilter, currentPage, fetchOrders]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
   const handleExportToExcel = () => {
     if (orders.length === 0) {
@@ -150,7 +155,7 @@ const OrdersHistory = () => {
                 type="text"
                 placeholder="Search by Client Name, Order ID, Phone, Email, or Part Requested..."
                 className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
-                onChange={(e) => debouncedSearch(e.target.value)}
+                onChange={handleSearchChange}
               />
               <select
                 className="border px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"

@@ -7,6 +7,7 @@ import { exportToExcel } from "./utilities/exportToExcel";
 import { confirmAlert } from "react-confirm-alert";
 import "react-confirm-alert/src/react-confirm-alert.css";
 import { useTheme } from "../context/ThemeContext";
+import { debounce } from "lodash";
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -37,6 +38,31 @@ const LeadTableHeader = () => {
     Ordered: "text-green-600 dark:text-green-400",
     default: "text-gray-600 dark:text-gray-400",
   };
+
+  // Debounced search function
+  const debouncedFetchLeads = useRef(
+    debounce(async (user, searchQuery, statusFilter, currentPage) => {
+      setLoadingLeads(true);
+      try {
+        const isAdmin = user?.role === "admin";
+        const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
+        const response = await fetch(
+          `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&status=${statusFilter}`,
+          { credentials: "include" }
+        );
+        if (!response.ok) throw new Error("Failed to fetch leads");
+        const data = await response.json();
+        setLeads(data.leads);
+        setTotalPages(data.totalPages);
+        setCurrentPage(data.currentPage || 1);
+      } catch (error) {
+        console.error("Error fetching leads:", error);
+        toast.error("Failed to load leads");
+      } finally {
+        setLoadingLeads(false);
+      }
+    }, 500) // 300ms delay
+  ).current;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -88,29 +114,12 @@ const LeadTableHeader = () => {
   }, [user?.role]);
 
   useEffect(() => {
-    const fetchLeads = async () => {
-      setLoadingLeads(true);
-      try {
-        const isAdmin = user?.role === "admin";
-        const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
-        const response = await fetch(
-          `http://localhost:3000/Lead${endpoint}?page=${currentPage}&limit=10&search=${searchQuery}&status=${statusFilter}`,
-          { credentials: "include" }
-        );
-        if (!response.ok) throw new Error("Failed to fetch leads");
-        const data = await response.json();
-        setLeads(data.leads);
-        setTotalPages(data.totalPages);
-        setCurrentPage(data.currentPage || 1);
-      } catch (error) {
-        console.error("Error fetching leads:", error);
-        toast.error("Failed to load leads");
-      } finally {
-        setLoadingLeads(false);
-      }
-    };
-    if (user) fetchLeads();
-  }, [user?.role, searchQuery, statusFilter, currentPage]);
+    if (user) {
+      debouncedFetchLeads(user, searchQuery, statusFilter, currentPage);
+    }
+    // Cleanup debounce on unmount
+    return () => debouncedFetchLeads.cancel();
+  }, [user, searchQuery, statusFilter, currentPage, debouncedFetchLeads]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -280,7 +289,7 @@ const LeadTableHeader = () => {
             <div className="flex items-center space-x-4">
               <input
                 type="text"
-                placeholder="Search by Name, Email, Phone..."
+                placeholder="Search by Name, Email, Phone, Part Requested, or Zip..."
                 className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
