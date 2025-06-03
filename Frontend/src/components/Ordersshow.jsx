@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
@@ -18,24 +18,60 @@ const OrdersHistory = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showOrderStatusDropdown, setShowOrderStatusDropdown] = useState(null); // Track dropdown for each order
   const itemsPerPage = 10;
+  const statusHeaderRef = useRef(null);
+  const orderStatusRefs = useRef({}); // Refs for each order's status dropdown
 
-  // Debounced search handler
+  const statusTextColors = {
+    "Locate Pending": "text-yellow-500 dark:text-yellow-300",
+    "PO Pending": "text-orange-500 dark:text-orange-300",
+    "PO Confirmed": "text-blue-500 dark:text-blue-300",
+    "Vendor Payment Pending": "text-red-500 dark:text-red-300",
+    "Vendor Payment Confirmed": "text-green-500 dark:text-green-300",
+    "Shipping Pending": "text-purple-500 dark:text-purple-300",
+    "Ship Out": "text-indigo-500 dark:text-indigo-300",
+    Instransit: "text-teal-500 dark:text-teal-300",
+    Delivered: "text-green-600 dark:text-green-400",
+    Replacement: "text-pink-500 dark:text-pink-300",
+    default: "text-gray-600 dark:text-gray-400",
+  };
+
   const debouncedSearch = useCallback(
     debounce((value) => {
+      console.log("Debounced search triggered with value:", value);
       setSearchQuery(value);
     }, 500),
     []
   );
 
-  const statusTextColors = {
-    Delivered: "text-green-600 dark:text-green-400",
-    Shipped: "text-blue-600 dark:text-blue-400",
-    Processing: "text-orange-600 dark:text-orange-400",
-    Pending: "text-yellow-600 dark:text-yellow-400",
-    Cancelled: "text-red-600 dark:text-red-400",
-    default: "text-gray-600 dark:text-gray-400",
-  };
+  // Close header status dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        statusHeaderRef.current &&
+        !statusHeaderRef.current.contains(event.target)
+      ) {
+        console.log("Clicked outside, closing header dropdown");
+        setShowStatusDropdown(false);
+      }
+      // Close order status dropdowns
+      if (
+        showOrderStatusDropdown &&
+        !Object.values(orderStatusRefs.current).some((ref) =>
+          ref?.contains(event.target)
+        )
+      ) {
+        console.log("Clicked outside, closing order status dropdown");
+        setShowOrderStatusDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showOrderStatusDropdown]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -74,17 +110,29 @@ const OrdersHistory = () => {
         } else if (user?.role === "customer_relations") {
           endpoint = "/getcustomerorders";
         } else if (user?.role === "procurement") {
-          endpoint = "/getprocurementorders"; // Corrected assignment and endpoint name
+          endpoint = "/getprocurementorders";
         } else {
           throw new Error("Unauthorized role");
         }
 
+        console.log("Fetching orders with params:", {
+          endpoint,
+          currentPage,
+          itemsPerPage,
+          searchQuery,
+          statusFilter,
+        });
+
         const response = await fetch(
-          `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}&status=${statusFilter}`,
+          `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
+            searchQuery
+          )}&status=${encodeURIComponent(statusFilter)}`,
           { credentials: "include" }
         );
-        if (!response.ok) throw new Error("Failed to fetch orders");
+        if (!response.ok)
+          throw new Error(`Failed to fetch orders: ${response.statusText}`);
         const data = await response.json();
+        console.log("Fetched orders data:", data);
         setOrders(data.orders || data);
         setTotalPages(data.totalPages || 1);
         setCurrentPage(data.currentPage || 1);
@@ -97,8 +145,6 @@ const OrdersHistory = () => {
     };
     if (user) fetchOrders();
   }, [user, searchQuery, statusFilter, currentPage]);
-
-  console.log("Orders list:", orders);
 
   const handleExportToExcel = () => {
     if (orders.length === 0) {
@@ -132,6 +178,40 @@ const OrdersHistory = () => {
     navigate(`/home/order/details/${orderId}`);
   };
 
+  const handleStatusSelect = (status) => {
+    console.log("Selected status:", status);
+    setStatusFilter(status);
+    setShowStatusDropdown(false);
+  };
+
+  const handleOrderStatusSelect = async (orderId, newStatus) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/Order/update-status/${orderId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to update order status");
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+      toast.success("Order status updated successfully");
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast.error("Failed to update order status");
+    } finally {
+      setShowOrderStatusDropdown(null);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {loadingUser || loadingOrders ? (
@@ -158,13 +238,22 @@ const OrdersHistory = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">All</option>
-                {Object.keys(statusTextColors)
-                  .filter((key) => key !== "default")
-                  .map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
+                {[
+                  "Locate Pending",
+                  "PO Pending",
+                  "PO Confirmed",
+                  "Vendor Payment Pending",
+                  "Vendor Payment Confirmed",
+                  "Shipping Pending",
+                  "Ship Out",
+                  "Instransit",
+                  "Delivered",
+                  "Replacement",
+                ].map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
               </select>
               {user?.role === "admin" && (
                 <button
@@ -199,7 +288,6 @@ const OrdersHistory = () => {
                       "Date ⬍",
                       "Part Requested ⬍",
                       "Total Cost ⬍",
-                      "Status ⬍",
                     ].map((header, i) => (
                       <th
                         key={i}
@@ -208,6 +296,55 @@ const OrdersHistory = () => {
                         {header}
                       </th>
                     ))}
+                    <th
+                      ref={statusHeaderRef}
+                      className="px-3 md:px-4 py-2 border-b border-gray-300 dark:border-gray-600 whitespace-nowrap relative cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Toggling status dropdown");
+                        setShowStatusDropdown(!showStatusDropdown);
+                      }}
+                    >
+                      Status ⬍
+                      {showStatusDropdown && (
+                        <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-30">
+                          <div
+                            className={`px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 ${
+                              statusFilter === ""
+                                ? "bg-blue-100 dark:bg-blue-600"
+                                : ""
+                            }`}
+                            onClick={() => handleStatusSelect("")}
+                          >
+                            All
+                          </div>
+                          {[
+                            "Locate Pending",
+                            "PO Pending",
+                            "PO Confirmed",
+                            "Vendor Payment Pending",
+                            "Vendor Payment Confirmed",
+                            "Shipping Pending",
+                            "Ship Out",
+                            "Instransit",
+                            "Delivered",
+                            "Replacement",
+                          ].map((status) => (
+                            <div
+                              key={status}
+                              className={`px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 ${
+                                statusFilter === status
+                                  ? "bg-blue-100 dark:bg-blue-600"
+                                  : ""
+                              }`}
+                              onClick={() => handleStatusSelect(status)}
+                            >
+                              {status}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -250,15 +387,56 @@ const OrdersHistory = () => {
                             ? `$${order.leadId.totalCost}`
                             : "N/A"}
                         </td>
-                        <td className="px-3 md:px-4 py-2">
+                        <td
+                          className="px-3 md:px-4 py-2 relative"
+                          ref={(el) => (orderStatusRefs.current[order._id] = el)}
+                          onClick={() =>
+                            setShowOrderStatusDropdown(
+                              showOrderStatusDropdown === order._id
+                                ? null
+                                : order._id
+                            )
+                          }
+                        >
                           <span
-                            className={`font-semibold ${
+                            className={`font-semibold cursor-pointer ${
                               statusTextColors[order.status] ||
                               statusTextColors.default
                             }`}
                           >
                             {order.status || "Unknown"}
                           </span>
+                          {showOrderStatusDropdown === order._id && (
+                            <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-30">
+                              {[
+                                "Locate Pending",
+                                "PO Pending",
+                                "PO Confirmed",
+                                "Vendor Payment Pending",
+                                "Vendor Payment Confirmed",
+                                "Shipping Pending",
+                                "Ship Out",
+                                "Instransit",
+                                "Delivered",
+                                "Replacement",
+                              ].map((status) => (
+                                <div
+                                  key={status}
+                                  className={`px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 ${
+                                    order.status === status
+                                      ? "bg-blue-100 dark:bg-blue-600"
+                                      : ""
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOrderStatusSelect(order._id, status);
+                                  }}
+                                >
+                                  {status}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))

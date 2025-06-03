@@ -111,14 +111,19 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
-    default: "Pending",
+    enum: ["Locate Pending","PO Pending","PO Confirmed","Vendor Payment Pending","Vendor Payment Confirmed","Shipping Pending","Ship Out",
+       "Instransit","Delivered", "Replacement"],
+    default: "Locate Pending",
   },
   vendors: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Vendor",
   }],
   notes: [{
+    text: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+  }],
+  procurementnotes: [{
     text: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
   }],
