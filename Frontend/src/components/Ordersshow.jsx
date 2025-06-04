@@ -255,6 +255,7 @@ const OrdersHistory = () => {
                 {[
                   "Locate Pending",
                   "PO Pending",
+                  "PO Send",
                   "PO Confirmed",
                   "Vendor Payment Pending",
                   "Vendor Payment Confirmed",
@@ -335,6 +336,7 @@ const OrdersHistory = () => {
                           {[
                             "Locate Pending",
                             "PO Pending",
+                            "PO Send",
                             "PO Confirmed",
                             "Vendor Payment Pending",
                             "Vendor Payment Confirmed",
@@ -425,6 +427,7 @@ const OrdersHistory = () => {
                               {[
                                 "Locate Pending",
                                 "PO Pending",
+                                "PO Send",
                                 "PO Confirmed",
                                 "Vendor Payment Pending",
                                 "Vendor Payment Confirmed",

@@ -2,52 +2,59 @@ import mongoose from "mongoose";
 import { Order, Counter } from '../models/order.js'; // Path to order.js in models folder
 import dotenv from 'dotenv';
 
-     dotenv.config();
+dotenv.config();
 
-    //  // Validate MONGODB_URI
-    //  if (!process.env.MONGODB_URI) {
-    //    console.error("❌ MONGODB_URI is not defined in .env file");
-    //    process.exit(1);
-    //  }
-
-     // Connect to MongoDB
-     mongoose
-       .connect("mongodb+srv://sachinpradeepan27:crmtest12345@crmtest.tdj6iar.mongodb.net/?retryWrites=true&w=majority&appName=crmtest")
-       .then(async () => {
-         console.log("✅ Connected to MongoDB");
-         try {
-      // Find orders without procurementnotes
-      const ordersToUpdate = await Order.find({
-        procurementnotes: { $exists: false }
+// Connect to MongoDB
+mongoose
+  .connect("mongodb+srv://sachinpradeepan27:crmtest12345@crmtest.tdj6iar.mongodb.net/?retryWrites=true&w=majority&appName=crmtest")
+  .then(async () => {
+    console.log("✅ Connected to MongoDB");
+    try {
+      // Find orders with invalid status values (not in the updated enum)
+      const validStatuses = [
+        "Locate Pending",
+        "PO Pending",
+        "PO Send",
+        "PO Confirmed",
+        "Vendor Payment Pending",
+        "Vendor Payment Confirmed",
+        "Shipping Pending",
+        "Ship Out",
+        "Instransit",
+        "Delivered",
+        "Replacement"
+      ];
+      const ordersWithInvalidStatus = await Order.find({
+        status: { $nin: validStatuses }
       });
 
-      if (ordersToUpdate.length === 0) {
-        console.log("✅ No orders found needing procurementnotes updates.");
+      if (ordersWithInvalidStatus.length === 0) {
+        console.log("✅ All orders have valid status values.");
         await mongoose.disconnect();
         return;
       }
 
-      console.log(`🔄 Found ${ordersToUpdate.length} orders to update.`);
+      console.log(`🔄 Found ${ordersWithInvalidStatus.length} orders with invalid status values.`);
 
       let modifiedCount = 0;
 
-      // Process each order sequentially
-      for (const order of ordersToUpdate) {
+      // Process each order with invalid status sequentially
+      for (const order of ordersWithInvalidStatus) {
         try {
-          // Initialize procurementnotes as empty array
+          // Set a default status (e.g., "Locate Pending") for invalid statuses
           await Order.updateOne(
             { _id: order._id },
-            { $set: { procurementnotes: [] } }
+            { $set: { status: "Locate Pending" } }
           );
           modifiedCount++;
-          console.log(`✅ Updated order _id: ${order._id} with procurementnotes field`);
+          console.log(`✅ Updated order _id: ${order._id} with status: Locate Pending`);
         } catch (err) {
           console.error(`❌ Error updating order _id: ${order._id}`, err);
         }
       }
 
       console.log(
-        `✅ Successfully updated ${modifiedCount} orders with procurementnotes field.`
+        `✅ Successfully updated ${modifiedCount} orders with valid status.`
       );
     } catch (err) {
       console.error("❌ Error updating orders", err);

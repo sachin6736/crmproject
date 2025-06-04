@@ -111,7 +111,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Locate Pending","PO Pending","PO Confirmed","Vendor Payment Pending","Vendor Payment Confirmed","Shipping Pending","Ship Out",
+    enum: ["Locate Pending","PO Pending","PO Send","PO Confirmed","Vendor Payment Pending","Vendor Payment Confirmed","Shipping Pending","Ship Out",
        "Instransit","Delivered", "Replacement"],
     default: "Locate Pending",
   },

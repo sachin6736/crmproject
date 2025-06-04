@@ -10,13 +10,13 @@ router.get("/getmyorders", protect, getMyOrders); //getting orders by sales team
 router.get("/getcustomerorders", protect, getCustomerOrders); //geting orders by customer realtions team
 router.get("/orderbyid/:id",protect ,orderbyid); // getting single order by id
 router.get("/checkorderbylead/:leadId", protect, checkOrderByLeadId);
-router.post('/:orderId/vendor', addVendorToOrder);
+router.post('/:orderId/vendor',protect, addVendorToOrder);
 router.post('/:orderId/notes', addNoteToOrder);
 router.get('/getprocurementorders',protect,getProcurementOrders);
 
 router.get('/getallvendors',getAllVendors);
 
-router.post('/sendpurchaseorder/:id',sendPurchaseorder);
+router.post('/sendpurchaseorder/:id',protect,sendPurchaseorder);
 
 router.patch('/update-status/:id',protect,changeOrderStatus)
 

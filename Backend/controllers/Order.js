@@ -552,8 +552,8 @@ export const getProcurementOrders = async (req, res) => {
   }
 };//geting orderdetails by orderid
 
-
- export const addVendorToOrder = async (req, res) => {
+//Add vendortoorder
+export const addVendorToOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const {
@@ -611,17 +611,31 @@ export const getProcurementOrders = async (req, res) => {
 
     // Add vendor ID to order's vendors array
     order.vendors.push(vendor._id);
+
+    // Update order status to PO Pending
+    order.status = 'PO Pending';
+
+    // Add note for status change
+    console.log("User",req.user);
+    
+    const userIdentity = req?.user?.name || req?.user?.id || 'Unknown User';
+    order.notes.push({
+      text: `Order status changed to 'PO Pending' by ${userIdentity} after adding vendor`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
+
+    // Save the updated order
     await order.save();
 
     // Populate the vendors field in the response
     const updatedOrder = await Order.findById(orderId).populate('vendors');
-    res.status(201).json({ message: 'Vendor added successfully', order: updatedOrder });
+    res.status(201).json({ message: 'Vendor added successfully and order status set to PO Pending', order: updatedOrder });
   } catch (error) {
     console.error('Error adding vendor to order:', error);
     res.status(500).json({ message: 'Server error while adding vendor' });
   }
 };
-
 
 export const addNoteToOrder = async (req, res) => {
   try {
@@ -824,16 +838,30 @@ export const sendPurchaseorder = async (req, res) => {
     // Send email using the sendEmail utility
     await sendEmail(vendor.email, `Purchase Order for Order ID: ${order.order_id}`, htmlContent);
 
-    // Update order status
-    order.status = "Processing";
+    // Update order status to PO Pending
+    order.status = "PO Send";
+
+    // Add note for status change
+
+    console.log("User",req.user);
+    
+    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+    order.notes.push({
+      text: `Order status changed to 'PO Send' by ${userIdentity} after sending purchase order`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
+
+    // Save the updated order
     await order.save();
 
-    return res.status(200).json({ message: "Purchase order sent successfully" });
+    return res.status(200).json({ message: "Purchase order sent successfully and order status set to PO Pending" });
   } catch (error) {
     console.error("Error sending purchase order:", error);
     return res.status(500).json({ message: "Failed to send purchase order" });
   }
 };
+
 
 //Change order status Controller
 export const changeOrderStatus=async(req,res)=>{
