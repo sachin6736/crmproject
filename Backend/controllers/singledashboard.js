@@ -21,7 +21,7 @@ export const singleleads = async(req,res,next)=>{
 }
 
 
-export const changestatus= async (req, res, next) => {
+export const changestatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -59,21 +59,35 @@ export const changestatus= async (req, res, next) => {
 export const getStatusDurations = async (req, res, next) => {
   try {
     const { userId } = req.params;
-    const { startDate, endDate } = req.query;
+    const { date } = req.query;
 
     // Verify admin access
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
     }
 
-    // Build query
-    const query = { userId };
-    if (startDate && endDate) {
-      query.timestamp = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
+    // Validate date
+    if (!date) {
+      return res.status(400).json({ message: 'Date parameter is required.' });
     }
+
+    const selectedDate = new Date(date);
+    if (isNaN(selectedDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format.' });
+    }
+
+    // Set start and end of the day
+    const startOfDay = new Date(selectedDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(selectedDate.setHours(23, 59, 59, 999));
+
+    // Build query
+    const query = {
+      userId,
+      timestamp: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    };
 
     // Fetch logs
     const logs = await StatusLog.find(query)
@@ -81,7 +95,7 @@ export const getStatusDurations = async (req, res, next) => {
       .lean();
 
     if (!logs.length) {
-      return res.status(200).json({ message: 'No status logs found.', durations: {} });
+      return res.status(200).json({ message: 'No status logs found for the selected date.', durations: {} });
     }
 
     // Calculate durations
@@ -104,8 +118,7 @@ export const getStatusDurations = async (req, res, next) => {
 
     // Last log duration
     const lastLog = logs[logs.length - 1];
-    const endTime = endDate ? new Date(endDate) : new Date();
-    const lastDurationMs = endTime - lastLog.timestamp;
+    const lastDurationMs = endOfDay - lastLog.timestamp;
     if (lastDurationMs > 0) {
       durations[lastLog.status] += lastDurationMs / (1000 * 60 * 60);
     }

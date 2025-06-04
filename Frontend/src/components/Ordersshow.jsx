@@ -73,6 +73,7 @@ const OrdersHistory = () => {
     };
   }, [showOrderStatusDropdown]);
 
+  // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -98,8 +99,9 @@ const OrdersHistory = () => {
     fetchUser();
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
+  // Debounced fetch orders function
+  const fetchOrders = useCallback(
+    debounce(async (user, searchQuery, statusFilter, currentPage) => {
       setLoadingOrders(true);
       try {
         let endpoint;
@@ -132,8 +134,7 @@ const OrdersHistory = () => {
         if (!response.ok)
           throw new Error(`Failed to fetch orders: ${response.statusText}`);
         const data = await response.json();
-        console.log("Fetched orders data:", data);
-        setOrders(data.orders || data);
+        setOrders(data.orders || []);
         setTotalPages(data.totalPages || 1);
         setCurrentPage(data.currentPage || 1);
       } catch (error) {
@@ -142,9 +143,22 @@ const OrdersHistory = () => {
       } finally {
         setLoadingOrders(false);
       }
-    };
-    if (user) fetchOrders();
-  }, [user, searchQuery, statusFilter, currentPage]);
+    }, 500),
+    []
+  );
+
+  // Trigger fetchOrders when dependencies change
+  useEffect(() => {
+    if (user) {
+      fetchOrders(user, searchQuery, statusFilter, currentPage);
+    }
+    return () => fetchOrders.cancel(); // Cleanup debounce on unmount
+  }, [user, searchQuery, statusFilter, currentPage, fetchOrders]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
   const handleExportToExcel = () => {
     if (orders.length === 0) {
@@ -230,7 +244,7 @@ const OrdersHistory = () => {
                 type="text"
                 placeholder="Search by Client Name, Order ID, Phone, Email, or Part Requested..."
                 className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
-                onChange={(e) => debouncedSearch(e.target.value)}
+                onChange={handleSearchChange}
               />
               <select
                 className="border px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
