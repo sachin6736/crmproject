@@ -834,3 +834,34 @@ export const sendPurchaseorder = async (req, res) => {
     return res.status(500).json({ message: "Failed to send purchase order" });
   }
 };
+
+//Change order status Controller
+export const changeOrderStatus=async(req,res)=>{
+  console.log("Edit order status controller working");
+  
+  try{
+  const id=req.params.id;
+  console.log("Id to change order status",id);
+  const {status}=req.body;
+  console.log("newstatus",status);
+  const order=await Order.findById(id);
+   if (!order) {
+      return res.status(404).json({ message: "order not found" });
+    }
+
+    order.status = status;
+   
+    console.log("User Role testing", req.user);
+    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+    order.notes.push({
+      text: `changed to order '${status}' by ${userIdentity}`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
+    await order.save();
+    return res.status(200).json({ message: "Order status updated", order });
+  } catch (error) {
+    console.log("Error updating order status:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}

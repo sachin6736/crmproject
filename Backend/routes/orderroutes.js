@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,getAllVendors,sendPurchaseorder , getProcurementOrders} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,getAllVendors,sendPurchaseorder , getProcurementOrders,changeOrderStatus} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -17,5 +17,7 @@ router.get('/getprocurementorders',protect,getProcurementOrders);
 router.get('/getallvendors',getAllVendors);
 
 router.post('/sendpurchaseorder/:id',sendPurchaseorder);
+
+router.patch('/update-status/:id',protect,changeOrderStatus)
 
 export default router;
