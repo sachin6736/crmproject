@@ -30,12 +30,32 @@ const OrderDetails = () => {
   const [isNewVendor, setIsNewVendor] = useState(false);
   const [showNotesForm, setShowNotesForm] = useState(false);
   const [showProcurementNotesForm, setShowProcurementNotesForm] = useState(false);
+  const [showCostForm, setShowCostForm] = useState(false);
   const [notesForm, setNotesForm] = useState({ note: "" });
   const [procurementNotesForm, setProcurementNotesForm] = useState({ note: "" });
+  const [costForm, setCostForm] = useState({
+    partCost: "",
+    shippingCost: "",
+    grossProfit: "",
+    totalCost: "",
+  });
   const [hasVendor, setHasVendor] = useState(false);
   const vendorButtonRef = useRef(null);
   const notesButtonRef = useRef(null);
   const procurementNotesButtonRef = useRef(null);
+  const costButtonRef = useRef(null);
+
+  // Auto-calculate totalCost when partCost, shippingCost, or grossProfit changes
+  useEffect(() => {
+    const partCost = parseFloat(costForm.partCost) || 0;
+    const shippingCost = parseFloat(costForm.shippingCost) || 0;
+    const grossProfit = parseFloat(costForm.grossProfit) || 0;
+    const calculatedTotalCost = (partCost + shippingCost + grossProfit).toFixed(2);
+    setCostForm((prev) => ({
+      ...prev,
+      totalCost: calculatedTotalCost,
+    }));
+  }, [costForm.partCost, costForm.shippingCost, costForm.grossProfit]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -68,6 +88,12 @@ const OrderDetails = () => {
         console.log("Order data:", data);
         setOrder(data);
         setHasVendor(data.vendors && data.vendors.length > 0);
+        setCostForm({
+          partCost: data.leadId?.partCost || "",
+          shippingCost: data.leadId?.shippingCost || "",
+          grossProfit: data.leadId?.grossProfit || "",
+          totalCost: data.leadId?.totalCost || "",
+        });
       } catch (error) {
         console.error("Error fetching order data:", error);
         toast.error("Failed to load order details");
@@ -238,6 +264,14 @@ const OrderDetails = () => {
     }));
   };
 
+  const handleCostFormChange = (e) => {
+    const { name, value } = e.target;
+    setCostForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleNotesFormSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -298,6 +332,46 @@ const OrderDetails = () => {
     }
   };
 
+  const handleCostFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`http://localhost:3000/Lead/updatecost/${order.leadId._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          partCost: parseFloat(costForm.partCost) || 0,
+          shippingCost: parseFloat(costForm.shippingCost) || 0,
+          grossProfit: parseFloat(costForm.grossProfit) || 0,
+          totalCost: parseFloat(costForm.totalCost) || 0,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update costs");
+      }
+      toast.success("Costs updated successfully");
+      setShowCostForm(false);
+      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+        credentials: "include",
+      });
+      if (responseOrder.ok) {
+        const data = await responseOrder.json();
+        setOrder(data);
+        setCostForm({
+          partCost: data.leadId?.partCost || "",
+          shippingCost: data.leadId?.shippingCost || "",
+          grossProfit: data.leadId?.grossProfit || "",
+          totalCost: data.leadId?.totalCost || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating costs:", error);
+      toast.error("Failed to update costs");
+    }
+  };
+
   const closeNotesForm = () => {
     setShowNotesForm(false);
     setNotesForm({ note: "" });
@@ -306,6 +380,16 @@ const OrderDetails = () => {
   const closeProcurementNotesForm = () => {
     setShowProcurementNotesForm(false);
     setProcurementNotesForm({ note: "" });
+  };
+
+  const closeCostForm = () => {
+    setShowCostForm(false);
+    setCostForm({
+      partCost: order.leadId?.partCost || "",
+      shippingCost: order.leadId?.shippingCost || "",
+      grossProfit: order.leadId?.grossProfit || "",
+      totalCost: order.leadId?.totalCost || "",
+    });
   };
 
   useEffect(() => {
@@ -331,15 +415,22 @@ const OrderDetails = () => {
       ) {
         closeProcurementNotesForm();
       }
+      if (
+        costButtonRef.current &&
+        !costButtonRef.current.contains(event.target) &&
+        !event.target.closest('.cost-form')
+      ) {
+        closeCostForm();
+      }
     };
 
-    if (showVendorForm || showNotesForm || showProcurementNotesForm) {
+    if (showVendorForm || showNotesForm || showProcurementNotesForm || showCostForm) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showVendorForm, showNotesForm, showProcurementNotesForm]);
+  }, [showVendorForm, showNotesForm, showProcurementNotesForm, showCostForm]);
 
   return (
     <div className="p-4 md:p-6 min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -850,6 +941,15 @@ const OrderDetails = () => {
               Add Procurement Note
             </button>
           )}
+          {['procurement', 'admin'].includes(user?.role) && (
+            <button
+              ref={costButtonRef}
+              onClick={() => setShowCostForm(!showCostForm)}
+              className="w-full px-6 py-2 mb-4 bg-yellow-600 dark:bg-yellow-500 text-white rounded-md hover:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
+            >
+              Edit Costs
+            </button>
+          )}
           {showVendorForm && (
             <div className="vendor-form absolute mt-5 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
               <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
@@ -1046,7 +1146,7 @@ const OrderDetails = () => {
                     name="mileage"
                     value={vendorForm.mileage}
                     onChange={handleVendorFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min="0"
                     required
                   />
@@ -1070,7 +1170,7 @@ const OrderDetails = () => {
             </div>
           )}
           {showNotesForm && (
-            <div className="notes-form absolute mt-5 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
+            <div className="notes-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
               <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                 Add Note
               </h3>
@@ -1107,7 +1207,7 @@ const OrderDetails = () => {
             </div>
           )}
           {showProcurementNotesForm && (
-            <div className="procurement-notes-form absolute mt-5 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
+            <div className="procurement-notes-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-100">
               <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                 Add Procurement Note
               </h3>
@@ -1129,6 +1229,93 @@ const OrderDetails = () => {
                   <button
                     type="button"
                     onClick={closeProcurementNotesForm}
+                    className="px-6 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          {showCostForm && (
+            <div className="cost-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-100">
+              <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+                Edit Costs
+              </h3>
+              <form onSubmit={handleCostFormSubmit} className="space-y-2">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                    Part Cost
+                  </label>
+                  <input
+                    type="number"
+                    name="partCost"
+                    value={costForm.partCost}
+                    onChange={handleCostFormChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    placeholder="Enter part cost"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                    Shipping Cost
+                  </label>
+                  <input
+                    type="number"
+                    name="shippingCost"
+                    value={costForm.shippingCost}
+                    onChange={handleCostFormChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    placeholder="Enter shipping cost"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                    Gross Profit
+                  </label>
+                  <input
+                    type="number"
+                    name="grossProfit"
+                    value={costForm.grossProfit}
+                    onChange={handleCostFormChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    placeholder="Enter gross profit"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                    Total Cost
+                  </label>
+                  <input
+                    type="number"
+                    name="totalCost"
+                    value={costForm.totalCost}
+                    onChange={handleCostFormChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    placeholder="Total cost (auto-calculated)"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                <div className="flex justify-between space-x-4">
+                  <button
+                    type="button"
+                    onClick={closeCostForm}
                     className="px-6 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                   >
                     Cancel
