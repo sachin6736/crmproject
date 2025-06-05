@@ -893,3 +893,41 @@ export const changeOrderStatus=async(req,res)=>{
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+//=========================================================procurement notes
+export const addProcurementNote = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { note } = req.body;
+    const user = req.user; // From auth middleware
+
+    // Validate input
+    if (!note || typeof note !== 'string' || note.trim().length === 0) {
+      return res.status(400).json({ message: 'Note is required and must be a non-empty string.' });
+    }
+
+    // Check user role
+    if (!['procurement', 'admin'].includes(user.role)) {
+      return res.status(403).json({ message: 'Unauthorized. Procurement or admin role required.' });
+    }
+
+    // Find and update order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    // Add procurement note
+    order.procurementnotes.push({
+      text: note.trim(),
+      createdAt: new Date(),
+    });
+
+    await order.save();
+
+    res.status(200).json({ message: 'Procurement note added successfully.', order });
+  } catch (error) {
+    console.error('Error adding procurement note:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
