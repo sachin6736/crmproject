@@ -29,10 +29,13 @@ const OrderDetails = () => {
   });
   const [isNewVendor, setIsNewVendor] = useState(false);
   const [showNotesForm, setShowNotesForm] = useState(false);
+  const [showProcurementNotesForm, setShowProcurementNotesForm] = useState(false);
   const [notesForm, setNotesForm] = useState({ note: "" });
+  const [procurementNotesForm, setProcurementNotesForm] = useState({ note: "" });
   const [hasVendor, setHasVendor] = useState(false);
   const vendorButtonRef = useRef(null);
   const notesButtonRef = useRef(null);
+  const procurementNotesButtonRef = useRef(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -157,7 +160,6 @@ const OrderDetails = () => {
         mileage: "",
       });
       setIsNewVendor(false);
-      // Refresh order data to show new vendor
       const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
         credentials: "include",
       });
@@ -165,7 +167,6 @@ const OrderDetails = () => {
         const data = await responseOrder.json();
         setOrder(data);
       }
-      // Refresh vendor list to include new vendor if added
       const responseVendors = await fetch('http://localhost:3000/Order/getallvendors', {
         credentials: "include",
       });
@@ -180,29 +181,28 @@ const OrderDetails = () => {
   };
 
   const handleSendPurchaseOrder = async () => {
-  try {
-    const response = await fetch(`http://localhost:3000/Order/sendpurchaseorder/${orderId}`, {
-      method: "POST",
-      credentials: "include",
-    });
-    if (!response.ok) {
-      throw new Error("Failed to send purchase order");
+    try {
+      const response = await fetch(`http://localhost:3000/Order/sendpurchaseorder/${orderId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send purchase order");
+      }
+      const data = await response.json();
+      toast.success(data.message || "Purchase order sent successfully");
+      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+        credentials: "include",
+      });
+      if (responseOrder.ok) {
+        const updatedOrder = await responseOrder.json();
+        setOrder(updatedOrder);
+      }
+    } catch (error) {
+      console.error("Error sending purchase order:", error);
+      toast.error("Failed to send purchase order");
     }
-    const data = await response.json();
-    toast.success(data.message || "Purchase order sent successfully");
-    // Refresh order data to reflect status change
-    const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-      credentials: "include",
-    });
-    if (responseOrder.ok) {
-      const updatedOrder = await responseOrder.json();
-      setOrder(updatedOrder);
-    }
-  } catch (error) {
-    console.error("Error sending purchase order:", error);
-    toast.error("Failed to send purchase order");
-  }
-};
+  };
 
   const closeVendorForm = () => {
     setShowVendorForm(false);
@@ -230,6 +230,14 @@ const OrderDetails = () => {
     }));
   };
 
+  const handleProcurementNotesFormChange = (e) => {
+    const { name, value } = e.target;
+    setProcurementNotesForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleNotesFormSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -247,7 +255,6 @@ const OrderDetails = () => {
       toast.success("Note added successfully");
       setShowNotesForm(false);
       setNotesForm({ note: "" });
-      // Refresh order data to show new note
       const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
         credentials: "include",
       });
@@ -261,12 +268,46 @@ const OrderDetails = () => {
     }
   };
 
+  const handleProcurementNotesFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`http://localhost:3000/Order/${orderId}/procurementnotes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ note: procurementNotesForm.note }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to submit procurement note");
+      }
+      toast.success("Procurement note added successfully");
+      setShowProcurementNotesForm(false);
+      setProcurementNotesForm({ note: "" });
+      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+        credentials: "include",
+      });
+      if (responseOrder.ok) {
+        const data = await responseOrder.json();
+        setOrder(data);
+      }
+    } catch (error) {
+      console.error("Error submitting procurement note:", error);
+      toast.error("Failed to add procurement note");
+    }
+  };
+
   const closeNotesForm = () => {
     setShowNotesForm(false);
     setNotesForm({ note: "" });
   };
 
-  // Close forms when clicking outside
+  const closeProcurementNotesForm = () => {
+    setShowProcurementNotesForm(false);
+    setProcurementNotesForm({ note: "" });
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -283,15 +324,22 @@ const OrderDetails = () => {
       ) {
         closeNotesForm();
       }
+      if (
+        procurementNotesButtonRef.current &&
+        !procurementNotesButtonRef.current.contains(event.target) &&
+        !event.target.closest('.procurement-notes-form')
+      ) {
+        closeProcurementNotesForm();
+      }
     };
 
-    if (showVendorForm || showNotesForm) {
+    if (showVendorForm || showNotesForm || showProcurementNotesForm) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showVendorForm, showNotesForm]);
+  }, [showVendorForm, showNotesForm, showProcurementNotesForm]);
 
   return (
     <div className="p-4 md:p-6 min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -319,7 +367,6 @@ const OrderDetails = () => {
                 </button>
               </div>
               <div className="space-y-8 text-gray-900 dark:text-gray-100">
-                {/* Customer Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Customer Information
@@ -346,7 +393,6 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
-                {/* Vehicle Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Vehicle Information
@@ -385,7 +431,6 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
-                {/* Payment Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Payment Information
@@ -458,7 +503,6 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
-                {/* Billing Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Billing Information
@@ -493,7 +537,6 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
-                {/* Shipping Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Shipping Information
@@ -530,7 +573,6 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
-                {/* Order Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Order Information
@@ -587,7 +629,6 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
-                {/* Vendor Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Vendor Information
@@ -685,8 +726,7 @@ const OrderDetails = () => {
                   )}
                 </section>
 
-                {/* Notes Section */}
-                <section>
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Notes
                   </h3>
@@ -711,7 +751,31 @@ const OrderDetails = () => {
                   )}
                 </section>
 
-                {/* Card Details (Visible only to admins) */}
+                <section>
+                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+                    Procurement Notes
+                  </h3>
+                  {order.procurementnotes && order.procurementnotes.length > 0 ? (
+                    <ul className="space-y-2">
+                      {order.procurementnotes.map((note, index) => (
+                        <li
+                          key={index}
+                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100"
+                        >
+                          <p>{note.text || note}</p>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {note.createdAt
+                              ? new Date(note.createdAt).toLocaleString()
+                              : "N/A"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-400">No procurement notes available</p>
+                  )}
+                </section>
+
                 {user?.role === "admin" && (
                   <section>
                     <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
@@ -757,7 +821,7 @@ const OrderDetails = () => {
           {hasVendor ? (
             <button
               onClick={handleSendPurchaseOrder}
-               className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+              className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
             >
               Send Purchase Order
             </button>
@@ -773,10 +837,19 @@ const OrderDetails = () => {
           <button
             ref={notesButtonRef}
             onClick={() => setShowNotesForm(!showNotesForm)}
-            className="w-full px-6 py-2 bg-[#3b82f6] dark:bg-[#3b82f6] text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition-colors"
+            className="w-full px-6 py-2 mb-4 bg-[#3b82f6] dark:bg-[#3b82f6] text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition-colors"
           >
             Add Note
           </button>
+          {['procurement', 'admin'].includes(user?.role) && (
+            <button
+              ref={procurementNotesButtonRef}
+              onClick={() => setShowProcurementNotesForm(!showProcurementNotesForm)}
+              className="w-full px-6 py-2 mb-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+            >
+              Add Procurement Note
+            </button>
+          )}
           {showVendorForm && (
             <div className="vendor-form absolute mt-5 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
               <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
@@ -1019,6 +1092,43 @@ const OrderDetails = () => {
                   <button
                     type="button"
                     onClick={closeNotesForm}
+                    className="px-6 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          {showProcurementNotesForm && (
+            <div className="procurement-notes-form absolute mt-5 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
+              <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+                Add Procurement Note
+              </h3>
+              <form onSubmit={handleProcurementNotesFormSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    Procurement Note
+                  </label>
+                  <textarea
+                    name="note"
+                    value={procurementNotesForm.note}
+                    onChange={handleProcurementNotesFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="4"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onClick={closeProcurementNotesForm}
                     className="px-6 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                   >
                     Cancel
