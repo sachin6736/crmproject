@@ -924,7 +924,7 @@ const OrderDetails = () => {
             <button
               ref={procurementNotesButtonRef}
               onClick={() => setShowProcurementNotesForm(!showProcurementNotesForm)}
-              className="w-full px-6 py-2 mb-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+              className="w-full px-6 mt-4 py-2 mb-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
             >
               Add Procurement Note
             </button>
