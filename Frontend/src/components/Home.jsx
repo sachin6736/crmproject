@@ -149,40 +149,53 @@ function Home() {
     }
   };
 
-  const handleStatusChange = async (selectedStatus) => {
-    if (!user?._id) {
-      toast.error('User ID not found');
-      setShowStatusDropdown(false);
+const handleStatusChange = async (selectedStatus) => {
+  if (!user?._id) {
+    toast.error('User ID not found');
+    setShowStatusDropdown(false);
+    return;
+  }
+
+  // Prevent selecting the same status
+  if (selectedStatus === user.status) {
+    toast.info('Status is already set to ' + selectedStatus);
+    setShowStatusDropdown(false);
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `http://localhost:3000/Sales/changestatus/${user._id}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: selectedStatus }),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || `HTTP error! Status: ${res.status}`);
+    }
+
+    // If status is "LoggedOut", proceed with logout
+    if (selectedStatus === 'LoggedOut') {
+      await handleLogout();
       return;
     }
 
-    try {
-      const res = await fetch(
-        `http://localhost:3000/Sales/changestatus/${user._id}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ status: selectedStatus }),
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || `HTTP error! Status: ${res.status}`);
-      }
-
-      await fetchUser();
-      toast.success('Status updated successfully');
-    } catch (err) {
-      console.error('Error changing status:', err);
-      toast.error(err.message || 'Failed to update status');
-    } finally {
-      setShowStatusDropdown(false);
-    }
-  };
+    await fetchUser();
+    toast.success('Status updated successfully');
+  } catch (err) {
+    console.error('Error changing status:', err);
+    toast.error(err.message || 'Failed to update status');
+  } finally {
+    setShowStatusDropdown(false);
+  }
+};
 
   const markNotificationAsRead = async (notificationId) => {
     try {
@@ -464,7 +477,7 @@ function Home() {
                     </div>
                   )}
                 </div>
-                <ul className='py-1 text-sm text-gray-700 dark:text-white'>
+                {/* <ul className='py-1 text-sm text-gray-700 dark:text-white'>
                   <li className='px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'>
                     Profile
                   </li>
@@ -477,7 +490,7 @@ function Home() {
                   >
                     Logout
                   </li>
-                </ul>
+                </ul> */}
               </div>
             )}
           </div>

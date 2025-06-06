@@ -1,6 +1,7 @@
 import User from '../models/user.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import StatusLog from "../models/statusLog.js";
 import sendEmail from "../sendEmail.js";
 
 const JWT_SECRET = process.env.JWT_SECRET 
@@ -36,7 +37,7 @@ export const signup = async(req,res,next)=>{
         console.log("error in sign up",error)
         res.status(500).json({message:"an error occurred during signup",error})
     }
-} /// previos signup logic when user was manully signing up
+} /// previuos signup logic when user was manully signing up
 
 export const createuser = async(req,res,next)=>{
 
@@ -94,36 +95,55 @@ export const createuser = async(req,res,next)=>{
   }
 }
 
-export const login = async (req,res,next)=>{
-    //console.log("login controller working")
-    try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User not found" });
-    
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
-        // Create JWT
-        const token = jwt.sign(
-          { id: user._id, name: user.name, role: user.role, status:user.status },
-          JWT_SECRET,
-          { expiresIn: '7d' }
-        );
-        // Send token in HttpOnly cookie
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-          })
-          .status(200)
-          .json({ message: "Login successful", user: { name: user.name, email: user.email, role: user.role,  } });
-    
-      } catch (error) {
-        console.log("Error",error);
-        res.status(500).json({ message: "Error during login", error });
-      }
-}
+export const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+
+    // Update user status to "Available"
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { status: "Available" },
+      { new: true }
+    ).select("name email role status");
+
+    // Log status change
+    const statusLog = new StatusLog({
+      userId: user._id,
+      status: "Available",
+      timestamp: new Date(),
+    });
+    await statusLog.save();
+
+    // Create JWT
+    const token = jwt.sign(
+      { id: user._id, name: user.name, role: user.role, status: "Available" },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Send token in HttpOnly cookie
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .status(200)
+      .json({
+        message: "Login successful",
+        user: { name: updatedUser.name, email: updatedUser.email, role: updatedUser.role, status: updatedUser.status },
+      });
+  } catch (error) {
+    console.log("Error", error);
+    res.status(500).json({ message: "Error during login", error });
+  }
+};
 
 export const logout = async(req,res,next)=>{
     //console.log("logout working");

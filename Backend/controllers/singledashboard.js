@@ -26,21 +26,17 @@ export const changestatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
     const validstatus = ['Available', 'OnBreak', 'Lunch', 'Meeting', 'LoggedOut'];
-
     if (!validstatus.includes(status)) {
       return res.status(400).json({ message: 'Invalid status value.' });
     }
-
     const user = await User.findByIdAndUpdate(
       id,
       { status },
       { new: true }
     ).select('name email status');
-
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
-
     // Log status change
     const statusLog = new StatusLog({
       userId: id,
@@ -48,7 +44,6 @@ export const changestatus = async (req, res, next) => {
       timestamp: new Date(),
     });
     await statusLog.save();
-
     res.status(200).json({ message: 'Status updated successfully.', user });
   } catch (error) {
     console.error('Error in changing status:', error);
@@ -57,17 +52,21 @@ export const changestatus = async (req, res, next) => {
 };
 
 export const getStatusDurations = async (req, res, next) => {
+  console.log("status count working")
   try {
     const { userId } = req.params;
+    console.log(userId)
     const { date } = req.query;
-
+    console.log("date",date)
     // Verify admin access
     if (req.user.role !== 'admin') {
+      console.log("admin acces")
       return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
     }
 
     // Validate date
     if (!date) {
+      console.log("no date")
       return res.status(400).json({ message: 'Date parameter is required.' });
     }
 
@@ -129,6 +128,7 @@ export const getStatusDurations = async (req, res, next) => {
     });
 
     res.status(200).json({ durations });
+    console.log("durations",durations)
   } catch (error) {
     console.error('Error fetching status durations:', error);
     res.status(500).json({ message: 'Server error.' });
