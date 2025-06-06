@@ -8,7 +8,7 @@ import { io } from '../socket.js'
 
 const ADMIN_EMAIL = "sachinpradeepan27@gmail.com";
 
-// creating leads
+//========================================= creating leads
 export const createleads =  async (req, res, next) => {
   console.log("Lead creation working");
   const errors = validationResult(req);
@@ -142,8 +142,8 @@ export const createleads =  async (req, res, next) => {
   }
 };
 
-
-export const createLeadBySalesperson = async (req, res, next) => {  //manual creation of leads
+//================================================================= //manual creation of leads
+export const createLeadBySalesperson = async (req, res, next) => { 
   console.log("Salesperson creating a lead");
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -253,6 +253,7 @@ export const createLeadBySalesperson = async (req, res, next) => {  //manual cre
   }
 };
 
+//==============================================================getingleads
 export const getleads = async (req, res, next) => {
   console.log("getlist controller working");
   const page = parseInt(req.query.page) || 1;
@@ -299,6 +300,7 @@ export const getleads = async (req, res, next) => {
   }
 };
 
+//===================================================getting leads by salesperson
 export const leadbyperson = async (req, res, next) => {
   console.log("getMyLeads controller working");
 
@@ -349,7 +351,7 @@ export const leadbyperson = async (req, res, next) => {
   }
 }; //getting individual leads by each person
 
-//editing lead status
+//==============================================editing lead status
 export const editstatus = async (req, res, next) => {
   console.log("editstatus working");
   try {
@@ -377,6 +379,7 @@ export const editstatus = async (req, res, next) => {
   }
 };
 
+//======================================leadsbyid
 export const getLeadById = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -396,7 +399,7 @@ export const getLeadById = async (req, res, next) => {
 };
 
 ////===================================================================
-//notes
+
 export const createnotes = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -426,7 +429,7 @@ export const createnotes = async (req, res, next) => {
     console.log(error);
     res.status(500).json({ error: "Error updating notes" });
   }
-}; ///creating notes
+}; 
 
 export const deletenotes = async (req, res, next) => {
   try {
