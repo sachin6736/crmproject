@@ -155,6 +155,9 @@ const OrderDetails = () => {
     }
   };
 
+  // ... other imports and code remain unchanged
+
+
   const handleVendorFormSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -164,7 +167,10 @@ const OrderDetails = () => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(vendorForm),
+        body: JSON.stringify({
+          ...vendorForm,
+          isNewVendor, // Include isNewVendor in the payload
+        }),
       });
       if (!response.ok) {
         throw new Error("Failed to submit vendor details");
@@ -186,6 +192,7 @@ const OrderDetails = () => {
         mileage: "",
       });
       setIsNewVendor(false);
+      // Refresh order data to show new vendor
       const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
         credentials: "include",
       });
@@ -193,6 +200,7 @@ const OrderDetails = () => {
         const data = await responseOrder.json();
         setOrder(data);
       }
+      // Refresh vendor list to include new vendor if added
       const responseVendors = await fetch('http://localhost:3000/Order/getallvendors', {
         credentials: "include",
       });
@@ -206,29 +214,32 @@ const OrderDetails = () => {
     }
   };
 
+
+
   const handleSendPurchaseOrder = async () => {
-    try {
-      const response = await fetch(`http://localhost:3000/Order/sendpurchaseorder/${orderId}`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to send purchase order");
-      }
-      const data = await response.json();
-      toast.success(data.message || "Purchase order sent successfully");
-      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
-      if (responseOrder.ok) {
-        const updatedOrder = await responseOrder.json();
-        setOrder(updatedOrder);
-      }
-    } catch (error) {
-      console.error("Error sending purchase order:", error);
-      toast.error("Failed to send purchase order");
+  try {
+    const response = await fetch(`http://localhost:3000/Order/sendpurchaseorder/${orderId}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to send purchase order");
     }
-  };
+    const data = await response.json();
+    toast.success(data.message || "Purchase order sent successfully");
+    // Refresh order data to reflect status change
+    const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+      credentials: "include",
+    });
+    if (responseOrder.ok) {
+      const updatedOrder = await responseOrder.json();
+      setOrder(updatedOrder);
+    }
+  } catch (error) {
+    console.error("Error sending purchase order:", error);
+    toast.error("Failed to send purchase order");
+  }
+};
 
   const closeVendorForm = () => {
     setShowVendorForm(false);
@@ -289,6 +300,7 @@ const OrderDetails = () => {
       toast.success("Note added successfully");
       setShowNotesForm(false);
       setNotesForm({ note: "" });
+      // Refresh order data to show new note
       const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
         credentials: "include",
       });
@@ -458,6 +470,7 @@ const OrderDetails = () => {
                 </button>
               </div>
               <div className="space-y-8 text-gray-900 dark:text-gray-100">
+                {/* Customer Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Customer Information
@@ -484,6 +497,7 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
+                {/* Vehicle Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Vehicle Information
@@ -522,6 +536,7 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
+                {/* Payment Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Payment Information
@@ -594,6 +609,7 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
+                {/* Billing Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Billing Information
@@ -628,6 +644,7 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
+                {/* Shipping Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Shipping Information
@@ -664,6 +681,7 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
+                {/* Order Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Order Information
@@ -720,6 +738,7 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
+                {/* Vendor Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Vendor Information
@@ -817,7 +836,8 @@ const OrderDetails = () => {
                   )}
                 </section>
 
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                {/* Notes Section */}
+                <section>
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                     Notes
                   </h3>
@@ -842,31 +862,7 @@ const OrderDetails = () => {
                   )}
                 </section>
 
-                <section>
-                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                    Procurement Notes
-                  </h3>
-                  {order.procurementnotes && order.procurementnotes.length > 0 ? (
-                    <ul className="space-y-2">
-                      {order.procurementnotes.map((note, index) => (
-                        <li
-                          key={index}
-                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100"
-                        >
-                          <p>{note.text || note}</p>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {note.createdAt
-                              ? new Date(note.createdAt).toLocaleString()
-                              : "N/A"}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-600 dark:text-gray-400">No procurement notes available</p>
-                  )}
-                </section>
-
+                {/* Card Details (Visible only to admins) */}
                 {user?.role === "admin" && (
                   <section>
                     <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
@@ -912,7 +908,7 @@ const OrderDetails = () => {
           {hasVendor ? (
             <button
               onClick={handleSendPurchaseOrder}
-              className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+               className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
             >
               Send Purchase Order
             </button>
@@ -928,7 +924,7 @@ const OrderDetails = () => {
           <button
             ref={notesButtonRef}
             onClick={() => setShowNotesForm(!showNotesForm)}
-            className="w-full px-6 py-2 mb-4 bg-[#3b82f6] dark:bg-[#3b82f6] text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition-colors"
+            className="w-full px-6 py-2 bg-[#3b82f6] dark:bg-[#3b82f6] text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition-colors"
           >
             Add Note
           </button>
@@ -936,7 +932,7 @@ const OrderDetails = () => {
             <button
               ref={procurementNotesButtonRef}
               onClick={() => setShowProcurementNotesForm(!showProcurementNotesForm)}
-              className="w-full px-6 py-2 mb-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+              className="w-full px-6 mt-4 py-2 mb-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
             >
               Add Procurement Note
             </button>

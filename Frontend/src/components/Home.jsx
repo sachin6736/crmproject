@@ -70,6 +70,7 @@ function Home() {
       setLoading(false);
     }
   };
+  
 
   const fetchNotifications = async () => {
     if (!user?._id) return;
@@ -441,8 +442,11 @@ const handleStatusChange = async (selectedStatus) => {
             {showDropdown && (
               <div className='absolute top-12 right-4 w-48 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2'>
                 <div className='mb-2'>
-                  <label className='text-sm font-semibold block mb-1 text-gray-700 dark:text-gray-200'>
-                    Status
+                  <label className='text-sm font-semibold block mb-1 text-gray-900 dark:text-gray-200'>
+                    {user.name}
+                  </label>
+                  <label className='text-sm font-semibold block mb-1 text-amber-500 dark:text-amber-500'>
+                    {user.role}
                   </label>
                   <div
                     className='w-full border rounded px-2 py-1 text-sm flex items-center justify-between cursor-pointer bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
