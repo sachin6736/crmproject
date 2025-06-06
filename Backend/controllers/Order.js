@@ -568,6 +568,7 @@ export const addVendorToOrder = async (req, res) => {
       rating = 0,
       warranty = '',
       mileage = 0,
+      isNewVendor, // New field to determine if vendor is new or existing
     } = req.body;
 
     // Validate required fields
@@ -576,7 +577,16 @@ export const addVendorToOrder = async (req, res) => {
     }
 
     // Validate numeric fields
-    if (isNaN(costPrice) || costPrice < 0 || isNaN(shippingCost) || shippingCost < 0 || isNaN(corePrice) || corePrice < 0 || isNaN(totalCost) || totalCost < 0) {
+    if (
+      isNaN(costPrice) ||
+      costPrice < 0 ||
+      isNaN(shippingCost) ||
+      shippingCost < 0 ||
+      isNaN(corePrice) ||
+      corePrice < 0 ||
+      isNaN(totalCost) ||
+      totalCost < 0
+    ) {
       return res.status(400).json({ message: 'Cost fields must be non-negative numbers' });
     }
 
@@ -585,39 +595,47 @@ export const addVendorToOrder = async (req, res) => {
       return res.status(400).json({ message: 'Rating must be between 0 and 5' });
     }
 
-    // Create new vendor
-    const vendor = new Vendor({
-      businessName,
-      phoneNumber,
-      email,
-      agentName,
-      costPrice,
-      shippingCost,
-      corePrice,
-      totalCost,
-      rating,
-      warranty,
-      mileage,
-    });
-
-    // Save vendor
-    await vendor.save();
-
-    // Find order and add vendor to it
+    // Find order
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Add vendor ID to order's vendors array
-    order.vendors.push(vendor._id);
+    let vendor;
+
+    if (isNewVendor) {
+      // Create new vendor for new vendor submission
+      vendor = new Vendor({
+        businessName,
+        phoneNumber,
+        email,
+        agentName,
+        costPrice,
+        shippingCost,
+        corePrice,
+        totalCost,
+        rating,
+        warranty,
+        mileage,
+      });
+      await vendor.save();
+    } else {
+      // Find existing vendor by businessName
+      vendor = await Vendor.findOne({ businessName });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Selected vendor not found' });
+      }
+    }
+
+    // Add vendor ID to order's vendors array if not already present
+    if (!order.vendors.includes(vendor._id)) {
+      order.vendors.push(vendor._id);
+    }
 
     // Update order status to PO Pending
     order.status = 'PO Pending';
 
     // Add note for status change
-    console.log("User",req.user);
-    
     const userIdentity = req?.user?.name || req?.user?.id || 'Unknown User';
     order.notes.push({
       text: `Order status changed to 'PO Pending' by ${userIdentity} after adding vendor`,

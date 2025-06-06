@@ -155,6 +155,9 @@ const OrderDetails = () => {
     }
   };
 
+  // ... other imports and code remain unchanged
+
+
   const handleVendorFormSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -164,7 +167,10 @@ const OrderDetails = () => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(vendorForm),
+        body: JSON.stringify({
+          ...vendorForm,
+          isNewVendor, // Include isNewVendor in the payload
+        }),
       });
       if (!response.ok) {
         throw new Error("Failed to submit vendor details");
@@ -207,6 +213,8 @@ const OrderDetails = () => {
       toast.error("Failed to submit vendor details");
     }
   };
+
+
 
   const handleSendPurchaseOrder = async () => {
   try {
