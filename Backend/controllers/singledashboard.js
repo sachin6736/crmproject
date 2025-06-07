@@ -52,32 +52,41 @@ export const changestatus = async (req, res, next) => {
 };
 
 export const getStatusDurations = async (req, res, next) => {
-  console.log("status count working")
+  console.log("status count working");
   try {
     const { userId } = req.params;
-    console.log(userId)
+    console.log(userId);
     const { date } = req.query;
-    console.log("date",date)
+    console.log("date", date);
+
     // Verify admin access
-    if (req.user.role !== 'admin') {
-      console.log("admin acces")
-      return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
+    if (req.user.role !== "admin") {
+      console.log("admin access");
+      return res.status(403).json({ message: "Unauthorized. Admin access required." });
     }
 
     // Validate date
     if (!date) {
-      console.log("no date")
-      return res.status(400).json({ message: 'Date parameter is required.' });
+      console.log("no date");
+      return res.status(400).json({ message: "Date parameter is required." });
     }
 
     const selectedDate = new Date(date);
     if (isNaN(selectedDate.getTime())) {
-      return res.status(400).json({ message: 'Invalid date format.' });
+      return res.status(400).json({ message: "Invalid date format." });
     }
 
     // Set start and end of the day
     const startOfDay = new Date(selectedDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(selectedDate.setHours(23, 59, 59, 999));
+
+    // Determine if the selected date is today
+    const now = new Date();
+    const isToday =
+      selectedDate.getFullYear() === now.getFullYear() &&
+      selectedDate.getMonth() === now.getMonth() &&
+      selectedDate.getDate() === now.getDate();
+    const endTime = isToday ? now : endOfDay;
 
     // Build query
     const query = {
@@ -94,10 +103,10 @@ export const getStatusDurations = async (req, res, next) => {
       .lean();
 
     if (!logs.length) {
-      return res.status(200).json({ message: 'No status logs found for the selected date.', durations: {} });
+      return res.status(200).json({ message: "No status logs found for the selected date.", durations: {} });
     }
 
-    // Calculate durations
+    // Initialize durations
     const durations = {
       Available: 0,
       OnBreak: 0,
@@ -106,6 +115,7 @@ export const getStatusDurations = async (req, res, next) => {
       LoggedOut: 0,
     };
 
+    // Calculate durations for all logs except the last
     for (let i = 0; i < logs.length - 1; i++) {
       const currentLog = logs[i];
       const nextLog = logs[i + 1];
@@ -115,11 +125,17 @@ export const getStatusDurations = async (req, res, next) => {
       }
     }
 
-    // Last log duration
+    // Handle the last log
     const lastLog = logs[logs.length - 1];
-    const lastDurationMs = endOfDay - lastLog.timestamp;
-    if (lastDurationMs > 0) {
-      durations[lastLog.status] += lastDurationMs / (1000 * 60 * 60);
+    if (lastLog.status === "LoggedOut") {
+      // Assign 0 duration for "LoggedOut" status
+      durations[lastLog.status] = 0;
+    } else {
+      // Calculate duration up to endTime (current time for today, endOfDay for past dates)
+      const lastDurationMs = endTime - lastLog.timestamp;
+      if (lastDurationMs > 0) {
+        durations[lastLog.status] += lastDurationMs / (1000 * 60 * 60); // Hours
+      }
     }
 
     // Round to 2 decimal places
@@ -128,10 +144,10 @@ export const getStatusDurations = async (req, res, next) => {
     });
 
     res.status(200).json({ durations });
-    console.log("durations",durations)
+    console.log("durations", durations);
   } catch (error) {
-    console.error('Error fetching status durations:', error);
-    res.status(500).json({ message: 'Server error.' });
+    console.error("Error fetching status durations:", error);
+    res.status(500).json({ message: "Server error." });
   }
 };
 
