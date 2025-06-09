@@ -123,7 +123,7 @@ export const login = async (req, res, next) => {
     const token = jwt.sign(
       { id: user._id, name: user.name, role: user.role, status: "Available" },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "14m" }
     );
 
     // Send token in HttpOnly cookie
@@ -132,7 +132,7 @@ export const login = async (req, res, next) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 14 * 60 * 1000, // 14 minutes in milliseconds
       })
       .status(200)
       .json({
