@@ -857,7 +857,7 @@ export const sendPurchaseorder = async (req, res) => {
     await sendEmail(vendor.email, `Purchase Order for Order ID: ${order.order_id}`, htmlContent);
 
     // Update order status to PO Pending
-    order.status = "PO Send";
+    order.status = "PO Sent";
 
     // Add note for status change
 
@@ -865,7 +865,7 @@ export const sendPurchaseorder = async (req, res) => {
     
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     order.notes.push({
-      text: `Order status changed to 'PO Send' by ${userIdentity} after sending purchase order`,
+      text: `Order status changed to 'PO Sent' by ${userIdentity} after sending purchase order`,
       addedBy: userIdentity,
       createdAt: new Date(),
     });
@@ -947,5 +947,108 @@ export const addProcurementNote = async (req, res) => {
   } catch (error) {
     console.error('Error adding procurement note:', error);
     res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+export const updateOrderDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const {
+      clientName,
+      phone,
+      email,
+      billingAddress,
+      city,
+      state,
+      zip,
+      shippingAddress,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      make,
+      model,
+      year,
+    } = req.body;
+    const user = req.user;
+
+    // Validate user role
+    if (!['customer_relations', 'admin'].includes(user.role)) {
+      return res.status(403).json({ message: 'Unauthorized. Only customer relations or admin can update order details.' });
+    }
+
+    // Find order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Validate required fields
+    if (
+      !clientName || !phone || !email ||
+      !billingAddress || !city || !state || !zip ||
+      !shippingAddress || !shippingCity || !shippingState || !shippingZip ||
+      !make || !model || !year
+    ) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Validate phone format (basic validation, adjust as needed)
+    const phoneRegex = /^\+?\d{10,15}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone number format' });
+    }
+
+    // Validate year
+    const currentYear = new Date().getFullYear();
+    if (isNaN(year) || year < 1900 || year > currentYear + 1) {
+      return res.status(400).json({ message: 'Invalid year' });
+    }
+
+    // Update order details
+    order.clientName = clientName;
+    order.phone = phone;
+    order.email = email;
+    order.billingAddress = billingAddress;
+    order.city = city;
+    order.state = state.toUpperCase();
+    order.zip = zip;
+    order.shippingAddress = shippingAddress;
+    order.shippingCity = shippingCity;
+    order.shippingState = shippingState.toUpperCase();
+    order.shippingZip = shippingZip;
+    order.make = make;
+    order.model = model;
+    order.year = year;
+
+    // Add note for the update
+    const userIdentity = user.name || user.id || 'Unknown User';
+    order.notes.push({
+      text: `Order details updated by ${userIdentity}`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
+
+    // Save updated order
+    await order.save();
+
+    // Fetch updated order with populated fields
+    const updatedOrder = await Order.findById(orderId)
+      .populate('leadId')
+      .populate('salesPerson', 'name email')
+      .populate('customerRelationsPerson', 'name email')
+      .populate('vendors');
+      console.log("Updated order:",updatedOrder);
+      
+
+    res.status(200).json({ message: 'Order details updated successfully', order: updatedOrder });
+  } catch (error) {
+    console.error('Error updating order details:', error);
+    res.status(500).json({ message: 'Server error while updating order details' });
   }
 };

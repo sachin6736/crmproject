@@ -111,8 +111,8 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Locate Pending","PO Pending","PO Send","PO Confirmed","Vendor Payment Pending","Vendor Payment Confirmed","Shipping Pending","Ship Out",
-       "Instransit","Delivered", "Replacement"],
+    enum: ["Locate Pending","PO Pending","PO Sent","PO Confirmed","Vendor Payment Pending","Vendor Payment Confirmed","Shipping Pending","Ship Out",
+       "Intransit","Delivered", "Replacement"],
     default: "Locate Pending",
   },
   vendors: [{

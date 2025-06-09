@@ -10,51 +10,37 @@ mongoose
   .then(async () => {
     console.log("✅ Connected to MongoDB");
     try {
-      // Find orders with invalid status values (not in the updated enum)
-      const validStatuses = [
-        "Locate Pending",
-        "PO Pending",
-        "PO Send",
-        "PO Confirmed",
-        "Vendor Payment Pending",
-        "Vendor Payment Confirmed",
-        "Shipping Pending",
-        "Ship Out",
-        "Instransit",
-        "Delivered",
-        "Replacement"
-      ];
-      const ordersWithInvalidStatus = await Order.find({
-        status: { $nin: validStatuses }
+      // Find orders with "PO Send" status
+      const ordersWithPOSend = await Order.find({
+        status: "PO Send"
       });
 
-      if (ordersWithInvalidStatus.length === 0) {
-        console.log("✅ All orders have valid status values.");
+      if (ordersWithPOSend.length === 0) {
+        console.log("✅ No orders found with 'PO Send' status.");
         await mongoose.disconnect();
         return;
       }
 
-      console.log(`🔄 Found ${ordersWithInvalidStatus.length} orders with invalid status values.`);
+      console.log(`🔄 Found ${ordersWithPOSend.length} orders with 'PO Send' status.`);
 
       let modifiedCount = 0;
 
-      // Process each order with invalid status sequentially
-      for (const order of ordersWithInvalidStatus) {
+      // Update each order with "PO Send" to "PO Sent"
+      for (const order of ordersWithPOSend) {
         try {
-          // Set a default status (e.g., "Locate Pending") for invalid statuses
           await Order.updateOne(
             { _id: order._id },
-            { $set: { status: "Locate Pending" } }
+            { $set: { status: "PO Sent" } }
           );
           modifiedCount++;
-          console.log(`✅ Updated order _id: ${order._id} with status: Locate Pending`);
+          console.log(`✅ Updated order _id: ${order._id} from 'PO Send' to 'PO Sent'`);
         } catch (err) {
           console.error(`❌ Error updating order _id: ${order._id}`, err);
         }
       }
 
       console.log(
-        `✅ Successfully updated ${modifiedCount} orders with valid status.`
+        `✅ Successfully updated ${modifiedCount} orders to 'PO Sent' status.`
       );
     } catch (err) {
       console.error("❌ Error updating orders", err);
