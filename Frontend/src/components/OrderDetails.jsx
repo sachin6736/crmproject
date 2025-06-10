@@ -206,7 +206,7 @@ const OrderDetails = () => {
       if (!response.ok) {
         throw new Error("Failed to submit vendor details");
       }
-      toast.success("Vendor details submitted successfully");
+      toast.success("Vendor details submitted successfully and status changed to PO Pending");
       setShowVendorForm(false);
       setHasVendor(true);
       setVendorForm({
@@ -573,24 +573,24 @@ const OrderDetails = () => {
                 {/* Customer Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                    Customer Information
+                    Personal Details
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Client Name
+                        Customer Name
                       </strong>
                       <span>{order.clientName || "N/A"}</span>
                     </div>
                     <div>
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Phone
+                       Phone
                       </strong>
                       <span>{order.phone || "N/A"}</span>
                     </div>
                     <div>
                       <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Email
+                      Email
                       </strong>
                       <span>{order.email || "N/A"}</span>
                     </div>
@@ -1080,7 +1080,7 @@ const OrderDetails = () => {
             <button
               ref={editOrderButtonRef}
               onClick={() => setShowEditOrderForm(!showEditOrderForm)}
-              className="w-full px-6 py-2 mt-4 mb-4 bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
+              className="w-full px-6 py-2 mt-1 mb-4 bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
             >
               Edit Order Details
             </button>

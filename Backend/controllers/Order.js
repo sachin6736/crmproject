@@ -105,7 +105,7 @@ export const createOrder = async (req, res) => {
     const customerRelationsTeam = await User.find({
       role: "customer_relations",
       isPaused: false,
-      status: "Available",
+      // status: "Available",
     });
     console.log("Customer Relations Team:", customerRelationsTeam.map(u => ({ id: u._id, name: u.name })));
 
@@ -117,7 +117,7 @@ export const createOrder = async (req, res) => {
     const procurementTeam = await User.find({
       role: "procurement",
       isPaused: false,
-      status: "Available",
+      // status: "Available",
     });
     console.log("Procurement Team:", procurementTeam.map(u => ({ id: u._id, name: u.name })));
 
@@ -873,7 +873,7 @@ export const sendPurchaseorder = async (req, res) => {
     // Save the updated order
     await order.save();
 
-    return res.status(200).json({ message: "Purchase order sent successfully and order status set to PO Pending" });
+    return res.status(200).json({ message: "Purchase order sent successfully and order status set to PO Sent" });
   } catch (error) {
     console.error("Error sending purchase order:", error);
     return res.status(500).json({ message: "Failed to send purchase order" });
