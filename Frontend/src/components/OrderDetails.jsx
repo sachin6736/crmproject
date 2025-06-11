@@ -4,7 +4,7 @@ import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "../context/ThemeContext";
-import EmailPreviewModal from "./orderdetails/EmailPreviewModal";
+import EmailPreviewModal from "../components/orderdetails/EmailPreviewModal";
 import { exportToExcel } from "./utilities/exportToExcel";
 
 
