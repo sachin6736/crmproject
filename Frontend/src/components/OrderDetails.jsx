@@ -4,6 +4,9 @@ import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "../context/ThemeContext";
+import EmailPreviewModal from "./orderdetails/EmailPreviewModal";
+import { exportToExcel } from "./utilities/exportToExcel";
+
 
 const OrderDetails = () => {
   const { orderId } = useParams();
@@ -62,6 +65,8 @@ const OrderDetails = () => {
   const procurementNotesButtonRef = useRef(null);
   const costButtonRef = useRef(null);
   const editOrderButtonRef = useRef(null);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [emailContent, setEmailContent] = useState("");
 
   // Auto-calculate totalCost when partCost, shippingCost, or grossProfit changes
   useEffect(() => {
@@ -78,18 +83,18 @@ const OrderDetails = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('http://localhost:3000/User/me', {
-          credentials: 'include',
+        const res = await fetch("http://localhost:3000/User/me", {
+          credentials: "include",
         });
         if (!res.ok) {
           throw new Error(`HTTP error! Status: ${res.status}`);
         }
         const data = await res.json();
-        console.log('Fetched user data:', data);
+        console.log("Fetched user data:", data);
         setUser(data.user);
       } catch (err) {
-        console.error('Error fetching user info:', err);
-        toast.error('Failed to load user data');
+        console.error("Error fetching user info:", err);
+        toast.error("Failed to load user data");
       }
     };
 
@@ -139,7 +144,7 @@ const OrderDetails = () => {
 
     const fetchVendors = async () => {
       try {
-        const response = await fetch('http://localhost:3000/Order/getallvendors', {
+        const response = await fetch("http://localhost:3000/Order/getallvendors", {
           credentials: "include",
         });
         if (!response.ok) {
@@ -230,7 +235,7 @@ const OrderDetails = () => {
         const data = await responseOrder.json();
         setOrder(data);
       }
-      const responseVendors = await fetch('http://localhost:3000/Order/getallvendors', {
+      const responseVendors = await fetch("http://localhost:3000/Order/getallvendors", {
         credentials: "include",
       });
       if (responseVendors.ok) {
@@ -245,25 +250,36 @@ const OrderDetails = () => {
 
   const handleSendPurchaseOrder = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/Order/sendpurchaseorder/${orderId}`, {
-        method: "POST",
+      const response = await fetch(`http://localhost:3000/Order/preview-purchase-order/${orderId}`, {
+        method: "GET",
         credentials: "include",
       });
       if (!response.ok) {
-        throw new Error("Failed to send purchase order");
+        throw new Error("Failed to fetch email preview");
       }
       const data = await response.json();
-      toast.success(data.message || "Purchase order sent successfully");
-      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+      setEmailContent(data.htmlContent);
+      setShowEmailPreview(true);
+    } catch (error) {
+      console.error("Error fetching email preview:", error);
+      toast.error("Failed to load email preview");
+    }
+  };
+
+  const handlePurchaseOrderSent = async () => {
+    setShowEmailPreview(false);
+    try {
+      const response = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
         credentials: "include",
       });
-      if (responseOrder.ok) {
-        const updatedOrder = await responseOrder.json();
-        setOrder(updatedOrder);
+      if (!response.ok) {
+        throw new Error("Failed to refresh order data");
       }
+      const updatedOrder = await response.json();
+      setOrder(updatedOrder);
     } catch (error) {
-      console.error("Error sending purchase order:", error);
-      toast.error("Failed to send purchase order");
+      console.error("Error refreshing order:", error);
+      toast.error("Failed to refresh order details");
     }
   };
 
@@ -476,6 +492,75 @@ const OrderDetails = () => {
       totalCost: order.leadId?.totalCost || "",
     });
   };
+const handleExportToExcel = () => {
+  if (!order) {
+    toast.error("No order available to export");
+    return;
+  }
+
+  const formattedOrder = [
+    { Field: "Order ID", Value: order.order_id || "N/A" },
+    { Field: "Client Name", Value: order.clientName || "N/A" },
+    { Field: "Phone", Value: order.phone || "N/A" },
+    { Field: "Email", Value: order.email || "N/A" },
+    { Field: "Billing Address", Value: order.billingAddress || "N/A" },
+    { Field: "City", Value: order.city || "N/A" },
+    { Field: "State", Value: order.state?.toUpperCase() || "N/A" },
+    { Field: "Zip", Value: order.zip || "N/A" },
+    { Field: "Shipping Address", Value: order.shippingAddress || "N/A" },
+    { Field: "Shipping City", Value: order.shippingCity || "N/A" },
+    { Field: "Shipping State", Value: order.shippingState?.toUpperCase() || "N/A" },
+    { Field: "Shipping Zip", Value: order.shippingZip || "N/A" },
+    { Field: "Make", Value: order.make || "N/A" },
+    { Field: "Model", Value: order.model || "N/A" },
+    { Field: "Year", Value: order.year || "N/A" },
+    { Field: "Trim", Value: order.leadId?.trim || "N/A" },
+    { Field: "Part Requested", Value: order.leadId?.partRequested || "N/A" },
+    { Field: "Part Cost", Value: order.leadId?.partCost ? `$${order.leadId.partCost.toFixed(2)}` : "N/A" },
+    { Field: "Shipping Cost", Value: order.leadId?.shippingCost ? `$${order.leadId.shippingCost.toFixed(2)}` : "N/A" },
+    { Field: "Gross Profit", Value: order.leadId?.grossProfit ? `$${order.leadId.grossProfit.toFixed(2)}` : "N/A" },
+    { Field: "Total Cost", Value: order.leadId?.totalCost ? `$${order.leadId.totalCost.toFixed(2)}` : "N/A" },
+    { Field: "Amount", Value: order.amount ? `$${order.amount.toFixed(2)}` : "N/A" },
+    { Field: "Order Status", Value: order.status || "N/A" },
+    { Field: "Lead Status", Value: order.leadId?.status || "N/A" },
+    { Field: "Sales Person", Value: order.salesPerson?.name || order.salesPerson?._id || "N/A" },
+    { Field: "Order Created At", Value: order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A" },
+    { Field: "Lead Created At", Value: order.leadId?.createdAt ? new Date(order.leadId.createdAt).toLocaleString() : "N/A" },
+    // Vendor Details
+    ...(order.vendors?.length > 0
+      ? order.vendors.flatMap((vendor, index) => [
+          { Field: `Vendor ${index + 1} Business Name`, Value: vendor.businessName || "N/A" },
+          { Field: `Vendor ${index + 1} Agent Name`, Value: vendor.agentName || "N/A" },
+          { Field: `Vendor ${index + 1} Phone Number`, Value: vendor.phoneNumber || "N/A" },
+          { Field: `Vendor ${index + 1} Email`, Value: vendor.email || "N/A" },
+          { Field: `Vendor ${index + 1} Cost Price`, Value: vendor.costPrice ? `$${vendor.costPrice.toFixed(2)}` : "N/A" },
+          { Field: `Vendor ${index + 1} Shipping Cost`, Value: vendor.shippingCost ? `$${vendor.shippingCost.toFixed(2)}` : "N/A" },
+          { Field: `Vendor ${index + 1} Core Price`, Value: vendor.corePrice ? `$${vendor.corePrice.toFixed(2)}` : "N/A" },
+          { Field: `Vendor ${index + 1} Total Cost`, Value: vendor.totalCost ? `$${vendor.totalCost.toFixed(2)}` : "N/A" },
+          { Field: `Vendor ${index + 1} Rating`, Value: vendor.rating || "N/A" },
+          { Field: `Vendor ${index + 1} Warranty`, Value: vendor.warranty || "N/A" },
+          { Field: `Vendor ${index + 1} Mileage`, Value: vendor.mileage || "N/A" },
+          { Field: `Vendor ${index + 1} Created At`, Value: vendor.createdAt ? new Date(vendor.createdAt).toLocaleString() : "N/A" },
+        ])
+      : [{ Field: "Vendor", Value: "No vendor details available" }]),
+    // Admin-only card details
+    ...(user?.role === "admin"
+      ? [
+          { Field: "Card Number", Value: order.cardNumber || "N/A" },
+          { Field: "Card Expiry", Value: order.cardMonth && order.cardYear ? `${order.cardMonth}/${order.cardYear}` : "N/A" },
+          { Field: "Card CVV", Value: order.cvv || "N/A" },
+        ]
+      : []),
+  ];
+
+  try {
+    exportToExcel(formattedOrder, `order_${order.order_id || "details"}.xlsx`);
+    toast.success("Order exported to Excel successfully");
+  } catch (error) {
+    toast.error("Error exporting order to Excel");
+    console.error("Error exporting to Excel:", error);
+  }
+};
 
   const closeEditOrderForm = () => {
     setShowEditOrderForm(false);
@@ -502,45 +587,45 @@ const OrderDetails = () => {
       if (
         vendorButtonRef.current &&
         !vendorButtonRef.current.contains(event.target) &&
-        !event.target.closest('.vendor-form')
+        !event.target.closest(".vendor-form")
       ) {
         closeVendorForm();
       }
       if (
         notesButtonRef.current &&
         !notesButtonRef.current.contains(event.target) &&
-        !event.target.closest('.notes-form')
+        !event.target.closest(".notes-form")
       ) {
         closeNotesForm();
       }
       if (
         procurementNotesButtonRef.current &&
         !procurementNotesButtonRef.current.contains(event.target) &&
-        !event.target.closest('.procurement-notes-form')
+        !event.target.closest(".procurement-notes-form")
       ) {
         closeProcurementNotesForm();
       }
       if (
         costButtonRef.current &&
         !costButtonRef.current.contains(event.target) &&
-        !event.target.closest('.cost-form')
+        !event.target.closest(".cost-form")
       ) {
         closeCostForm();
       }
       if (
         editOrderButtonRef.current &&
         !editOrderButtonRef.current.contains(event.target) &&
-        !event.target.closest('.edit-order-form')
+        !event.target.closest(".edit-order-form")
       ) {
         closeEditOrderForm();
       }
     };
 
     if (showVendorForm || showNotesForm || showProcurementNotesForm || showCostForm || showEditOrderForm) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showVendorForm, showNotesForm, showProcurementNotesForm, showCostForm, showEditOrderForm]);
 
@@ -1025,49 +1110,49 @@ const OrderDetails = () => {
               </div>
             </div>
           ) : (
-            <p className="text-gray-900 dark:text-gray-100 text-center">
+            <p className="text-gray-900 dark:text-gray-300 text-center">
               No order details available
             </p>
           )}
         </div>
-        <div className="md:w-80 relative">
-          {['procurement', 'admin'].includes(user?.role) && (
-          <>
-          {hasVendor ? (
-            <button
-              onClick={handleSendPurchaseOrder}
-              className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-            >
-              Send Purchase Order
-            </button>
-          ) : (
-            <button
-              ref={vendorButtonRef}
-              onClick={() => setShowVendorForm(!showVendorForm)}
-              className="w-full px-6 py-2 mb-4 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
-            >
-              Add Vendor Details
-            </button>
+        <div className="md:w-80 w-full relative">
+          {["procurement", "admin"].includes(user?.role) && (
+            <>
+              {hasVendor ? (
+                <button
+                  onClick={handleSendPurchaseOrder}
+                  className="w-full px-6 py-2 mb-4 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                >
+                  Send Purchase Order
+                </button>
+              ) : (
+                <button
+                  ref={vendorButtonRef}
+                  onClick={() => setShowVendorForm(!showVendorForm)}
+                  className="w-full px-6 py-2 mb-6 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                >
+                  Add Vendor Details
+                </button>
+              )}
+            </>
           )}
-          </>
-          )}    
           <button
             ref={notesButtonRef}
             onClick={() => setShowNotesForm(!showNotesForm)}
-            className="w-full px-6 py-2 bg-[#3b82f6] dark:bg-[#3b82f6] text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition-colors"
+            className="w-full px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
           >
             Add Note
           </button>
-          {['procurement', 'admin'].includes(user?.role) && (
+          {["procurement", "admin"].includes(user?.role) && (
             <button
               ref={procurementNotesButtonRef}
               onClick={() => setShowProcurementNotesForm(!showProcurementNotesForm)}
-              className="w-full px-6 mt-4 py-2 mb-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+              className="w-full px-6 py-2 mt-4 mb-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
             >
               Add Procurement Note
             </button>
           )}
-          {['procurement', 'admin'].includes(user?.role) && (
+          {["procurement", "admin"].includes(user?.role) && (
             <button
               ref={costButtonRef}
               onClick={() => setShowCostForm(!showCostForm)}
@@ -1076,7 +1161,7 @@ const OrderDetails = () => {
               Edit Costs
             </button>
           )}
-          {['customer_relations', 'admin'].includes(user?.role) && (
+          {["customer_relations", "admin"].includes(user?.role) && (
             <button
               ref={editOrderButtonRef}
               onClick={() => setShowEditOrderForm(!showEditOrderForm)}
@@ -1085,6 +1170,15 @@ const OrderDetails = () => {
               Edit Order Details
             </button>
           )}
+         
+  <button
+    onClick={handleExportToExcel}
+    className="w-full px-6 py-2 mt-4 mb-4 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+    disabled={loading || !order}
+  >
+    Download as Excel
+  </button>
+
           {showVendorForm && (
             <div className="vendor-form absolute mt-5 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
               <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
@@ -1108,7 +1202,7 @@ const OrderDetails = () => {
                       name="vendorType"
                       checked={isNewVendor}
                       onChange={() => setIsNewVendor(true)}
-                      className="mr-2"
+                      className="mr-400"
                     />
                     Add New Vendor
                   </label>
@@ -1321,7 +1415,7 @@ const OrderDetails = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows="4"
                     required
-                  />
+                  ></textarea>
                 </div>
                 <div className="flex justify-end space-x-4">
                   <button
@@ -1358,7 +1452,7 @@ const OrderDetails = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows="4"
                     required
-                  />
+                  ></textarea>
                 </div>
                 <div className="flex justify-end space-x-4">
                   <button
@@ -1371,7 +1465,7 @@ const OrderDetails = () => {
                   <button
                     type="submit"
                     className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                  >
+                    >
                     Submit
                   </button>
                 </div>
@@ -1379,11 +1473,11 @@ const OrderDetails = () => {
             </div>
           )}
           {showCostForm && (
-            <div className="cost-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-100">
+            <div className="cost-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
               <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                 Edit Costs
               </h3>
-              <form onSubmit={handleCostFormSubmit} className="space-y-2">
+              <form onSubmit={handleCostFormSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-400">
                     Part Cost
@@ -1393,7 +1487,7 @@ const OrderDetails = () => {
                     name="partCost"
                     value={costForm.partCost}
                     onChange={handleCostFormChange}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                     placeholder="Enter part cost"
                     step="0.01"
                     min="0"
@@ -1409,7 +1503,7 @@ const OrderDetails = () => {
                     name="shippingCost"
                     value={costForm.shippingCost}
                     onChange={handleCostFormChange}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                     placeholder="Enter shipping cost"
                     step="0.01"
                     min="0"
@@ -1425,7 +1519,7 @@ const OrderDetails = () => {
                     name="grossProfit"
                     value={costForm.grossProfit}
                     onChange={handleCostFormChange}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                     placeholder="Enter gross profit"
                     step="0.01"
                     min="0"
@@ -1440,14 +1534,14 @@ const OrderDetails = () => {
                     type="number"
                     name="totalCost"
                     value={costForm.totalCost}
-                    onChange={handleCostFormChange}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none"
                     placeholder="Total cost (auto-calculated)"
                     step="0.01"
                     min="0"
                   />
                 </div>
-                <div className="flex justify-between space-x-4">
+                <div className="flex justify-end space-x-4">
                   <button
                     type="button"
                     onClick={closeCostForm}
@@ -1466,7 +1560,7 @@ const OrderDetails = () => {
             </div>
           )}
           {showEditOrderForm && (
-            <div className="edit-order-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-100">
+            <div className="edit-order-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
               <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
                 Edit Order Details
               </h3>
@@ -1480,7 +1574,7 @@ const OrderDetails = () => {
                     name="clientName"
                     value={editOrderForm.clientName}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1493,7 +1587,7 @@ const OrderDetails = () => {
                     name="phone"
                     value={editOrderForm.phone}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1506,7 +1600,7 @@ const OrderDetails = () => {
                     name="email"
                     value={editOrderForm.email}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1519,7 +1613,7 @@ const OrderDetails = () => {
                     name="billingAddress"
                     value={editOrderForm.billingAddress}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1532,7 +1626,7 @@ const OrderDetails = () => {
                     name="city"
                     value={editOrderForm.city}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1545,7 +1639,7 @@ const OrderDetails = () => {
                     name="state"
                     value={editOrderForm.state}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1558,7 +1652,7 @@ const OrderDetails = () => {
                     name="zip"
                     value={editOrderForm.zip}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1571,7 +1665,7 @@ const OrderDetails = () => {
                     name="shippingAddress"
                     value={editOrderForm.shippingAddress}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1584,7 +1678,7 @@ const OrderDetails = () => {
                     name="shippingCity"
                     value={editOrderForm.shippingCity}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1597,7 +1691,7 @@ const OrderDetails = () => {
                     name="shippingState"
                     value={editOrderForm.shippingState}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1610,7 +1704,7 @@ const OrderDetails = () => {
                     name="shippingZip"
                     value={editOrderForm.shippingZip}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1623,7 +1717,7 @@ const OrderDetails = () => {
                     name="make"
                     value={editOrderForm.make}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1636,7 +1730,7 @@ const OrderDetails = () => {
                     name="model"
                     value={editOrderForm.model}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -1649,7 +1743,7 @@ const OrderDetails = () => {
                     name="year"
                     value={editOrderForm.year}
                     onChange={handleEditOrderFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min="1900"
                     max={new Date().getFullYear() + 1}
                     required
@@ -1673,6 +1767,14 @@ const OrderDetails = () => {
               </form>
             </div>
           )}
+          {/* Email Preview Modal */}
+          <EmailPreviewModal
+            isOpen={showEmailPreview}
+            onClose={() => setShowEmailPreview(false)}
+            emailContent={emailContent}
+            orderId={orderId}
+            onConfirm={handlePurchaseOrderSent}
+          />
         </div>
       </div>
     </div>
