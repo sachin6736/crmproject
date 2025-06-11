@@ -731,6 +731,11 @@ export const sendPurchaseorder = async (req, res) => {
     // Generate a unique tracking number
     const trackingNumber = `TRK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
+    // Generate invoice number (e.g., 2-01, 2-02)
+    const existingPOs = await PurchaseOrder.countDocuments({ orderId: id });
+    const sequence = (existingPOs + 1).toString().padStart(2, '0'); // e.g., 01, 02
+    const invoiceNumber = `${order.order_id}-${sequence}`; // e.g., 2-01
+
     // Create a new purchase order
     const purchaseOrder = new PurchaseOrder({
       businessName: vendor.businessName,
@@ -746,6 +751,8 @@ export const sendPurchaseorder = async (req, res) => {
       estimatedArrivalTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       status: "Pending",
       notes: "",
+      invoiceNumber,
+      orderId: id
     });
 
     // Save the purchase order to the database
@@ -766,6 +773,7 @@ export const sendPurchaseorder = async (req, res) => {
   
       <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Order Information</h3>
       <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Invoice Number:</strong> ${invoiceNumber}</li>
         <li style="margin-bottom: 8px;"><strong>Order ID:</strong> ${order.order_id || "N/A"}</li>
         <li style="margin-bottom: 8px;"><strong>Vendor Name:</strong> ${vendor.businessName || "N/A"}</li>
         <li style="margin-bottom: 8px;"><strong>Agent Name:</strong> ${vendor.agentName || "N/A"}</li>
@@ -854,18 +862,17 @@ export const sendPurchaseorder = async (req, res) => {
     `;
 
     // Send email using the sendEmail utility
-    await sendEmail(vendor.email, `Purchase Order for Order ID: ${order.order_id}`, htmlContent);
+    await sendEmail(vendor.email, `Purchase Order for Invoice: ${invoiceNumber}`, htmlContent);
 
-    // Update order status to PO Pending
+    // Update order status to PO Sent
     order.status = "PO Sent";
 
     // Add note for status change
-
-    console.log("User",req.user);
+    console.log("User", req.user);
     
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
-    order.notes.push({
-      text: `Order status changed to 'PO Sent' by ${userIdentity} after sending purchase order`,
+    order.procurementnotes.push({
+      text: ` 'PO Sent' by ${userIdentity} with invoice ${invoiceNumber} to  ${vendor.businessName || "N/A"} `,
       addedBy: userIdentity,
       createdAt: new Date(),
     });
@@ -879,8 +886,138 @@ export const sendPurchaseorder = async (req, res) => {
     return res.status(500).json({ message: "Failed to send purchase order" });
   }
 };
+//===========================================================================================
+//purchase order preview
+export const previewPurchaseOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Id of the order for preview:", id);
 
+    const order = await Order.findById(id).populate("vendors").populate("leadId");
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
 
+    if (!order.vendors || order.vendors.length === 0) {
+      return res.status(400).json({ message: "No vendor details available for this order" });
+    }
+
+    if (!order.leadId || !order.leadId.partRequested) {
+      console.error("Lead data missing or partRequested not set:", order.leadId);
+      return res.status(400).json({ message: "Lead information or partRequested missing" });
+    }
+
+    const vendor = order.vendors[0];
+    const trackingNumber = `TRK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
+      <div style="text-align: center;">
+        <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598236/Picsart_24-04-02_10-36-01-714_xpnbgi.png" alt="First Used Autoparts Logo" style="max-width: 250px; margin-bottom: 24px;" />
+      </div>
+      
+      <h2 style="color: #2a2a2a;">Purchase Order Details</h2>
+      <p style="color: #555;">
+        Dear ${vendor.businessName || "Vendor"},<br />
+        Thank you for your partnership. Below are the details of the purchase order.
+      </p>
+  
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Order Information</h3>
+      <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Order ID:</strong> ${order.order_id || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Vendor Name:</strong> ${vendor.businessName || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Agent Name:</strong> ${vendor.agentName || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Phone Number:</strong> ${vendor.phoneNumber || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Email:</strong> ${vendor.email || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Cost Price:</strong> $${vendor.costPrice?.toFixed(2) || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Shipping Cost:</strong> $${vendor.shippingCost?.toFixed(2) || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Core Price:</strong> $${vendor.corePrice?.toFixed(2) || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Total Cost:</strong> $${vendor.totalCost?.toFixed(2) || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Tracking Number:</strong> ${trackingNumber}</li>
+        <li style="margin-bottom: 8px;"><strong>Carrier Name:</strong> Default Carrier</li>
+        <li style="margin-bottom: 8px;"><strong>Estimated Arrival Time:</strong> ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</li>
+      </ul>
+      
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Order Specifications</h3>
+      <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Part Requested:</strong> ${order.leadId.partRequested || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Make:</strong> ${order.make || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Model:</strong> ${order.model || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Year:</strong> ${order.year || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Trim:</strong> ${order.leadId.trim || "N/A"}</li>
+      </ul>
+      
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Billing Information</h3>
+      <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Billing Address:</strong> ${order.billingAddress || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>City:</strong> ${order.city || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>State:</strong> ${order.state?.toUpperCase() || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Zip:</strong> ${order.zip || "N/A"}</li>
+      </ul>
+      
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Shipping Information</h3>
+      <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Shipping Address:</strong> ${order.shippingAddress || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Shipping City:</strong> ${order.shippingCity || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Shipping State:</strong> ${order.shippingState?.toUpperCase() || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Shipping Zip:</strong> ${order.shippingZip || "N/A"}</li>
+      </ul>
+      
+      <p style="color: #555;">
+        To proceed or ask questions, reply to this email or call +1 888-282-7476.
+      </p>
+  
+      <p style="color: #555;">Best regards,<br />
+      <strong>First Used Autoparts Team</strong></p>
+  
+      <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;" />
+  
+      <div style="font-size: 14px; color: #888;">
+        <p><strong>Address:</strong><br />
+        330 N Brand Blvd, STE 700<br />
+        Glendale, California 91203</p>
+  
+        <p><strong>Contact:</strong><br />
+        +1 888-282-7476<br />
+        <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF; text-decoration: none;">contact@firstusedautoparts.com</a></p>
+      </div>
+  
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599473/fb_n6h6ja.png" alt="Facebook" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599377/linkedin_v3pufc.png" alt="LinkedIn" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://www.instagram.com/first_used_auto_parts/" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598983/10462345_g4oluw.png" alt="Instagram" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://twitter.com/parts54611" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599225/twitter_kivbi6.png" alt="X" style="width: 32px; height: 32px;" />
+        </a>
+      </div>
+      
+      <p style="text-align: center; margin-top: 10px;">
+        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="color: #007BFF; margin: 0 5px;">Facebook</a> |
+        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="color: #007BFF; margin: 0 5px;">LinkedIn</a> |
+        <a href="https://www.instagram.com/first_used_auto_parts/" style="color: #007BFF; margin: 0 5px;">Instagram</a> |
+        <a href="https://twitter.com/parts54611" style="color: #007BFF; margin: 0 5px;">X</a>
+      </p>
+  
+      <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
+        © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.<br />
+        <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(vendor.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
+      </p>
+    </div>
+    `;
+
+    return res.status(200).json({ htmlContent });
+  } catch (error) {
+    console.error("Error previewing purchase order:", error);
+    return res.status(500).json({ message: "Failed to preview purchase order" });
+  }
+};
+//====================================================
 //Change order status Controller
 export const changeOrderStatus=async(req,res)=>{
   console.log("Edit order status controller working");

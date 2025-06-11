@@ -68,6 +68,17 @@ const purchaseOrderSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  invoiceNumber: {
+    type: String,
+    required: true,
+    trim: true,
+    unique: true
+  },
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order',
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
