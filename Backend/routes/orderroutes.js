@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,getAllVendors,sendPurchaseorder , getProcurementOrders,changeOrderStatus,addProcurementNote,updateOrderDetails} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,getAllVendors,sendPurchaseorder , getProcurementOrders,changeOrderStatus,addProcurementNote,updateOrderDetails,updateShipmentDetails} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -19,6 +19,7 @@ router.post("/:orderId/procurementnotes", protect, addProcurementNote);//adding 
 router.get('/getallvendors',getAllVendors);//showing vendor details
 router.post('/sendpurchaseorder/:id',protect,sendPurchaseorder);
 router.patch('/update-status/:id',protect,changeOrderStatus);
-router.patch("/update/:orderId", protect,updateOrderDetails); // New route
+router.patch("/update/:orderId", protect,updateOrderDetails); // editorder details in customer-relations
+router.patch('/:orderId/shipment', protect,updateShipmentDetails);//edit shipment details
 
 export default router;

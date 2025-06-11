@@ -32,6 +32,7 @@ const OrderDetails = () => {
   const [showProcurementNotesForm, setShowProcurementNotesForm] = useState(false);
   const [showCostForm, setShowCostForm] = useState(false);
   const [showEditOrderForm, setShowEditOrderForm] = useState(false);
+  const [showShipmentForm, setShowShipmentForm] = useState(false);
   const [notesForm, setNotesForm] = useState({ note: "" });
   const [procurementNotesForm, setProcurementNotesForm] = useState({ note: "" });
   const [costForm, setCostForm] = useState({
@@ -56,12 +57,20 @@ const OrderDetails = () => {
     model: "",
     year: "",
   });
+  const [shipmentForm, setShipmentForm] = useState({ // New state for shipment details
+    weight: "",
+    height: "",
+    width: "",
+    carrierName: "",
+    trackingNumber: "",
+  });
   const [hasVendor, setHasVendor] = useState(false);
   const vendorButtonRef = useRef(null);
   const notesButtonRef = useRef(null);
   const procurementNotesButtonRef = useRef(null);
   const costButtonRef = useRef(null);
   const editOrderButtonRef = useRef(null);
+  const shipmentButtonRef = useRef(null); // New ref for shipment button
 
   // Auto-calculate totalCost when partCost, shippingCost, or grossProfit changes
   useEffect(() => {
@@ -128,6 +137,13 @@ const OrderDetails = () => {
           model: data.model || "",
           year: data.year || "",
         });
+        setShipmentForm({
+        weight: data.weightAndDimensions?.weight ?? "",
+        height: data.weightAndDimensions?.height ?? "",
+        width: data.weightAndDimensions?.width ?? "",
+        carrierName: data.carrierName ?? "",
+        trackingNumber: data.trackingNumber ?? "",
+      });
       } catch (error) {
         console.error("Error fetching order data:", error);
         toast.error("Failed to load order details");
@@ -317,6 +333,14 @@ const OrderDetails = () => {
     }));
   };
 
+  const handleShipmentFormChange = (e) => {
+  const { name, value } = e.target;
+  setShipmentForm((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
   const handleNotesFormSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -457,6 +481,48 @@ const OrderDetails = () => {
     }
   };
 
+  const handleShipmentFormSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch(`http://localhost:3000/Order/${orderId}/shipment`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        weight: parseFloat(shipmentForm.weight) || 0,
+        height: parseFloat(shipmentForm.height) || 0,
+        width: parseFloat(shipmentForm.width) || 0,
+        carrierName: shipmentForm.carrierName,
+        trackingNumber: shipmentForm.trackingNumber,
+      }),
+    });
+    if (!response.ok) throw new Error("Failed to update shipment details");
+    toast.success("Shipment details updated successfully");
+    setShowShipmentForm(false);
+
+    const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+      credentials: "include",
+    });
+    if (responseOrder.ok) {
+      const data = await responseOrder.json();
+      setOrder(data);
+      console.log("Data:", data);
+
+      // Update shipmentForm with fallback to empty string only if undefined
+      setShipmentForm({
+        weight: data.weightAndDimensions?.weight ?? "",
+        height: data.weightAndDimensions?.height ?? "",
+        width: data.weightAndDimensions?.width ?? "",
+        carrierName: data.carrierName ?? "",
+        trackingNumber: data.trackingNumber ?? "",
+      });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    toast.error("Failed to update shipment details");
+  }
+};
+
   const closeNotesForm = () => {
     setShowNotesForm(false);
     setNotesForm({ note: "" });
@@ -494,6 +560,17 @@ const OrderDetails = () => {
       make: order.make || "",
       model: order.model || "",
       year: order.year || "",
+    });
+  };
+
+  const closeShipmentForm = () => { // New close handler for shipment form
+    setShowShipmentForm(false);
+    setShipmentForm({
+      weight: order.weightAndDimensions?.weight || "",
+      height: order.weightAndDimensions?.height || "",
+      width: order.weightAndDimensions?.width || "",
+      carrierName: order.carrierName || "",
+      trackingNumber: order.trackingNumber || "",
     });
   };
 
@@ -593,6 +670,109 @@ const OrderDetails = () => {
                       Email
                       </strong>
                       <span>{order.email || "N/A"}</span>
+                    </div>
+                  </div>
+                </section>
+                {/* Shipment Details */}
+                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+    Shipment Details
+  </h3>
+  <div className="flex flex-wrap gap-8 text-sm">
+    <div>
+      <strong className="font-semibold text-gray-600 dark:text-gray-400">
+        Weight and Dimensions:
+      </strong>
+      <span className="ml-1">
+        {order.weightAndDimensions?.weight && order.weightAndDimensions?.width && order.weightAndDimensions?.height
+          ? `${order.weightAndDimensions.weight}  ${order.weightAndDimensions.width}*${order.weightAndDimensions.height}`
+          : "N/A"}
+      </span>
+    </div>
+    <div>
+      <strong className="font-semibold text-gray-600 dark:text-gray-400">
+        Carrier Name:
+      </strong>
+      <span className="ml-1">{order.carrierName || "N/A"}</span>
+    </div>
+    <div>
+      <strong className="font-semibold text-gray-600 dark:text-gray-400">
+        Tracking Number:
+      </strong>
+      <span className="ml-1">{order.trackingNumber || "N/A"}</span>
+    </div>
+  </div>
+</section>
+
+{/* Billing Address */}
+
+<section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+                    Billing Address
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        Billing Address
+                      </strong>
+                      <span>{order.billingAddress || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        City
+                      </strong>
+                      <span>{order.city || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        State
+                      </strong>
+                      <span>
+                        {order.state ? order.state.toUpperCase() : "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        Zip
+                      </strong>
+                      <span>{order.zip || "N/A"}</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Shipping Address */}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+                    Shipping Address
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        Shipping Address
+                      </strong>
+                      <span>{order.shippingAddress || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        Shipping City
+                      </strong>
+                      <span>{order.shippingCity || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        Shipping State
+                      </strong>
+                      <span>
+                        {order.shippingState
+                          ? order.shippingState.toUpperCase()
+                          : "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        Shipping Zip
+                      </strong>
+                      <span>{order.shippingZip || "N/A"}</span>
                     </div>
                   </div>
                 </section>
@@ -705,78 +885,6 @@ const OrderDetails = () => {
                       <span>
                         {order.amount ? `$${order.amount.toFixed(2)}` : "N/A"}
                       </span>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Billing Information */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                    Billing Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Billing Address
-                      </strong>
-                      <span>{order.billingAddress || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        City
-                      </strong>
-                      <span>{order.city || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        State
-                      </strong>
-                      <span>
-                        {order.state ? order.state.toUpperCase() : "N/A"}
-                      </span>
-                    </div>
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Zip
-                      </strong>
-                      <span>{order.zip || "N/A"}</span>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Shipping Information */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                    Shipping Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Shipping Address
-                      </strong>
-                      <span>{order.shippingAddress || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Shipping City
-                      </strong>
-                      <span>{order.shippingCity || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Shipping State
-                      </strong>
-                      <span>
-                        {order.shippingState
-                          ? order.shippingState.toUpperCase()
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div>
-                      <strong className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                        Shipping Zip
-                      </strong>
-                      <span>{order.shippingZip || "N/A"}</span>
                     </div>
                   </div>
                 </section>
@@ -1074,6 +1182,15 @@ const OrderDetails = () => {
               className="w-full px-6 py-2 mb-4 bg-yellow-600 dark:bg-yellow-500 text-white rounded-md hover:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
             >
               Edit Costs
+            </button>
+          )}
+          {['procurement'].includes(user?.role) && (
+            <button
+              ref={shipmentButtonRef}
+              onClick={() => setShowShipmentForm(!showShipmentForm)}
+              className="w-full px-6 py-2 mb-4 bg-orange-600 dark:bg-orange-500 text-white rounded-md hover:bg-orange-700 dark:hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+            >
+              Add Shipment Details
             </button>
           )}
           {['customer_relations', 'admin'].includes(user?.role) && (
@@ -1673,9 +1790,104 @@ const OrderDetails = () => {
               </form>
             </div>
           )}
-        </div>
+          {showShipmentForm && (
+  <div className="shipment-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-100">
+    <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+      Add Shipment Details
+    </h3>
+    <form onSubmit={handleShipmentFormSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+          Weight (in pounds)
+        </label>
+        <input
+          type="number"
+          name="weight"
+          value={shipmentForm.weight}
+          onChange={handleShipmentFormChange}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          step="0.01"
+          min="0"
+          required
+        />
       </div>
-    </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+          Height (in cm)
+        </label>
+        <input
+          type="number"
+          name="height"
+          value={shipmentForm.height}
+          onChange={handleShipmentFormChange}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          step="0.1"
+          min="0"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+          Width (in cm)
+        </label>
+        <input
+          type="number"
+          name="width"
+          value={shipmentForm.width}
+          onChange={handleShipmentFormChange}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          step="0.1"
+          min="0"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+          Carrier Name
+        </label>
+        <input
+          type="text"
+          name="carrierName"
+          value={shipmentForm.carrierName}
+          onChange={handleShipmentFormChange}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+          Tracking Number
+        </label>
+        <input
+          type="text"
+          name="trackingNumber"
+          value={shipmentForm.trackingNumber}
+          onChange={handleShipmentFormChange}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+      <div className="flex justify-end space-x-4">
+        <button
+          type="button"
+          onClick={closeShipmentForm}
+          className="px-6 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+        >
+          Submit
+        </button>
+      </div>
+    </form>
+  </div>
+)}
+ </div>
+ </div>
+ </div>
   );
 };
 
