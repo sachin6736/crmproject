@@ -1023,55 +1023,58 @@ const handleExportToExcel = () => {
 
                 {/* Notes Section */}
                 <section>
-                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                    Notes
-                  </h3>
-                  {order.notes && order.notes.length > 0 ? (
-                    <ul className="space-y-2">
-                      {order.notes.map((note, index) => (
-                        <li
-                          key={index}
-                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100"
-                        >
-                          <p>{note.text || note}</p>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {note.createdAt
-                              ? new Date(note.createdAt).toLocaleString()
-                              : "N/A"}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-600 dark:text-gray-400">No notes available</p>
-                  )}
-                </section>
+  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+    Notes
+  </h3>
+  <div className="max-h-64 overflow-y-auto p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+    {order.notes && order.notes.length > 0 ? (
+      <ul className="space-y-2">
+        {order.notes.map((note, index) => (
+          <li
+            key={index}
+            className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100"
+          >
+            <p>{note.text || note}</p>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {note.createdAt
+                ? new Date(note.createdAt).toLocaleString()
+                : "N/A"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p className="text-gray-600 dark:text-gray-400">No notes available</p>
+    )}
+  </div>
+</section>
 
-                {/* Procurement Notes Section */}
-                <section>
-                  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
-                    Procurement Notes
-                  </h3>
-                  {order.procurementnotes && order.procurementnotes.length > 0 ? (
-                    <ul className="space-y-2">
-                      {order.procurementnotes.map((note, index) => (
-                        <li
-                          key={index}
-                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100"
-                        >
-                          <p>{note.text || note}</p>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {note.createdAt
-                              ? new Date(note.createdAt).toLocaleString()
-                              : "N/A"}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-600 dark:text-gray-400">No procurement notes available</p>
-                  )}
-                </section>
+<section>
+  <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+    Procurement Notes
+  </h3>
+  <div className="max-h-64 overflow-y-auto p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+    {order.procurementnotes && order.procurementnotes.length > 0 ? (
+      <ul className="space-y-2">
+        {order.procurementnotes.map((note, index) => (
+          <li
+            key={index}
+            className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-900 dark:text-gray-100"
+          >
+            <p>{note.text || note}</p>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {note.createdAt
+                ? new Date(note.createdAt).toLocaleString()
+                : "N/A"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p className="text-gray-600 dark:text-gray-400">No procurement notes available</p>
+    )}
+  </div>
+</section>
 
                 {/* Card Details (Visible only to admins) */}
                 {user?.role === "admin" && (
