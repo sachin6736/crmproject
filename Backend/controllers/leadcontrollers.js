@@ -33,7 +33,7 @@ export const createleads =  async (req, res, next) => {
       const salesTeam = await User.find({
         role: "sales",
         isPaused: false,
-        status: "Available",
+        //status: "Available",
       });
       console.log("salesteam", salesTeam);
       if (salesTeam.length === 0) {
