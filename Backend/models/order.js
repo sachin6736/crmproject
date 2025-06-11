@@ -104,6 +104,19 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  weightAndDimensions: {
+    weight: { type: Number, required: false, min: 0 },
+    height: { type: Number, required: false, min: 0 },
+    width: { type: Number, required: false, min: 0 }
+  },
+  carrierName: {
+    type: String,
+    required: false
+  },
+  trackingNumber: {
+    type: String,
+    required: false
+  },
   amount: {
     type: Number,
     required: true,

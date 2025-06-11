@@ -10,37 +10,41 @@ mongoose
   .then(async () => {
     console.log("✅ Connected to MongoDB");
     try {
-      // Find orders with "PO Send" status
-      const ordersWithPOSend = await Order.find({
-        status: "PO Send"
-      });
+      // Find all orders
+      const allOrders = await Order.find({});
 
-      if (ordersWithPOSend.length === 0) {
-        console.log("✅ No orders found with 'PO Send' status.");
+      if (allOrders.length === 0) {
+        console.log("✅ No orders found in the collection.");
         await mongoose.disconnect();
         return;
       }
 
-      console.log(`🔄 Found ${ordersWithPOSend.length} orders with 'PO Send' status.`);
+      console.log(`🔄 Found ${allOrders.length} orders in the collection.`);
 
       let modifiedCount = 0;
 
-      // Update each order with "PO Send" to "PO Sent"
-      for (const order of ordersWithPOSend) {
+      // Update each order to add new fields with blank values
+      for (const order of allOrders) {
         try {
           await Order.updateOne(
             { _id: order._id },
-            { $set: { status: "PO Sent" } }
+            { 
+              $set: { 
+                weightAndDimensions: {}, // Empty object for weightAndDimensions
+                carrierName: "",        // Empty string for carrierName
+                trackingNumber: ""      // Empty string for trackingNumber
+              } 
+            }
           );
           modifiedCount++;
-          console.log(`✅ Updated order _id: ${order._id} from 'PO Send' to 'PO Sent'`);
+          console.log(`✅ Updated order _id: ${order._id} with blank fields (weightAndDimensions, carrierName, trackingNumber)`);
         } catch (err) {
           console.error(`❌ Error updating order _id: ${order._id}`, err);
         }
       }
 
       console.log(
-        `✅ Successfully updated ${modifiedCount} orders to 'PO Sent' status.`
+        `✅ Successfully updated ${modifiedCount} orders with blank fields.`
       );
     } catch (err) {
       console.error("❌ Error updating orders", err);

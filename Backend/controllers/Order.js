@@ -1189,3 +1189,34 @@ export const updateOrderDetails = async (req, res) => {
     res.status(500).json({ message: 'Server error while updating order details' });
   }
 };
+
+export const updateShipmentDetails=async(req,res)=>{
+   try {
+    const { orderId } = req.params;
+    const { weight, height, width, carrierName, trackingNumber } = req.body;
+
+    // Validate input
+    if (!weight || !height || !width || !carrierName || !trackingNumber) {
+      return res.status(400).json({ message: 'All shipment fields are required' });
+    }
+
+    // Find and update the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Update shipment details
+    order.weightAndDimensions = { weight, height, width };
+    order.carrierName = carrierName;
+    order.trackingNumber = trackingNumber;
+
+    // Save the updated order
+    await order.save();
+
+    res.status(200).json({ message: 'Shipment details updated successfully', order });
+  } catch (error) {
+    console.error('Error updating shipment details:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
