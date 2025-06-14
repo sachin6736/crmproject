@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,getAllVendors,sendPurchaseorder , getProcurementOrders,changeOrderStatus,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,changeOrderStatus,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple ,updateVendorConfirmation , getVendorSimpleList, updateVendorDetails} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -13,10 +13,14 @@ router.get('/getprocurementorders',protect,getProcurementOrders);//geting orders
 //=================
 router.get("/orderbyid/:id",protect ,orderbyid);// getting single order by id
 router.get("/checkorderbylead/:leadId", protect, checkOrderByLeadId);
-router.post('/:orderId/vendor',protect, addVendorToOrder);//addingvendor details
+router.post('/vendor-simple', protect, createVendorSimple);
+router.post('/order/:orderId/vendor', protect, addVendorToOrder);//addingvendor details
+router.patch('/order/:orderId/vendor/:vendorId', protect, updateVendorDetails); // update vendor
+router.patch('/order/:orderId/vendor/:vendorId/confirm', protect, updateVendorConfirmation);// confirmation
 router.post('/:orderId/notes', addNoteToOrder);//adding notes to order
 router.post("/:orderId/procurementnotes", protect, addProcurementNote);//adding notes by procurement team
-router.get('/getallvendors',getAllVendors);//showing vendor details
+//router.get('/getallvendors',getAllVendors);//showing vendor details
+router.get('/vendor-simple', protect, getVendorSimpleList);
 router.get('/preview-purchase-order/:id', previewPurchaseOrder);//
 router.post('/sendpurchaseorder/:id',protect,sendPurchaseorder); //sent purchase order
 router.patch('/update-status/:id',protect,changeOrderStatus);

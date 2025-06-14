@@ -3,11 +3,12 @@ import Lead from "../models/lead.js";
 import { Order ,Counter} from '../models/order.js';
 import Notification from '../models/notificationSchema.js';
 import { io } from '../socket.js'
-import Vendor from '../models/vendor.js';
+//import Vendor from '../models/vendor.js';
 import { PurchaseOrder } from '../models/purchase.js';
 import sendEmail from '../sendEmail.js';
 import CustomerRelationsRoundRobinState from '../models/customerRelationsRoundRobinState.js';
 import ProcurementRoundRobinState from '../models/procurementRoundRobinState.js';
+import VendorSimple from '../models/VendorSimple.js.js';
 
 export const createOrder = async (req, res) => {
   try {
@@ -551,6 +552,42 @@ export const getProcurementOrders = async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching order details' });
   }
 };//geting orderdetails by orderid
+//==============================
+export const createVendorSimple = async (req, res) => {
+  try {
+    const { businessName, phoneNumber, email } = req.body;
+
+    // Validate required fields
+    if (!businessName || !phoneNumber || !email) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Create new vendor
+    const vendor = new VendorSimple({
+      businessName,
+      phoneNumber,
+      email
+    });
+
+    // Save to database
+    await vendor.save();
+
+    res.status(201).json({ message: 'Vendor created successfully', vendor });
+  } catch (error) {
+    console.error('Error creating vendor:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};//creating vendor
+
+export const getVendorSimpleList = async (req, res) => {
+  try {
+    const vendors = await VendorSimple.find().select('businessName phoneNumber email');
+    res.status(200).json(vendors);
+  } catch (error) {
+    console.error('Error fetching vendors:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 
 //Add vendortoorder
 export const addVendorToOrder = async (req, res) => {
@@ -563,95 +600,134 @@ export const addVendorToOrder = async (req, res) => {
       agentName,
       costPrice,
       shippingCost,
-      corePrice,
       totalCost,
-      rating = 0,
-      warranty = '',
-      mileage = 0,
-      isNewVendor, // New field to determine if vendor is new or existing
+      corePrice,
+      rating,
+      warranty,
+      mileage
     } = req.body;
 
     // Validate required fields
-    if (!businessName || !phoneNumber || !email || !agentName || !costPrice || !shippingCost || !corePrice || !totalCost) {
-      return res.status(400).json({ message: 'All required vendor fields must be provided' });
-    }
-
-    // Validate numeric fields
     if (
-      isNaN(costPrice) ||
-      costPrice < 0 ||
-      isNaN(shippingCost) ||
-      shippingCost < 0 ||
-      isNaN(corePrice) ||
-      corePrice < 0 ||
-      isNaN(totalCost) ||
-      totalCost < 0
+      !businessName ||
+      !phoneNumber ||
+      !email ||
+      !agentName ||
+      costPrice == null ||
+      shippingCost == null ||
+      totalCost == null
     ) {
-      return res.status(400).json({ message: 'Cost fields must be non-negative numbers' });
+      return res.status(400).json({ message: 'Required fields: businessName, phoneNumber, email, agentName, costPrice, shippingCost, totalCost' });
     }
 
-    // Validate rating
-    if (rating < 0 || rating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 0 and 5' });
-    }
-
-    // Find order
+    // Find the order
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    let vendor;
-
-    if (isNewVendor) {
-      // Create new vendor for new vendor submission
-      vendor = new Vendor({
-        businessName,
-        phoneNumber,
-        email,
-        agentName,
-        costPrice,
-        shippingCost,
-        corePrice,
-        totalCost,
-        rating,
-        warranty,
-        mileage,
-      });
-      await vendor.save();
-    } else {
-      // Find existing vendor by businessName
-      vendor = await Vendor.findOne({ businessName });
-      if (!vendor) {
-        return res.status(404).json({ message: 'Selected vendor not found' });
-      }
-    }
-
-    // Add vendor ID to order's vendors array if not already present
-    if (!order.vendors.includes(vendor._id)) {
-      order.vendors.push(vendor._id);
-    }
-
-    // Update order status to PO Pending
-    order.status = 'PO Pending';
-
-    // Add note for status change
-    const userIdentity = req?.user?.name || req?.user?.id || 'Unknown User';
-    order.notes.push({
-      text: `Order status changed to 'PO Pending' by ${userIdentity} after adding vendor`,
-      addedBy: userIdentity,
-      createdAt: new Date(),
+    // Add vendor to order
+    order.vendors.push({
+      businessName,
+      phoneNumber,
+      email,
+      agentName,
+      costPrice,
+      shippingCost,
+      corePrice: corePrice || 0,
+      totalCost,
+      rating: rating || 0,
+      warranty: warranty || '',
+      mileage: mileage || 0,
+      isConfirmed: false
     });
 
-    // Save the updated order
     await order.save();
 
-    // Populate the vendors field in the response
-    const updatedOrder = await Order.findById(orderId).populate('vendors');
-    res.status(201).json({ message: 'Vendor added successfully and order status set to PO Pending', order: updatedOrder });
+    res.status(200).json({ message: 'Vendor added to order successfully', order });
   } catch (error) {
     console.error('Error adding vendor to order:', error);
-    res.status(500).json({ message: 'Server error while adding vendor' });
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const updateVendorDetails = async (req, res) => {
+  try {
+    const { orderId, vendorId } = req.params;
+    const {
+      businessName,
+      phoneNumber,
+      email,
+      agentName,
+      costPrice,
+      shippingCost,
+      corePrice,
+      totalCost,
+      rating,
+      warranty,
+      mileage
+    } = req.body;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Find the vendor
+    const vendor = order.vendors.id(vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found in order' });
+    }
+
+    // Update vendor details
+    if (businessName) vendor.businessName = businessName;
+    if (phoneNumber) vendor.phoneNumber = phoneNumber;
+    if (email) vendor.email = email;
+    if (agentName) vendor.agentName = agentName;
+    if (costPrice != null) vendor.costPrice = costPrice;
+    if (shippingCost != null) vendor.shippingCost = shippingCost;
+    if (corePrice != null) vendor.corePrice = corePrice;
+    if (totalCost != null) vendor.totalCost = totalCost;
+    if (rating != null) vendor.rating = rating;
+    if (warranty != null) vendor.warranty = warranty;
+    if (mileage != null) vendor.mileage = mileage;
+
+    await order.save();
+
+    res.status(200).json({ message: 'Vendor details updated successfully', order });
+  } catch (error) {
+    console.error('Error updating vendor details:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const updateVendorConfirmation = async (req, res) => {
+  try {
+    const { orderId, vendorId } = req.params;
+    const { isConfirmed } = req.body;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Find the vendor in the order
+    const vendor = order.vendors.id(vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found in order' });
+    }
+
+    // Update confirmation status
+    vendor.isConfirmed = isConfirmed;
+
+    await order.save();
+
+    res.status(200).json({ message: 'Vendor confirmation status updated', order });
+  } catch (error) {
+    console.error('Error updating vendor confirmation:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -689,16 +765,16 @@ export const addNoteToOrder = async (req, res) => {
 };
 
 //Get All vendors controller
-export const getAllVendors = async (req, res) => {
-    try {
-      const vendors = await Vendor.find();
-      console.log("Vendors list:",vendors);
-      res.status(200).json(vendors);
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  };
+// export const getAllVendors = async (req, res) => {
+//     try {
+//       const vendors = await Vendor.find();
+//       console.log("Vendors list:",vendors);
+//       res.status(200).json(vendors);
+//     } catch (error) {
+//       console.error('Error fetching vendors:', error);
+//       res.status(500).json({ message: 'Server error' });
+//     }
+//   };
 
 //Send Purchase order controller
 export const sendPurchaseorder = async (req, res) => {
