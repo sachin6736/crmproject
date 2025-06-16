@@ -822,6 +822,9 @@ export const addNoteToOrder = async (req, res) => {
 //Send Purchase order controller
 export const sendPurchaseorder = async (req, res) => {
   try {
+     if (!req.user || req.user.Access !== true) {
+      return res.status(403).json({ message: "Access denied: User does not have permission to send purchase orders" });
+    }
     const { id } = req.params; // Order ID from the route
     const { vendorId } = req.query; // Get vendorId from query
     console.log("Id of the order:", id, "Vendor ID:", vendorId);

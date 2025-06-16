@@ -21,6 +21,7 @@ const EmailPreviewModal = ({
           credentials: "include",
         }
       );
+      if(response.status = 403) throw new Error (" admin access required")
       if (!response.ok) throw new Error("Failed to send purchase order");
       const data = await response.json();
       toast.success(data.message || "Purchase order sent successfully");

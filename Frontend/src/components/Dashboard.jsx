@@ -77,6 +77,7 @@ const Dashboard = () => {
   const [confirmAction, setConfirmAction] = useState("");
   const [confirmUserId, setConfirmUserId] = useState("");
   const [confirmUserName, setConfirmUserName] = useState("");
+  const [isAccessLoading, setIsAccessLoading] = useState(false);
 
   const statusColor = {
     Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
@@ -149,6 +150,7 @@ const Dashboard = () => {
           setLoading(false);
         }
       } catch (error) {
+        console.error("Role verification failed:", error);
         navigate("/");
       }
     };
@@ -176,8 +178,8 @@ const Dashboard = () => {
         setOrders(ordersData);
         setTeamUsers(usersData);
       } catch (error) {
-        toast.error("Error fetching dashboard");
-        console.error("Error fetching dashboard data:", error);
+        toast.error("Error fetching dashboard data");
+        console.error("Fetch data error:", error);
       } finally {
         setLoading(false);
       }
@@ -212,29 +214,30 @@ const Dashboard = () => {
         body: JSON.stringify(newMember),
       });
       if (res.status === 403) {
-        toast.error("access denied, contact admin");
+        toast.error("Access denied, contact admin");
         return;
       }
       if (res.status === 409) {
         toast.error("User with email already exists");
         return;
       }
-
       if (!res.ok) {
         toast.error("Failed to add user");
+        return;
       }
       const savedUser = await res.json();
-
       setTeamUsers((prev) => [...prev, savedUser]);
       setShowModal(false);
       setNewMember({ name: "", email: "", role: "" });
       toast.success("User added to the team!");
     } catch (error) {
+      console.error("Add user error:", error);
       toast.error("Error adding user");
     }
   };
 
   const handleUserAction = async (action, userId) => {
+    console.log(`Performing action: ${action} for userId: ${userId}`);
     try {
       if (action === "Pause" || action === "Resume") {
         const status = action === "Pause";
@@ -298,10 +301,54 @@ const Dashboard = () => {
       } else if (action === "Password") {
         setSelectedUserId(userId);
         setShowPasswordModal(true);
+      } else if (action === "Grant Access" || action === "Revoke Access") {
+        setIsAccessLoading(true);
+        const newAccess = action === "Grant Access";
+        console.log(`Sending access: ${newAccess} for userId: ${userId}`);
+        const res = await fetch(
+          `http://localhost:3000/User/${userId}/access`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ access: newAccess }),
+          }
+        );
+
+        const data = await res.json();
+        console.log(`Response status: ${res.status}, data:`, data);
+
+        if (res.status === 403) {
+          toast.error("Access denied, admin access required");
+          return;
+        }
+        if (res.status === 404) {
+          toast.error("User not found");
+          return;
+        }
+        if (res.status === 400) {
+          toast.error("Invalid input");
+          return;
+        }
+        if (!res.ok) {
+          toast.error(`Failed to ${newAccess ? "grant" : "revoke"} access: ${data.message || "Unknown error"}`);
+          return;
+        }
+
+        setTeamUsers((prevUsers) => {
+          const updatedUsers = prevUsers.map((user) =>
+            user._id === userId ? { ...user, Access: newAccess } : user
+          );
+          console.log("Updated teamUsers:", updatedUsers);
+          return updatedUsers;
+        });
+        toast.success(`Access ${newAccess ? "granted" : "revoked"} successfully`);
       }
     } catch (error) {
-      console.error(error);
+      console.error(`Error performing action ${action}:`, error);
       toast.error(`Failed to perform action: ${action}`);
+    } finally {
+      setIsAccessLoading(false);
     }
   };
 
@@ -391,7 +438,7 @@ const Dashboard = () => {
           <ul className="space-y-4 max-h-72 overflow-y-auto pr-2">
             {teamUsers.map((member, index) => (
               <li
-                key={index}
+                key={member._id}
                 className="relative flex items-center justify-between space-x-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
               >
                 <div className="flex items-center gap-3">
@@ -403,14 +450,13 @@ const Dashboard = () => {
                     {member.role[0]?.toUpperCase()}
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-medium text-gray-800 dark:text-gray-200">
-                      {member.name}
-                    </span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">{member.name}</span>
                     <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
                       {member.role.replace("_", " ")}
                     </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
-                      {member.email}
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{member.email}</span>
+                    <span className={`text-xs ${member.Access ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                      {member.Access ? "Access Granted" : "No Access"}
                     </span>
                   </div>
                 </div>
@@ -421,12 +467,12 @@ const Dashboard = () => {
                   <div className="relative">
                     <button
                       onClick={() =>
-                        setDropdownOpen(dropdownOpen === index ? null : index)
+                        setDropdownOpen(dropdownOpen === member._id ? null : member._id)
                       }
                     >
                       <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-gray-100" />
                     </button>
-                    {dropdownOpen === index && (
+                    {dropdownOpen === member._id && (
                       <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                         <button
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -467,6 +513,30 @@ const Dashboard = () => {
                           }}
                         >
                           Password
+                        </button>
+                        <button
+                          className={`block w-full text-left px-4 py-2 text-sm ${
+                            isAccessLoading
+                              ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                              : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          }`}
+                          onClick={() => {
+                            if (!isAccessLoading) {
+                              showConfirmation(
+                                member.Access ? "Revoke Access" : "Grant Access",
+                                member._id,
+                                member.name
+                              );
+                              setDropdownOpen(null);
+                            }
+                          }}
+                          disabled={isAccessLoading}
+                        >
+                          {isAccessLoading
+                            ? "Processing..."
+                            : member.Access
+                            ? "Revoke Access"
+                            : "Grant Access"}
                         </button>
                       </div>
                     )}
@@ -518,7 +588,7 @@ const Dashboard = () => {
                         const res = await fetch(
                           `http://localhost:3000/User/Resetpassword/${selectedUserId}`,
                           {
-                            method: "POST",
+                            method: "PATCH",
                             headers: { "Content-Type": "application/json" },
                             credentials: "include",
                             body: JSON.stringify({
@@ -527,30 +597,26 @@ const Dashboard = () => {
                           }
                         );
                         if (res.status === 403) {
-                          toast.error("only admin can change password");
+                          toast.error("Only admin can change password");
                           return;
                         }
                         if (res.status === 400) {
-                          toast.error("password could not be empty");
+                          toast.error("Password cannot be empty");
                           return;
                         }
                         if (res.status === 404) {
-                          toast.error(
-                            "User doesn’t exist, please check the database"
-                          );
+                          toast.error("User doesn’t exist, please check the database");
                           return;
                         }
-
                         if (!res.ok) {
-                          toast.error("Oops, an error occurred");
+                          toast.error("An error occurred");
                           return;
                         }
-
                         toast.success("Password updated successfully!");
                         setShowPasswordModal(false);
                         setPasswordInput("");
                       } catch (err) {
-                        console.error(err);
+                        console.error("Password reset error:", err);
                         toast.error("Failed to change password");
                       }
                     }}
@@ -728,7 +794,7 @@ const Dashboard = () => {
                         setSelectedRole("");
                         setCurrentRole("");
                       } catch (error) {
-                        console.error(error);
+                        console.error("Change role error:", error);
                         toast.error("Failed to change role");
                       }
                     }}

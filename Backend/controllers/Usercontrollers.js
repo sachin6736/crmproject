@@ -197,3 +197,27 @@ export const getCurrentUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const updateUserAccess = async (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  const userId = req.params.id;
+  const { access } = req.body;
+  if (typeof access !== "boolean") {
+    return res.status(400).json({ message: "Access must be a boolean" });
+  }
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.Access = access;
+    await user.save();
+    console.log(`User ${userId} Access updated to ${access}`);
+    return res.status(200).json({ message: `Access ${access ? "granted" : "revoked"}`, user: { _id: user._id, Access: user.Access } });
+  } catch (error) {
+    console.error(`Error updating access for user ${userId}:`, error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
