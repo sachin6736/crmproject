@@ -6,6 +6,7 @@ const EmailPreviewModal = ({
   onClose,
   emailContent,
   orderId,
+  vendorId,
   onConfirm,
 }) => {
   const [isSending, setIsSending] = React.useState(false);
@@ -14,7 +15,7 @@ const EmailPreviewModal = ({
     setIsSending(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/sendpurchaseorder/${orderId}`,
+        `http://localhost:3000/Order/sendpurchaseorder/${orderId}?vendorId=${vendorId}`,
         {
           method: "POST",
           credentials: "include",

@@ -13,15 +13,15 @@ router.get('/getprocurementorders',protect,getProcurementOrders);//geting orders
 //=================
 router.get("/orderbyid/:id",protect ,orderbyid);// getting single order by id
 router.get("/checkorderbylead/:leadId", protect, checkOrderByLeadId);
-router.post('/vendor-simple', protect, createVendorSimple);
-router.post('/order/:orderId/vendor', protect, addVendorToOrder);//addingvendor details
+router.post('/vendor-simple', protect, createVendorSimple); //creating single vendor in the database
+router.post('/order/:orderId/vendor', protect, addVendorToOrder);//addingvendor details to order
 router.patch('/order/:orderId/vendor/:vendorId', protect, updateVendorDetails); // update vendor
 router.patch('/order/:orderId/vendor/:vendorId/confirm', protect, updateVendorConfirmation);// confirmation
 router.post('/:orderId/notes', addNoteToOrder);//adding notes to order
 router.post("/:orderId/procurementnotes", protect, addProcurementNote);//adding notes by procurement team
 //router.get('/getallvendors',getAllVendors);//showing vendor details
-router.get('/vendor-simple', protect, getVendorSimpleList);
-router.get('/preview-purchase-order/:id', previewPurchaseOrder);//
+router.get('/vendor-simple', protect, getVendorSimpleList); //vendor details list
+router.get('/previewpurchaseorder/:id', previewPurchaseOrder);//
 router.post('/sendpurchaseorder/:id',protect,sendPurchaseorder); //sent purchase order
 router.patch('/update-status/:id',protect,changeOrderStatus);
 router.patch("/update/:orderId", protect,updateOrderDetails); // editorder details in customer-relations

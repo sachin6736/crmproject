@@ -547,6 +547,7 @@ export const getProcurementOrders = async (req, res) => {
       await order.save();
     }
     res.status(200).json(order);
+    console.log("this",order)
   } catch (error) {
     console.error('Error fetching order:', error);
     res.status(500).json({ message: 'Server error while fetching order details' });
@@ -730,6 +731,48 @@ export const updateVendorConfirmation = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+//===========================================
+export const confirmVendor = async (req, res) => {
+  try {
+    const { orderId, vendorId } = req.params;
+    const { isConfirmed } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const vendor = order.vendors.id(vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    vendor.isConfirmed = isConfirmed;
+    vendor.poStatus = isConfirmed ? "PO Confirmed" : "PO Canceled";
+
+    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+    order.procurementnotes.push({
+      text: `'PO ${isConfirmed ? "Confirmed" : "Canceled"}' by ${userIdentity} for vendor ${vendor.businessName || "N/A"}`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
+
+    // Update order status based on vendor confirmations
+    const hasConfirmedVendor = order.vendors.some((v) => v.isConfirmed);
+    if (hasConfirmedVendor && order.status !== "PO Confirmed") {
+      order.status = "PO Confirmed";
+    } else if (!hasConfirmedVendor && order.status === "PO Confirmed") {
+      order.status = "PO Sent";
+    }
+
+    await order.save();
+
+    return res.status(200).json({ order, message: `Vendor ${isConfirmed ? "confirmed" : "canceled"} successfully` });
+  } catch (error) {
+    console.error("Error updating vendor status:", error);
+    return res.status(500).json({ message: "Failed to update vendor status" });
+  }
+};
 
 export const addNoteToOrder = async (req, res) => {
   try {
@@ -780,7 +823,8 @@ export const addNoteToOrder = async (req, res) => {
 export const sendPurchaseorder = async (req, res) => {
   try {
     const { id } = req.params; // Order ID from the route
-    console.log("Id of the order:", id);
+    const { vendorId } = req.query; // Get vendorId from query
+    console.log("Id of the order:", id, "Vendor ID:", vendorId);
 
     // Fetch the order with vendor and lead details
     const order = await Order.findById(id).populate("vendors").populate("leadId");
@@ -795,21 +839,29 @@ export const sendPurchaseorder = async (req, res) => {
       return res.status(400).json({ message: "No vendor details available for this order" });
     }
 
+    // Find the specific vendor by vendorId
+    const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found for this order" });
+    }
+
+    // Check if PO has already been sent, confirmed, or canceled
+    if (["PO Sent", "PO Confirmed", "PO Canceled"].includes(vendor.poStatus)) {
+      return res.status(400).json({ message: `Purchase order is already ${vendor.poStatus.toLowerCase()}` });
+    }
+
     // Check if leadId exists and has partRequested
     if (!order.leadId || !order.leadId.partRequested) {
       console.error("Lead data missing or partRequested not set:", order.leadId);
       return res.status(400).json({ message: "Lead information or partRequested missing" });
     }
 
-    // For simplicity, use the first vendor (modify for multiple vendors if needed)
-    const vendor = order.vendors[0];
-
     // Generate a unique tracking number
     const trackingNumber = `TRK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Generate invoice number (e.g., 2-01, 2-02)
     const existingPOs = await PurchaseOrder.countDocuments({ orderId: id });
-    const sequence = (existingPOs + 1).toString().padStart(2, '0'); // e.g., 01, 02
+    const sequence = (existingPOs + 1).toString().padStart(2, "0"); // e.g., 01, 02
     const invoiceNumber = `${order.order_id}-${sequence}`; // e.g., 2-01
 
     // Create a new purchase order
@@ -828,7 +880,7 @@ export const sendPurchaseorder = async (req, res) => {
       status: "Pending",
       notes: "",
       invoiceNumber,
-      orderId: id
+      orderId: id,
     });
 
     // Save the purchase order to the database
@@ -940,15 +992,18 @@ export const sendPurchaseorder = async (req, res) => {
     // Send email using the sendEmail utility
     await sendEmail(vendor.email, `Purchase Order for Invoice: ${invoiceNumber}`, htmlContent);
 
-    // Update order status to PO Sent
-    order.status = "PO Sent";
+    // Update vendor's poStatus to PO Sent
+    vendor.poStatus = "PO Sent";
+
+    // Update order status to PO Sent if not already set
+    if (order.status !== "PO Confirmed") {
+      order.status = "PO Sent";
+    }
 
     // Add note for status change
-    console.log("User", req.user);
-    
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     order.procurementnotes.push({
-      text: ` 'PO Sent' by ${userIdentity} with invoice ${invoiceNumber} to  ${vendor.businessName || "N/A"} `,
+      text: `'PO Sent' by ${userIdentity} with invoice ${invoiceNumber} to ${vendor.businessName || "N/A"}`,
       addedBy: userIdentity,
       createdAt: new Date(),
     });
@@ -967,7 +1022,8 @@ export const sendPurchaseorder = async (req, res) => {
 export const previewPurchaseOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("Id of the order for preview:", id);
+    const { vendorId } = req.query; // Get vendorId from query
+    console.log("Id of the order for preview:", id, "Vendor ID:", vendorId);
 
     const order = await Order.findById(id).populate("vendors").populate("leadId");
     if (!order) {
@@ -983,7 +1039,12 @@ export const previewPurchaseOrder = async (req, res) => {
       return res.status(400).json({ message: "Lead information or partRequested missing" });
     }
 
-    const vendor = order.vendors[0];
+    // Find the specific vendor by vendorId
+    const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found for this order" });
+    }
+
     const trackingNumber = `TRK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     const htmlContent = `
@@ -1011,7 +1072,9 @@ export const previewPurchaseOrder = async (req, res) => {
         <li style="margin-bottom: 8px;"><strong>Total Cost:</strong> $${vendor.totalCost?.toFixed(2) || "N/A"}</li>
         <li style="margin-bottom: 8px;"><strong>Tracking Number:</strong> ${trackingNumber}</li>
         <li style="margin-bottom: 8px;"><strong>Carrier Name:</strong> Default Carrier</li>
-        <li style="margin-bottom: 8px;"><strong>Estimated Arrival Time:</strong> ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</li>
+        <li style="margin-bottom: 8px;"><strong>Estimated Arrival Time:</strong> ${new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString()}</li>
       </ul>
       
       <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Order Specifications</h3>
@@ -1082,7 +1145,9 @@ export const previewPurchaseOrder = async (req, res) => {
   
       <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
         © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.<br />
-        <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(vendor.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
+        <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(
+          vendor.email
+        )}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
       </p>
     </div>
     `;
@@ -1093,7 +1158,7 @@ export const previewPurchaseOrder = async (req, res) => {
     return res.status(500).json({ message: "Failed to preview purchase order" });
   }
 };
-//====================================================
+//=================================================
 //Change order status Controller
 export const changeOrderStatus=async(req,res)=>{
   console.log("Edit order status controller working");

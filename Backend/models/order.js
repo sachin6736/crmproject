@@ -191,6 +191,11 @@ const orderSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    poStatus: {
+      type: String,
+      enum: ["PO Pending", "PO Sent", "PO Confirmed", "PO Canceled"],
+      default: "PO Pending"
+    },
     createdAt: {
       type: Date,
       default: Date.now
