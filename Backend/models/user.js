@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
       enum: ["Available", "OnBreak", "Lunch", "Meeting", "LoggedOut"],
       default: "Available"
     },
+    Access: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   });
   
