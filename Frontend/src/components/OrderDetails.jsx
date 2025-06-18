@@ -410,22 +410,22 @@ const OrderDetails = () => {
   };
 
   const handleSelectVendor = (vendor) => {
-    setVendorDetailsForm({
-      businessName: vendor.businessName,
-      phoneNumber: vendor.phoneNumber,
-      email: vendor.email,
-      agentName: "",
-      costPrice: "",
-      shippingCost: "",
-      corePrice: "",
-      totalCost: "",
-      rating: "",
-      warranty: "",
-      mileage: "",
-    });
-    setShowVendorDetailsModal(true);
-    setShowAssociateVendorModal(false);
-  };
+  setVendorDetailsForm({
+    businessName: vendor.businessName,
+    phoneNumber: vendor.phoneNumber,
+    email: vendor.email,
+    agentName: "",
+    costPrice: order.leadId?.partCost ? order.leadId.partCost.toString() : "",
+    shippingCost: order.leadId?.shippingCost ? order.leadId.shippingCost.toString() : "",
+    corePrice: "",
+    totalCost: order.leadId?.totalCost ? order.leadId.totalCost.toString() : "",
+    rating: "",
+    warranty: "",
+    mileage: "",
+  });
+  setShowVendorDetailsModal(true);
+  setShowAssociateVendorModal(false);
+};
 
   const handleToggleVendorConfirmation = (vendorId, action) => {
     setConfirmationVendorId(vendorId);
