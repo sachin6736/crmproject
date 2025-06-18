@@ -19,16 +19,27 @@ const EmailPreviewModal = ({
         {
           method: "POST",
           credentials: "include",
+          headers: { "Content-Type": "application/json" },
         }
       );
-      if(response.status = 403) throw new Error (" admin access required")
-      if (!response.ok) throw new Error("Failed to send purchase order");
+
+      console.log("Response status:", response.status);
+
       const data = await response.json();
+      console.log("Response data:", data);
+
+      if (response.status === 403) {
+        throw new Error(data.message || "Admin access required");
+      }
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send purchase order");
+      }
+
       toast.success(data.message || "Purchase order sent successfully");
-      onConfirm(); // Close modal and refresh order
+      //onConfirm(); // Close modal and refresh order
     } catch (error) {
       console.error("Error sending purchase order:", error);
-      toast.error("Failed to send purchase order");
+      toast.error(error.message || "Failed to send purchase order");
     } finally {
       setIsSending(false);
     }
