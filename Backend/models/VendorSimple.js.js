@@ -18,6 +18,20 @@ const vendorSimpleSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
   },
+  agentName: {
+    type: String,
+    trim: true
+  },
+  address: {
+    type: String,
+    trim: true
+  },
+  rating: {
+    type: Number,
+    min: [0, 'Rating cannot be less than 0'],
+    max: [5, 'Rating cannot be more than 5'],
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now

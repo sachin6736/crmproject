@@ -275,7 +275,7 @@ const LeadTableHeader = () => {
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-1/2 rounded-md">
-              {["New", "Import", "Calendar"].map((btn, i) => (
+              {["New"].map((btn, i) => (
                 <button
                   key={i}
                   className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 hover:bg-[#032d60] dark:hover:bg-gray-700 hover:text-white dark:hover:text-gray-100"

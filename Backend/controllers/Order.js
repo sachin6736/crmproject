@@ -556,18 +556,30 @@ export const getProcurementOrders = async (req, res) => {
 //==============================
 export const createVendorSimple = async (req, res) => {
   try {
-    const { businessName, phoneNumber, email } = req.body;
+    const { businessName, phoneNumber, email, agentName, address, rating } = req.body;
 
     // Validate required fields
     if (!businessName || !phoneNumber || !email) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: 'Business name, phone number, and email are required' });
+    }
+
+    // Check for duplicate vendor by email and businessName
+    const existingVendor = await VendorSimple.findOne({ 
+      email: email.toLowerCase(), 
+      businessName: businessName.trim()
+    });
+    if (existingVendor) {
+      return res.status(409).json({ message: 'Vendor with this email and business name already exists' });
     }
 
     // Create new vendor
     const vendor = new VendorSimple({
       businessName,
       phoneNumber,
-      email
+      email,
+      agentName: agentName || undefined,
+      address: address || undefined,
+      rating: rating !== undefined ? Number(rating) : undefined
     });
 
     // Save to database

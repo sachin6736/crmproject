@@ -56,6 +56,13 @@ const Lead = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingQuote, setIsSendingQuote] = useState(false);
 
+  // Sync notes state with singleLead.notes whenever singleLead changes
+  useEffect(() => {
+    if (singleLead && singleLead.notes) {
+      setNotes(singleLead.notes);
+    }
+  }, [singleLead]);
+
   useEffect(() => {
     const fetchSingleLead = async () => {
       try {
@@ -66,7 +73,6 @@ const Lead = () => {
         if (!response.ok) throw new Error("Failed to fetch lead");
         const data = await response.json();
         setSingleLead(data);
-        setNotes(data.notes || []);
         setSelectedDates(data.importantDates || []);
         setEditForm({
           clientName: data.clientName || "",
@@ -210,7 +216,6 @@ const Lead = () => {
         );
         const updatedLead = await leadResponse.json();
         setSingleLead(updatedLead);
-        setNotes(updatedLead.notes || []);
       } else {
         toast.error("Failed to update status");
       }
@@ -296,7 +301,7 @@ const Lead = () => {
 
   const handleSendQuote = async () => {
     if (!areCostsValid()) {
-      toast.error("Please add and submit all cost details and a valid warranty before sending a quotation.");
+      toast.error("Please add and submit quote details before sending a quotation.");
       return;
     }
 
@@ -346,16 +351,7 @@ const Lead = () => {
     <div className="p-4 md:p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {/* Action Buttons */}
       <div className="flex justify-end mb-4">
-        <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2 md:w-1/2 w-full">
-          {["Convert", "Change Owner"].map((button, index) => (
-            <button
-              key={index}
-              className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300"
-              disabled
-            >
-              {button}
-            </button>
-          ))}
+        <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2">
           <button
             onClick={handleSendQuote}
             className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm border-r border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50"
@@ -499,21 +495,23 @@ const Lead = () => {
               </h2>
               <div className="p-2 mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-wrap overflow-y-auto flex-1">
                 {notes.length > 0 ? (
-                  notes.map((note, index) => (
-                    <div
-                      key={index}
-                      className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex justify-between items-center"
-                    >
-                      <div>
-                        <p className="text-gray-900 dark:text-gray-100">
-                          {note.text}
-                        </p>
-                        <small className="text-gray-500 dark:text-gray-400">
-                          {new Date(note.createdAt).toLocaleString()}
-                        </small>
+                  [...notes]
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .map((note, index) => (
+                      <div
+                        key={note._id || index}
+                        className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="text-gray-900 dark:text-gray-100">
+                            {note.text}
+                          </p>
+                          <small className="text-gray-500 dark:text-gray-400">
+                            {new Date(note.createdAt).toLocaleString()}
+                          </small>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
                     No notes added yet

@@ -507,6 +507,9 @@ export const editlead = async (req, res, next) => {
   try {
     const leadId = req.params.id;
     const updatedFields = req.body;
+    const user = req.user; 
+    console.log("user",user)
+    // Assuming req.user is set by authentication middleware
 
     // Define the fields that are allowed to be updated
     const allowedFields = [
@@ -529,14 +532,47 @@ export const editlead = async (req, res, next) => {
       }
     });
 
+    // Fetch the existing lead to compare changes
+    const existingLead = await Lead.findById(leadId);
+    if (!existingLead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // Generate a note summarizing the changes
+    const changes = [];
+    for (const field of allowedFields) {
+      if (filteredFields[field] !== undefined && filteredFields[field] !== existingLead[field]) {
+        changes.push(
+          `${field} changed from "${existingLead[field] || "N/A"}" to "${filteredFields[field]}"`
+        );
+      }
+    }
+
+    // Create a new note if there are changes
+    let noteUpdate = {};
+    if (changes.length > 0) {
+      const noteText = `Lead updated by ${user.name || user.email || "Unknown User"}: ${changes.join("; ")}`;
+      noteUpdate = {
+        $push: {
+          notes: {
+            text: noteText,
+            addedBy: user.name || user.email || "Unknown User",
+            createdAt: new Date(),
+          },
+        },
+      };
+    }
+
+    // Update the lead with filtered fields and append the note (if any)
     const updatedLead = await Lead.findByIdAndUpdate(
       leadId,
-      { $set: filteredFields },
+      { $set: filteredFields, ...noteUpdate },
       { new: true }
     );
 
-    if (!updatedLead)
+    if (!updatedLead) {
       return res.status(404).json({ message: "Lead not found" });
+    }
 
     res.status(200).json(updatedLead);
   } catch (error) {
@@ -544,7 +580,6 @@ export const editlead = async (req, res, next) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 export const updatecost = async (req, res, next) => {
   const { id } = req.params;
   const { partCost, shippingCost, grossProfit, warranty, totalCost } = req.body;

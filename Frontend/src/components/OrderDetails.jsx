@@ -60,11 +60,14 @@ const OrderDetails = () => {
   const [emailPreviewContent, setEmailPreviewContent] = useState("");
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [confirmationVendorId, setConfirmationVendorId] = useState(null);
-  const [vendorForm, setVendorForm] = useState({
-    businessName: "",
-    phoneNumber: "",
-    email: "",
-  });
+ const [vendorForm, setVendorForm] = useState({
+  businessName: "",
+  phoneNumber: "",
+  email: "",
+  agentName: "",
+  address: "",
+  rating: ""
+});
   const [vendorDetailsForm, setVendorDetailsForm] = useState({
     businessName: "",
     phoneNumber: "",
@@ -256,35 +259,45 @@ const OrderDetails = () => {
     setVendorForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleVendorFormSubmit = async (e) => {
-    e.preventDefault();
-    setActionLoading(true);
-    try {
-      const response = await fetch(`http://localhost:3000/Order/vendor-simple`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(vendorForm),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create vendor");
+const handleVendorFormSubmit = async (e) => {
+  e.preventDefault();
+  setActionLoading(true);
+  try {
+    const response = await fetch(`http://localhost:3000/Order/vendor-simple`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        businessName: vendorForm.businessName,
+        phoneNumber: vendorForm.phoneNumber,
+        email: vendorForm.email,
+        agentName: vendorForm.agentName,
+        address: vendorForm.address,
+        rating: vendorForm.rating
+      }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      if (response.status === 409) {
+        throw new Error("Vendor with this email and business name already exists");
       }
-      toast.success("Vendor created successfully");
-      setShowAddVendorModal(false);
-      setVendorForm({ businessName: "", phoneNumber: "", email: "" });
-      const vendorsRes = await fetch("http://localhost:3000/Order/vendor-simple", { credentials: "include" });
-      if (vendorsRes.ok) {
-        const vendorsData = await vendorsRes.json();
-        setSimpleVendors(vendorsData);
-      }
-    } catch (error) {
-      console.error("Error creating vendor:", error);
-      toast.error(error.message || "Failed to create vendor");
-    } finally {
-      setActionLoading(false);
+      throw new Error(errorData.message || "Failed to create vendor");
     }
-  };
+    toast.success("Vendor created successfully");
+    setShowAddVendorModal(false);
+    setVendorForm({ businessName: "", phoneNumber: "", email: "", agentName: "", address: "", rating: "" });
+    const vendorsRes = await fetch("http://localhost:3000/Order/vendor-simple", { credentials: "include" });
+    if (vendorsRes.ok) {
+      const vendorsData = await vendorsRes.json();
+      setSimpleVendors(vendorsData);
+    }
+  } catch (error) {
+    console.error("Error creating vendor:", error);
+    toast.error(error.message || "Failed to create vendor");
+  } finally {
+    setActionLoading(false);
+  }
+};
 
   const handleVendorDetailsFormChange = (e) => {
     const { name, value } = e.target;
@@ -1465,64 +1478,97 @@ const OrderDetails = () => {
       </div>
 
       {/* Add Vendor Modal */}
-      <Modal isOpen={showAddVendorModal} onClose={() => setShowAddVendorModal(false)} title="Add New Vendor">
-        <form onSubmit={handleVendorFormSubmit} className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Business Name</label>
-            <input
-              type="text"
-              name="businessName"
-              value={vendorForm.businessName}
-              onChange={handleVendorFormChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
-            <input
-              type="tel"
-              name="phoneNumber"
-              value={vendorForm.phoneNumber}
-              onChange={handleVendorFormChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={vendorForm.email}
-              onChange={handleVendorFormChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-          </div>
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={() => setShowAddVendorModal(false)}
-              className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
-              disabled={actionLoading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center text-sm"
-              disabled={actionLoading}
-            >
-              {actionLoading ? (
-                <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-blue-200" />
-              ) : (
-                "Submit"
-              )}
-            </button>
-          </div>
-        </form>
-      </Modal>
+<Modal isOpen={showAddVendorModal} onClose={() => setShowAddVendorModal(false)} title="Add New Vendor">
+  <form onSubmit={handleVendorFormSubmit} className="space-y-3">
+    <div>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Business Name</label>
+      <input
+        type="text"
+        name="businessName"
+        value={vendorForm.businessName}
+        onChange={handleVendorFormChange}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+      <input
+        type="tel"
+        name="phoneNumber"
+        value={vendorForm.phoneNumber}
+        onChange={handleVendorFormChange}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+      <input
+        type="email"
+        name="email"
+        value={vendorForm.email}
+        onChange={handleVendorFormChange}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Agent Name</label>
+      <input
+        type="text"
+        name="agentName"
+        value={vendorForm.agentName}
+        onChange={handleVendorFormChange}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Address</label>
+      <input
+        type="text"
+        name="address"
+        value={vendorForm.address}
+        onChange={handleVendorFormChange}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Rating (0-5)</label>
+      <input
+        type="number"
+        name="rating"
+        value={vendorForm.rating}
+        onChange={handleVendorFormChange}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        min="0"
+        max="5"
+        step="0.1"
+      />
+    </div>
+    <div className="flex justify-end space-x-3 pt-4">
+      <button
+        type="button"
+        onClick={() => setShowAddVendorModal(false)}
+        className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
+        disabled={actionLoading}
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center text-sm"
+        disabled={actionLoading}
+      >
+        {actionLoading ? (
+          <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-blue-200" />
+        ) : (
+          "Submit"
+        )}
+      </button>
+    </div>
+  </form>
+</Modal>
 
       {/* Associate Vendor Modal */}
       <Modal
