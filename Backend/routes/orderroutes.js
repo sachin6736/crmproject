@@ -25,6 +25,6 @@ router.get('/previewpurchaseorder/:id', previewPurchaseOrder);//
 router.post('/sendpurchaseorder/:id',protect,sendPurchaseorder); //sent purchase order
 router.patch('/update-status/:id',protect,changeOrderStatus);
 router.patch("/update/:orderId", protect,updateOrderDetails); // editorder details in customer-relations
-router.patch('/:orderId/shipment', protect,updateShipmentDetails);//edit shipment details
+router.put('/updateShipment/:orderId', protect,updateShipmentDetails);//edit shipment details
 
 export default router;

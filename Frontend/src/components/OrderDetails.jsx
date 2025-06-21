@@ -6,10 +6,28 @@ import { useTheme } from "../context/ThemeContext";
 import EmailPreviewModal from "./orderdetails/EmailPreviewModal";
 import { exportToExcel } from "./utilities/exportToExcel";
 
-const FullPageLoader = ({ size = "w-6 h-6", color = "text-blue-500", fill = "fill-blue-200" }) => (
-  <svg className={`${size} animate-spin ${color}`} fill="none" viewBox="0 0 24 24">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className={fill} d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z" />
+const FullPageLoader = ({
+  size = "w-6 h-6",
+  color = "text-blue-500",
+  fill = "fill-blue-200",
+}) => (
+  <svg
+    className={`${size} animate-spin ${color}`}
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
+    <path
+      className={fill}
+      d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+    />
   </svg>
 );
 
@@ -23,7 +41,9 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     >
       <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 max-w-md sm:max-w-lg w-full mx-4 max-h-[400px] overflow-y-auto shadow-2xl animate-fade-in">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100">
+            {title}
+          </h3>
           <button
             onClick={onClose}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-full w-8 h-8 flex items-center justify-center"
@@ -47,27 +67,29 @@ const OrderDetails = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
-  const [showAssociateVendorModal, setShowAssociateVendorModal] = useState(false);
+  const [showAssociateVendorModal, setShowAssociateVendorModal] =
+    useState(false);
   const [showVendorDetailsModal, setShowVendorDetailsModal] = useState(false);
   const [showEditVendorModal, setShowEditVendorModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
-  const [showProcurementNotesModal, setShowProcurementNotesModal] = useState(false);
+  const [showProcurementNotesModal, setShowProcurementNotesModal] =
+    useState(false);
   const [showCostModal, setShowCostModal] = useState(false);
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
   const [showShipmentModal, setShowShipmentModal] = useState(false);
   const [emailPreviewContent, setEmailPreviewContent] = useState("");
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [confirmationVendorId, setConfirmationVendorId] = useState(null);
- const [vendorForm, setVendorForm] = useState({
-  businessName: "",
-  phoneNumber: "",
-  email: "",
-  agentName: "",
-  address: "",
-  rating: ""
-});
+  const [vendorForm, setVendorForm] = useState({
+    businessName: "",
+    phoneNumber: "",
+    email: "",
+    agentName: "",
+    address: "",
+    rating: "",
+  });
   const [vendorDetailsForm, setVendorDetailsForm] = useState({
     businessName: "",
     phoneNumber: "",
@@ -95,7 +117,9 @@ const OrderDetails = () => {
     mileage: "",
   });
   const [notesForm, setNotesForm] = useState({ note: "" });
-  const [procurementNotesForm, setProcurementNotesForm] = useState({ note: "" });
+  const [procurementNotesForm, setProcurementNotesForm] = useState({
+    note: "",
+  });
   const [costForm, setCostForm] = useState({
     partCost: "",
     shippingCost: "",
@@ -124,6 +148,8 @@ const OrderDetails = () => {
     width: "",
     carrierName: "",
     trackingNumber: "",
+    bolNumber: "",
+    trackingLink: "",
   });
   const [simpleVendors, setSimpleVendors] = useState([]);
   const [editingVendorId, setEditingVendorId] = useState(null);
@@ -139,7 +165,9 @@ const OrderDetails = () => {
     const partCost = parseFloat(costForm.partCost) || 0;
     const shippingCost = parseFloat(costForm.shippingCost) || 0;
     const grossProfit = parseFloat(costForm.grossProfit) || 0;
-    const calculatedTotalCost = (partCost + shippingCost + grossProfit).toFixed(2);
+    const calculatedTotalCost = (partCost + shippingCost + grossProfit).toFixed(
+      2
+    );
     setCostForm((prev) => ({
       ...prev,
       totalCost: calculatedTotalCost,
@@ -153,8 +181,12 @@ const OrderDetails = () => {
       try {
         const [userRes, orderRes, vendorsRes] = await Promise.all([
           fetch("http://localhost:3000/User/me", { credentials: "include" }),
-          fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, { credentials: "include" }),
-          fetch("http://localhost:3000/Order/vendor-simple", { credentials: "include" }),
+          fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Order/vendor-simple", {
+            credentials: "include",
+          }),
         ]);
         if (!userRes.ok) throw new Error("Failed to fetch user data");
         if (!orderRes.ok) throw new Error("Failed to fetch order data");
@@ -193,6 +225,8 @@ const OrderDetails = () => {
           width: orderData.weightAndDimensions?.width ?? "",
           carrierName: orderData.carrierName ?? "",
           trackingNumber: orderData.trackingNumber ?? "",
+          bolNumber: orderData.bolNumber ?? "",
+          trackingLink: orderData.trackingLink ?? "",
         });
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -245,13 +279,25 @@ const OrderDetails = () => {
       }
     };
 
-    if (showNotesModal || showProcurementNotesModal || showCostModal || showEditOrderModal || showShipmentModal) {
+    if (
+      showNotesModal ||
+      showProcurementNotesModal ||
+      showCostModal ||
+      showEditOrderModal ||
+      showShipmentModal
+    ) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showNotesModal, showProcurementNotesModal, showCostModal, showEditOrderModal, showShipmentModal]);
+  }, [
+    showNotesModal,
+    showProcurementNotesModal,
+    showCostModal,
+    showEditOrderModal,
+    showShipmentModal,
+  ]);
 
   // Vendor form handlers
   const handleVendorFormChange = (e) => {
@@ -259,45 +305,60 @@ const OrderDetails = () => {
     setVendorForm((prev) => ({ ...prev, [name]: value }));
   };
 
-const handleVendorFormSubmit = async (e) => {
-  e.preventDefault();
-  setActionLoading(true);
-  try {
-    const response = await fetch(`http://localhost:3000/Order/vendor-simple`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        businessName: vendorForm.businessName,
-        phoneNumber: vendorForm.phoneNumber,
-        email: vendorForm.email,
-        agentName: vendorForm.agentName,
-        address: vendorForm.address,
-        rating: vendorForm.rating
-      }),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      if (response.status === 409) {
-        throw new Error("Vendor with this email and business name already exists");
+  const handleVendorFormSubmit = async (e) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:3000/Order/vendor-simple`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            businessName: vendorForm.businessName,
+            phoneNumber: vendorForm.phoneNumber,
+            email: vendorForm.email,
+            agentName: vendorForm.agentName,
+            address: vendorForm.address,
+            rating: vendorForm.rating,
+          }),
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 409) {
+          throw new Error(
+            "Vendor with this email and business name already exists"
+          );
+        }
+        throw new Error(errorData.message || "Failed to create vendor");
       }
-      throw new Error(errorData.message || "Failed to create vendor");
+      toast.success("Vendor created successfully");
+      setShowAddVendorModal(false);
+      setVendorForm({
+        businessName: "",
+        phoneNumber: "",
+        email: "",
+        agentName: "",
+        address: "",
+        rating: "",
+      });
+      const vendorsRes = await fetch(
+        "http://localhost:3000/Order/vendor-simple",
+        { credentials: "include" }
+      );
+      if (vendorsRes.ok) {
+        const vendorsData = await vendorsRes.json();
+        setSimpleVendors(vendorsData);
+      }
+    } catch (error) {
+      console.error("Error creating vendor:", error);
+      toast.error(error.message || "Failed to create vendor");
+    } finally {
+      setActionLoading(false);
     }
-    toast.success("Vendor created successfully");
-    setShowAddVendorModal(false);
-    setVendorForm({ businessName: "", phoneNumber: "", email: "", agentName: "", address: "", rating: "" });
-    const vendorsRes = await fetch("http://localhost:3000/Order/vendor-simple", { credentials: "include" });
-    if (vendorsRes.ok) {
-      const vendorsData = await vendorsRes.json();
-      setSimpleVendors(vendorsData);
-    }
-  } catch (error) {
-    console.error("Error creating vendor:", error);
-    toast.error(error.message || "Failed to create vendor");
-  } finally {
-    setActionLoading(false);
-  }
-};
+  };
 
   const handleVendorDetailsFormChange = (e) => {
     const { name, value } = e.target;
@@ -308,12 +369,15 @@ const handleVendorFormSubmit = async (e) => {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/Order/order/${orderId}/vendor`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(vendorDetailsForm),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/order/${orderId}/vendor`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(vendorDetailsForm),
+        }
+      );
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to add vendor to order");
@@ -422,17 +486,17 @@ const handleVendorFormSubmit = async (e) => {
     }
   };
 
-  const handleSelectVendor = (vendor) => {
+const handleSelectVendor = (vendor) => {
   setVendorDetailsForm({
     businessName: vendor.businessName,
     phoneNumber: vendor.phoneNumber,
     email: vendor.email,
-    agentName: "",
+    agentName: vendor.agentName || "", // Add fallback for agentName
     costPrice: order.leadId?.partCost ? order.leadId.partCost.toString() : "",
     shippingCost: order.leadId?.shippingCost ? order.leadId.shippingCost.toString() : "",
     corePrice: "",
     totalCost: order.leadId?.totalCost ? order.leadId.totalCost.toString() : "",
-    rating: "",
+    rating: vendor.rating ? vendor.rating.toString() : "", // Already correct
     warranty: "",
     mileage: "",
   });
@@ -465,7 +529,9 @@ const handleVendorFormSubmit = async (e) => {
       }
       const data = await response.json();
       setOrder(data.order);
-      toast.success(`Vendor ${isConfirmed ? "confirmed" : "canceled"} successfully`);
+      toast.success(
+        `Vendor ${isConfirmed ? "confirmed" : "canceled"} successfully`
+      );
       setShowConfirmationModal(false);
       setConfirmationVendorId(null);
       setConfirmationAction(null);
@@ -486,7 +552,8 @@ const handleVendorFormSubmit = async (e) => {
           credentials: "include",
         }
       );
-      if (!response.ok) throw new Error("Failed to fetch purchase order preview");
+      if (!response.ok)
+        throw new Error("Failed to fetch purchase order preview");
       const data = await response.json();
       setEmailPreviewContent(data.htmlContent);
       setConfirmationVendorId(vendorId);
@@ -502,9 +569,12 @@ const handleVendorFormSubmit = async (e) => {
     setEmailPreviewContent("");
     setConfirmationVendorId(null);
     try {
-      const response = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/orderbyid/${orderId}`,
+        {
+          credentials: "include",
+        }
+      );
       if (!response.ok) throw new Error("Failed to fetch order data");
       const orderData = await response.json();
       setOrder(orderData);
@@ -526,23 +596,29 @@ const handleVendorFormSubmit = async (e) => {
   const handleNotesFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/${orderId}/notes`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ note: notesForm.note }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/${orderId}/notes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ note: notesForm.note }),
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to submit note");
       }
       toast.success("Note added successfully");
       setShowNotesModal(false);
       setNotesForm({ note: "" });
-      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
+      const responseOrder = await fetch(
+        `http://localhost:3000/Order/orderbyid/${orderId}`,
+        {
+          credentials: "include",
+        }
+      );
       if (responseOrder.ok) {
         const data = await responseOrder.json();
         setOrder(data);
@@ -570,23 +646,29 @@ const handleVendorFormSubmit = async (e) => {
   const handleProcurementNotesFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/${orderId}/procurementnotes`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ note: procurementNotesForm.note }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/${orderId}/procurementnotes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ note: procurementNotesForm.note }),
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to submit procurement note");
       }
       toast.success("Procurement note added successfully");
       setShowProcurementNotesModal(false);
       setProcurementNotesForm({ note: "" });
-      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
+      const responseOrder = await fetch(
+        `http://localhost:3000/Order/orderbyid/${orderId}`,
+        {
+          credentials: "include",
+        }
+      );
       if (responseOrder.ok) {
         const data = await responseOrder.json();
         setOrder(data);
@@ -614,27 +696,33 @@ const handleVendorFormSubmit = async (e) => {
   const handleCostFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Lead/updatecost/${order.leadId._id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          partCost: parseFloat(costForm.partCost) || 0,
-          shippingCost: parseFloat(costForm.shippingCost) || 0,
-          grossProfit: parseFloat(costForm.grossProfit) || 0,
-          totalCost: parseFloat(costForm.totalCost) || 0,
-        }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Lead/updatecost/${order.leadId._id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            partCost: parseFloat(costForm.partCost) || 0,
+            shippingCost: parseFloat(costForm.shippingCost) || 0,
+            grossProfit: parseFloat(costForm.grossProfit) || 0,
+            totalCost: parseFloat(costForm.totalCost) || 0,
+          }),
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to update costs");
       }
       toast.success("Costs updated successfully");
       setShowCostModal(false);
-      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
+      const responseOrder = await fetch(
+        `http://localhost:3000/Order/orderbyid/${orderId}`,
+        {
+          credentials: "include",
+        }
+      );
       if (responseOrder.ok) {
         const data = await responseOrder.json();
         setOrder(data);
@@ -673,14 +761,17 @@ const handleVendorFormSubmit = async (e) => {
   const handleEditOrderFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/update/${orderId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(editOrderForm),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/update/${orderId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(editOrderForm),
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to update order details");
       }
@@ -742,38 +833,45 @@ const handleVendorFormSubmit = async (e) => {
   const handleShipmentFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/${orderId}/shipment`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          weight: parseFloat(shipmentForm.weight) || 0,
-          height: parseFloat(shipmentForm.height) || 0,
-          width: parseFloat(shipmentForm.width) || 0,
-          carrierName: shipmentForm.carrierName,
-          trackingNumber: shipmentForm.trackingNumber,
-        }),
-      });
-      if (!response.ok) throw new Error("Failed to update shipment details");
-      toast.success("Shipment details updated successfully");
-      setShowShipmentModal(false);
-      const responseOrder = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
-      if (responseOrder.ok) {
-        const data = await responseOrder.json();
-        setOrder(data);
-        setShipmentForm({
-          weight: data.weightAndDimensions?.weight ?? "",
-          height: data.weightAndDimensions?.height ?? "",
-          width: data.weightAndDimensions?.width ?? "",
-          carrierName: data.carrierName ?? "",
-          trackingNumber: data.trackingNumber ?? "",
-        });
+      const response = await fetch(
+        `http://localhost:3000/Order/updateShipment/${orderId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            weight: parseFloat(shipmentForm.weight) || 0,
+            height: parseFloat(shipmentForm.height) || 0,
+            width: parseFloat(shipmentForm.width) || 0,
+            carrierName: shipmentForm.carrierName,
+            trackingNumber: shipmentForm.trackingNumber,
+            bolNumber: shipmentForm.bolNumber,
+            trackingLink: shipmentForm.trackingLink,
+          }),
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to update shipment details"
+        );
       }
+      const data = await response.json();
+      toast.success(data.message);
+      setShowShipmentModal(false);
+      setOrder(data.order);
+      setShipmentForm({
+        weight: data.order.weightAndDimensions?.weight ?? "",
+        height: data.order.weightAndDimensions?.height ?? "",
+        width: data.order.weightAndDimensions?.width ?? "",
+        carrierName: data.order.carrierName ?? "",
+        trackingNumber: data.order.trackingNumber ?? "",
+        bolNumber: data.order.bolNumber ?? "",
+        trackingLink: data.order.trackingLink ?? "",
+      });
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Failed to update shipment details");
+      toast.error(error.message || "Failed to update shipment details");
     }
   };
 
@@ -785,6 +883,8 @@ const handleVendorFormSubmit = async (e) => {
       width: order.weightAndDimensions?.width || "",
       carrierName: order.carrierName || "",
       trackingNumber: order.trackingNumber || "",
+      bolNumber: order.bolNumber || "",
+      trackingLink: order.trackingLink || "",
     });
   };
 
@@ -806,50 +906,166 @@ const handleVendorFormSubmit = async (e) => {
       { Field: "Zip", Value: order.zip || "N/A" },
       { Field: "Shipping Address", Value: order.shippingAddress || "N/A" },
       { Field: "Shipping City", Value: order.shippingCity || "N/A" },
-      { Field: "Shipping State", Value: order.shippingState?.toUpperCase() || "N/A" },
+      {
+        Field: "Shipping State",
+        Value: order.shippingState?.toUpperCase() || "N/A",
+      },
       { Field: "Shipping Zip", Value: order.shippingZip || "N/A" },
       { Field: "Make", Value: order.make || "N/A" },
       { Field: "Model", Value: order.model || "N/A" },
       { Field: "Year", Value: order.year || "N/A" },
       { Field: "Trim", Value: order.leadId?.trim || "N/A" },
       { Field: "Part Requested", Value: order.leadId?.partRequested || "N/A" },
-      { Field: "Part Cost", Value: order.leadId?.partCost ? `$${order.leadId.partCost.toFixed(2)}` : "N/A" },
-      { Field: "Shipping Cost", Value: order.leadId?.shippingCost ? `$${order.leadId.shippingCost.toFixed(2)}` : "N/A" },
-      { Field: "Gross Profit", Value: order.leadId?.grossProfit ? `$${order.leadId.grossProfit.toFixed(2)}` : "N/A" },
-      { Field: "Total Cost", Value: order.leadId?.totalCost ? `$${order.leadId.totalCost.toFixed(2)}` : "N/A" },
-      { Field: "Amount", Value: order.amount ? `$${order.amount.toFixed(2)}` : "N/A" },
+      {
+        Field: "Part Cost",
+        Value: order.leadId?.partCost
+          ? `$${order.leadId.partCost.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Shipping Cost",
+        Value: order.leadId?.shippingCost
+          ? `$${order.leadId.shippingCost.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Gross Profit",
+        Value: order.leadId?.grossProfit
+          ? `$${order.leadId.grossProfit.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Total Cost",
+        Value: order.leadId?.totalCost
+          ? `$${order.leadId.totalCost.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Amount",
+        Value: order.amount ? `$${order.amount.toFixed(2)}` : "N/A",
+      },
       { Field: "Order Status", Value: order.status || "N/A" },
       { Field: "Lead Status", Value: order.leadId?.status || "N/A" },
-      { Field: "Sales Person", Value: order.salesPerson?.name || order.salesPerson?._id || "N/A" },
-      { Field: "Order Created At", Value: order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A" },
-      { Field: "Lead Created At", Value: order.leadId?.createdAt ? new Date(order.leadId.createdAt).toLocaleString() : "N/A" },
+      {
+        Field: "Sales Person",
+        Value: order.salesPerson?.name || order.salesPerson?._id || "N/A",
+      },
+      {
+        Field: "Order Created At",
+        Value: order.createdAt
+          ? new Date(order.createdAt).toLocaleString()
+          : "N/A",
+      },
+      {
+        Field: "Lead Created At",
+        Value: order.leadId?.createdAt
+          ? new Date(order.leadId.createdAt).toLocaleString()
+          : "N/A",
+      },
+      {
+        Field: "Weight",
+        Value: order.weightAndDimensions?.weight
+          ? `${order.weightAndDimensions.weight} lb`
+          : "N/A",
+      },
+      {
+        Field: "Height",
+        Value: order.weightAndDimensions?.height
+          ? `${order.weightAndDimensions.height} cm`
+          : "N/A",
+      },
+      {
+        Field: "Width",
+        Value: order.weightAndDimensions?.width
+          ? `${order.weightAndDimensions.width} cm`
+          : "N/A",
+      },
+      { Field: "Carrier Name", Value: order.carrierName || "N/A" },
+      { Field: "Tracking Number", Value: order.trackingNumber || "N/A" },
+      { Field: "BOL Number", Value: order.bolNumber || "N/A" },
+      { Field: "Tracking Link", Value: order.trackingLink || "N/A" },
       ...(order.vendors?.length > 0
         ? order.vendors.flatMap((vendor, index) => [
-            { Field: `Vendor ${index + 1} Business Name`, Value: vendor.businessName || "N/A" },
-            { Field: `Vendor ${index + 1} Agent Name`, Value: vendor.agentName || "N/A" },
-            { Field: `Vendor ${index + 1} Phone Number`, Value: vendor.phoneNumber || "N/A" },
-            { Field: `Vendor ${index + 1} Email`, Value: vendor.email || "N/A" },
-            { Field: `Vendor ${index + 1} Cost Price`, Value: vendor.costPrice ? `$${vendor.costPrice.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Shipping Cost`, Value: vendor.shippingCost ? `$${vendor.shippingCost.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Core Price`, Value: vendor.corePrice ? `$${vendor.corePrice.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Total Cost`, Value: vendor.totalCost ? `$${vendor.totalCost.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Rating`, Value: vendor.rating || "N/A" },
-            { Field: `Vendor ${index + 1} Warranty`, Value: vendor.warranty || "N/A" },
-            { Field: `Vendor ${index + 1} Mileage`, Value: vendor.mileage || "N/A" },
-            { Field: `Vendor ${index + 1} Created At`, Value: vendor.createdAt ? new Date(vendor.createdAt).toLocaleString() : "N/A" },
+            {
+              Field: `Vendor ${index + 1} Business Name`,
+              Value: vendor.businessName || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Agent Name`,
+              Value: vendor.agentName || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Phone Number`,
+              Value: vendor.phoneNumber || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Email`,
+              Value: vendor.email || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Cost Price`,
+              Value: vendor.costPrice
+                ? `$${vendor.costPrice.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Shipping Cost`,
+              Value: vendor.shippingCost
+                ? `$${vendor.shippingCost.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Core Price`,
+              Value: vendor.corePrice
+                ? `$${vendor.corePrice.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Total Cost`,
+              Value: vendor.totalCost
+                ? `$${vendor.totalCost.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Rating`,
+              Value: vendor.rating || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Warranty`,
+              Value: vendor.warranty || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Mileage`,
+              Value: vendor.mileage || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Created At`,
+              Value: vendor.createdAt
+                ? new Date(vendor.createdAt).toLocaleString()
+                : "N/A",
+            },
           ])
         : [{ Field: "Vendor", Value: "No vendor details available" }]),
       ...(user?.role === "admin"
         ? [
             { Field: "Card Number", Value: order.cardNumber || "N/A" },
-            { Field: "Card Expiry", Value: order.cardMonth && order.cardYear ? `${order.cardMonth}/${order.cardYear}` : "N/A" },
+            {
+              Field: "Card Expiry",
+              Value:
+                order.cardMonth && order.cardYear
+                  ? `${order.cardMonth}/${order.cardYear}`
+                  : "N/A",
+            },
             { Field: "Card CVV", Value: order.cvv || "N/A" },
           ]
         : []),
     ];
 
     try {
-      exportToExcel(formattedOrder, `order_${order.order_id || "details"}.xlsx`);
+      exportToExcel(
+        formattedOrder,
+        `order_${order.order_id || "details"}.xlsx`
+      );
       toast.success("Order exported to Excel successfully");
     } catch (error) {
       toast.error("Error exporting order to Excel");
@@ -897,15 +1113,21 @@ const handleVendorFormSubmit = async (e) => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Name</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Name
+                      </strong>
                       <p>{order.clientName || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Phone
+                      </strong>
                       <p>{order.phone || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Email
+                      </strong>
                       <p>{order.email || "N/A"}</p>
                     </div>
                   </div>
@@ -921,7 +1143,9 @@ const handleVendorFormSubmit = async (e) => {
                         Weight and Dimensions:
                       </strong>
                       <span className="ml-1">
-                        {order.weightAndDimensions?.weight && order.weightAndDimensions?.width && order.weightAndDimensions?.height
+                        {order.weightAndDimensions?.weight &&
+                        order.weightAndDimensions?.width &&
+                        order.weightAndDimensions?.height
                           ? `${order.weightAndDimensions.weight} lb, ${order.weightAndDimensions.width}*${order.weightAndDimensions.height} cm`
                           : "N/A"}
                       </span>
@@ -936,7 +1160,34 @@ const handleVendorFormSubmit = async (e) => {
                       <strong className="font-semibold text-gray-600 dark:text-gray-400">
                         Tracking Number:
                       </strong>
-                      <span className="ml-1">{order.trackingNumber || "N/A"}</span>
+                      <span className="ml-1">
+                        {order.trackingNumber || "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <strong className="font-semibold text-gray-600 dark:text-gray-400">
+                        BOL Number:
+                      </strong>
+                      <span className="ml-1">{order.bolNumber || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong className="font-semibold text-gray-600 dark:text-gray-400">
+                        Tracking Link:
+                      </strong>
+                      <span className="ml-1">
+                        {order.trackingLink ? (
+                          <a
+                            href={order.trackingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            {order.trackingLink}
+                          </a>
+                        ) : (
+                          "N/A"
+                        )}
+                      </span>
                     </div>
                   </div>
                 </section>
@@ -947,19 +1198,27 @@ const handleVendorFormSubmit = async (e) => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Address</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Address
+                      </strong>
                       <p>{order.billingAddress || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">City</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        City
+                      </strong>
                       <p>{order.city || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">State</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        State
+                      </strong>
                       <p>{order.state?.toUpperCase() || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Zip</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Zip
+                      </strong>
                       <p>{order.zip || "N/A"}</p>
                     </div>
                   </div>
@@ -971,19 +1230,27 @@ const handleVendorFormSubmit = async (e) => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Address</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Address
+                      </strong>
                       <p>{order.shippingAddress || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">City</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        City
+                      </strong>
                       <p>{order.shippingCity || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">State</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        State
+                      </strong>
                       <p>{order.shippingState?.toUpperCase() || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Zip</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Zip
+                      </strong>
                       <p>{order.shippingZip || "N/A"}</p>
                     </div>
                   </div>
@@ -995,23 +1262,33 @@ const handleVendorFormSubmit = async (e) => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Make</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Make
+                      </strong>
                       <p>{order.make || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Model</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Model
+                      </strong>
                       <p>{order.model || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Year</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Year
+                      </strong>
                       <p>{order.year || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Trim</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Trim
+                      </strong>
                       <p>{order.leadId?.trim || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Part Requested</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Part Requested
+                      </strong>
                       <p>{order.leadId?.partRequested || "N/A"}</p>
                     </div>
                   </div>
@@ -1023,11 +1300,19 @@ const handleVendorFormSubmit = async (e) => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Card Number</strong>
-                      <p>{user?.role === "admin" ? order.cardNumber || "N/A" : "**** **** **** ****"}</p>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Card Number
+                      </strong>
+                      <p>
+                        {user?.role === "admin"
+                          ? order.cardNumber || "N/A"
+                          : "**** **** **** ****"}
+                      </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Card Expiry</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Card Expiry
+                      </strong>
                       <p>
                         {order.cardMonth && order.cardYear
                           ? `${order.cardMonth}/${order.cardYear}`
@@ -1035,7 +1320,9 @@ const handleVendorFormSubmit = async (e) => {
                       </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Part Cost</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Part Cost
+                      </strong>
                       <p>
                         {order.leadId?.partCost
                           ? `$${order.leadId.partCost.toFixed(2)}`
@@ -1043,7 +1330,9 @@ const handleVendorFormSubmit = async (e) => {
                       </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Shipping Cost</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Shipping Cost
+                      </strong>
                       <p>
                         {order.leadId?.shippingCost
                           ? `$${order.leadId.shippingCost.toFixed(2)}`
@@ -1051,7 +1340,9 @@ const handleVendorFormSubmit = async (e) => {
                       </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Gross Profit</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Gross Profit
+                      </strong>
                       <p>
                         {order.leadId?.grossProfit
                           ? `$${order.leadId.grossProfit.toFixed(2)}`
@@ -1059,7 +1350,9 @@ const handleVendorFormSubmit = async (e) => {
                       </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Cost</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Total Cost
+                      </strong>
                       <p>
                         {order.leadId?.totalCost
                           ? `$${order.leadId.totalCost.toFixed(2)}`
@@ -1067,7 +1360,9 @@ const handleVendorFormSubmit = async (e) => {
                       </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Amount</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Amount
+                      </strong>
                       <p>
                         {order.amount ? `$${order.amount.toFixed(2)}` : "N/A"}
                       </p>
@@ -1081,19 +1376,27 @@ const handleVendorFormSubmit = async (e) => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Order ID</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Order ID
+                      </strong>
                       <p>{order.order_id || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Order Status</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Order Status
+                      </strong>
                       <p>{order.status || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Lead Status</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Lead Status
+                      </strong>
                       <p>{order.leadId?.status || "N/A"}</p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Sales Person</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Sales Person
+                      </strong>
                       <p>
                         {order.salesPerson?.name ||
                           order.salesPerson?._id ||
@@ -1101,7 +1404,9 @@ const handleVendorFormSubmit = async (e) => {
                       </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Order Created At</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Order Created At
+                      </strong>
                       <p>
                         {order.createdAt
                           ? new Date(order.createdAt).toLocaleString()
@@ -1109,7 +1414,9 @@ const handleVendorFormSubmit = async (e) => {
                       </p>
                     </div>
                     <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Lead Created At</strong>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Lead Created At
+                      </strong>
                       <p>
                         {order.leadId?.createdAt
                           ? new Date(order.leadId.createdAt).toLocaleString()
@@ -1123,7 +1430,8 @@ const handleVendorFormSubmit = async (e) => {
                   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
                     Active Vendors
                   </h3>
-                  {order.vendors && order.vendors.filter((v) => v.isConfirmed).length > 0 ? (
+                  {order.vendors &&
+                  order.vendors.filter((v) => v.isConfirmed).length > 0 ? (
                     <ul className="space-y-4">
                       {order.vendors
                         .filter((v) => v.isConfirmed)
@@ -1161,25 +1469,41 @@ const handleVendorFormSubmit = async (e) => {
                                 <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
                                   Cost Price
                                 </strong>
-                                <p>{vendor.costPrice ? `$${vendor.costPrice.toFixed(2)}` : "N/A"}</p>
+                                <p>
+                                  {vendor.costPrice
+                                    ? `$${vendor.costPrice.toFixed(2)}`
+                                    : "N/A"}
+                                </p>
                               </div>
                               <div>
                                 <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
                                   Shipping Cost
                                 </strong>
-                                <p>{vendor.shippingCost ? `$${vendor.shippingCost.toFixed(2)}` : "N/A"}</p>
+                                <p>
+                                  {vendor.shippingCost
+                                    ? `$${vendor.shippingCost.toFixed(2)}`
+                                    : "N/A"}
+                                </p>
                               </div>
                               <div>
                                 <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
                                   Core Price
                                 </strong>
-                                <p>{vendor.corePrice ? `$${vendor.corePrice.toFixed(2)}` : "N/A"}</p>
+                                <p>
+                                  {vendor.corePrice
+                                    ? `$${vendor.corePrice.toFixed(2)}`
+                                    : "N/A"}
+                                </p>
                               </div>
                               <div>
                                 <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
                                   Total Cost
                                 </strong>
-                                <p>{vendor.totalCost ? `$${vendor.totalCost.toFixed(2)}` : "N/A"}</p>
+                                <p>
+                                  {vendor.totalCost
+                                    ? `$${vendor.totalCost.toFixed(2)}`
+                                    : "N/A"}
+                                </p>
                               </div>
                               <div>
                                 <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -1218,14 +1542,21 @@ const handleVendorFormSubmit = async (e) => {
                                 </p>
                                 <div className="mt-2 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                                   <button
-                                    onClick={() => handleEditVendorClick(vendor)}
+                                    onClick={() =>
+                                      handleEditVendorClick(vendor)
+                                    }
                                     className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
                                     aria-label={`Edit vendor ${vendor.businessName}`}
                                   >
                                     Edit Details
                                   </button>
                                   <button
-                                    onClick={() => handleToggleVendorConfirmation(vendor._id, "reject")}
+                                    onClick={() =>
+                                      handleToggleVendorConfirmation(
+                                        vendor._id,
+                                        "reject"
+                                      )
+                                    }
                                     className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors text-sm"
                                     aria-label={`Cancel PO for ${vendor.businessName}`}
                                   >
@@ -1238,17 +1569,24 @@ const handleVendorFormSubmit = async (e) => {
                         ))}
                     </ul>
                   ) : (
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">No confirmed vendors.</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      No confirmed vendors.
+                    </p>
                   )}
                 </section>
                 {/* Not Confirmed Vendors */}
                 <section className="pb-6">
                   <button
-                    onClick={() => setShowNotConfirmedVendors(!showNotConfirmedVendors)}
+                    onClick={() =>
+                      setShowNotConfirmedVendors(!showNotConfirmedVendors)
+                    }
                     className="flex items-center text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     aria-expanded={showNotConfirmedVendors}
                   >
-                    <span>{showNotConfirmedVendors ? "Hide" : "Show"} Not Confirmed Vendors</span>
+                    <span>
+                      {showNotConfirmedVendors ? "Hide" : "Show"} Not Confirmed
+                      Vendors
+                    </span>
                     <svg
                       className={`ml-2 w-4 h-4 sm:w-5 sm:h-5 transform ${
                         showNotConfirmedVendors ? "rotate-180" : ""
@@ -1257,12 +1595,18 @@ const handleVendorFormSubmit = async (e) => {
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </button>
                   {showNotConfirmedVendors && (
                     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                      {order.vendors && order.vendors.filter((v) => !v.isConfirmed).length > 0 ? (
+                      {order.vendors &&
+                      order.vendors.filter((v) => !v.isConfirmed).length > 0 ? (
                         <ul className="space-y-2">
                           {order.vendors
                             .filter((v) => !v.isConfirmed)
@@ -1272,7 +1616,9 @@ const handleVendorFormSubmit = async (e) => {
                                 className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 bg-gray-100 dark:bg-gray-600 rounded-md"
                               >
                                 <div className="flex flex-col">
-                                  <span className="text-sm sm:text-base">{vendor.businessName}</span>
+                                  <span className="text-sm sm:text-base">
+                                    {vendor.businessName}
+                                  </span>
                                   <span
                                     className={`text-xs ${
                                       vendor.poStatus === "PO Confirmed"
@@ -1289,14 +1635,21 @@ const handleVendorFormSubmit = async (e) => {
                                 </div>
                                 <div className="mt-2 sm:mt-0 flex space-x-2">
                                   <button
-                                    onClick={() => handleToggleVendorConfirmation(vendor._id, "confirm")}
+                                    onClick={() =>
+                                      handleToggleVendorConfirmation(
+                                        vendor._id,
+                                        "confirm"
+                                      )
+                                    }
                                     className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm"
                                     aria-label={`Confirm PO for ${vendor.businessName}`}
                                   >
                                     Confirm PO
                                   </button>
                                   <button
-                                    onClick={() => handleSendPOClick(vendor._id)}
+                                    onClick={() =>
+                                      handleSendPOClick(vendor._id)
+                                    }
                                     className={`px-3 py-1 text-white rounded-md transition-colors text-sm ${
                                       vendor.poStatus !== "PO Pending"
                                         ? "bg-gray-400 cursor-not-allowed"
@@ -1312,7 +1665,9 @@ const handleVendorFormSubmit = async (e) => {
                             ))}
                         </ul>
                       ) : (
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">No unconfirmed vendors.</p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                          No unconfirmed vendors.
+                        </p>
                       )}
                     </div>
                   )}
@@ -1340,7 +1695,9 @@ const handleVendorFormSubmit = async (e) => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-gray-600 dark:text-gray-400">No notes available</p>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        No notes available
+                      </p>
                     )}
                   </div>
                 </section>
@@ -1350,7 +1707,8 @@ const handleVendorFormSubmit = async (e) => {
                     Procurement Notes
                   </h3>
                   <div className="max-h-64 overflow-y-auto p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
-                    {order.procurementnotes && order.procurementnotes.length > 0 ? (
+                    {order.procurementnotes &&
+                    order.procurementnotes.length > 0 ? (
                       <ul className="space-y-2">
                         {order.procurementnotes.map((note, index) => (
                           <li
@@ -1367,7 +1725,9 @@ const handleVendorFormSubmit = async (e) => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-gray-600 dark:text-gray-400">No procurement notes available</p>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        No procurement notes available
+                      </p>
                     )}
                   </div>
                 </section>
@@ -1379,19 +1739,27 @@ const handleVendorFormSubmit = async (e) => {
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Card Number</strong>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Card Number
+                        </strong>
                         <p>{order.cardNumber || "N/A"}</p>
                       </div>
                       <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Card Month</strong>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Card Month
+                        </strong>
                         <p>{order.cardMonth || "N/A"}</p>
                       </div>
                       <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">Card Year</strong>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Card Year
+                        </strong>
                         <p>{order.cardYear || "N/A"}</p>
                       </div>
                       <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">CVV</strong>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          CVV
+                        </strong>
                         <p>{order.cvv || "N/A"}</p>
                       </div>
                     </div>
@@ -1400,7 +1768,9 @@ const handleVendorFormSubmit = async (e) => {
               </div>
             </div>
           ) : (
-            <p className="text-center text-gray-600 dark:text-gray-400 text-sm">No order details available.</p>
+            <p className="text-center text-gray-600 dark:text-gray-400 text-sm">
+              No order details available.
+            </p>
           )}
         </div>
         <div className="lg:w-80 w-full">
@@ -1433,7 +1803,9 @@ const handleVendorFormSubmit = async (e) => {
             {["procurement", "admin"].includes(user?.role) && (
               <button
                 ref={procurementNotesButtonRef}
-                onClick={() => setShowProcurementNotesModal(!showProcurementNotesModal)}
+                onClick={() =>
+                  setShowProcurementNotesModal(!showProcurementNotesModal)
+                }
                 className="w-full px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors text-sm sm:text-base"
               >
                 Add Procurement Note
@@ -1478,97 +1850,117 @@ const handleVendorFormSubmit = async (e) => {
       </div>
 
       {/* Add Vendor Modal */}
-<Modal isOpen={showAddVendorModal} onClose={() => setShowAddVendorModal(false)} title="Add New Vendor">
-  <form onSubmit={handleVendorFormSubmit} className="space-y-3">
-    <div>
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Business Name</label>
-      <input
-        type="text"
-        name="businessName"
-        value={vendorForm.businessName}
-        onChange={handleVendorFormChange}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
-      <input
-        type="tel"
-        name="phoneNumber"
-        value={vendorForm.phoneNumber}
-        onChange={handleVendorFormChange}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
-      <input
-        type="email"
-        name="email"
-        value={vendorForm.email}
-        onChange={handleVendorFormChange}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Agent Name</label>
-      <input
-        type="text"
-        name="agentName"
-        value={vendorForm.agentName}
-        onChange={handleVendorFormChange}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Address</label>
-      <input
-        type="text"
-        name="address"
-        value={vendorForm.address}
-        onChange={handleVendorFormChange}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Rating (0-5)</label>
-      <input
-        type="number"
-        name="rating"
-        value={vendorForm.rating}
-        onChange={handleVendorFormChange}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-        min="0"
-        max="5"
-        step="0.1"
-      />
-    </div>
-    <div className="flex justify-end space-x-3 pt-4">
-      <button
-        type="button"
-        onClick={() => setShowAddVendorModal(false)}
-        className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
-        disabled={actionLoading}
+      <Modal
+        isOpen={showAddVendorModal}
+        onClose={() => setShowAddVendorModal(false)}
+        title="Add New Vendor"
       >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center text-sm"
-        disabled={actionLoading}
-      >
-        {actionLoading ? (
-          <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-blue-200" />
-        ) : (
-          "Submit"
-        )}
-      </button>
-    </div>
-  </form>
-</Modal>
+        <form onSubmit={handleVendorFormSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Business Name
+            </label>
+            <input
+              type="text"
+              name="businessName"
+              value={vendorForm.businessName}
+              onChange={handleVendorFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              name="phoneNumber"
+              value={vendorForm.phoneNumber}
+              onChange={handleVendorFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={vendorForm.email}
+              onChange={handleVendorFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Agent Name
+            </label>
+            <input
+              type="text"
+              name="agentName"
+              value={vendorForm.agentName}
+              onChange={handleVendorFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Address
+            </label>
+            <input
+              type="text"
+              name="address"
+              value={vendorForm.address}
+              onChange={handleVendorFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Rating (0-5)
+            </label>
+            <input
+              type="number"
+              name="rating"
+              value={vendorForm.rating}
+              onChange={handleVendorFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              min="0"
+              max="5"
+              step="0.1"
+            />
+          </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowAddVendorModal(false)}
+              className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
+              disabled={actionLoading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center text-sm"
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <FullPageLoader
+                  size="w-4 h-4"
+                  color="text-white"
+                  fill="fill-blue-200"
+                />
+              ) : (
+                "Submit"
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Associate Vendor Modal */}
       <Modal
@@ -1585,15 +1977,23 @@ const handleVendorFormSubmit = async (e) => {
                 onClick={() => handleSelectVendor(vendor)}
                 role="button"
                 tabIndex={0}
-                onKeyPress={(e) => e.key === "Enter" && handleSelectVendor(vendor)}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && handleSelectVendor(vendor)
+                }
               >
-                <p className="font-semibold text-sm sm:text-base">{vendor.businessName}</p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{vendor.email}</p>
+                <p className="font-semibold text-sm sm:text-base">
+                  {vendor.businessName}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  {vendor.email}
+                </p>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-gray-600 dark:text-gray-400 text-sm">No vendors available.</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
+            No vendors available.
+          </p>
         )}
         <div className="flex justify-end mt-4">
           <button
@@ -1613,7 +2013,9 @@ const handleVendorFormSubmit = async (e) => {
       >
         <form onSubmit={handleVendorDetailsFormSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Business Name</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Business Name
+            </label>
             <input
               type="text"
               name="businessName"
@@ -1623,7 +2025,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Phone Number
+            </label>
             <input
               type="tel"
               name="phoneNumber"
@@ -1633,7 +2037,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Email
+            </label>
             <input
               type="email"
               name="email"
@@ -1643,7 +2049,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Agent Name</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Agent Name
+            </label>
             <input
               type="text"
               name="agentName"
@@ -1654,7 +2062,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Cost Price ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Cost Price ($)
+            </label>
             <input
               type="number"
               name="costPrice"
@@ -1667,7 +2077,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Shipping Cost ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Shipping Cost ($)
+            </label>
             <input
               type="number"
               name="shippingCost"
@@ -1680,7 +2092,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Core Price ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Core Price ($)
+            </label>
             <input
               type="number"
               name="corePrice"
@@ -1692,7 +2106,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Total Cost ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Total Cost ($)
+            </label>
             <input
               type="number"
               name="totalCost"
@@ -1705,7 +2121,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Rating (0-5)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Rating (0-5)
+            </label>
             <input
               type="number"
               name="rating"
@@ -1715,10 +2133,12 @@ const handleVendorFormSubmit = async (e) => {
               min="0"
               max="5"
               step="0.1"
-              />
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Warranty</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Warranty
+            </label>
             <input
               type="text"
               name="warranty"
@@ -1728,7 +2148,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Mileage</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Mileage
+            </label>
             <input
               type="number"
               name="mileage"
@@ -1753,7 +2175,11 @@ const handleVendorFormSubmit = async (e) => {
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-blue-200" />
+                <FullPageLoader
+                  size="w-4 h-4"
+                  color="text-white"
+                  fill="fill-blue-200"
+                />
               ) : (
                 "Submit"
               )}
@@ -1770,7 +2196,9 @@ const handleVendorFormSubmit = async (e) => {
       >
         <form onSubmit={handleEditVendorFormSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Business Name</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Business Name
+            </label>
             <input
               type="text"
               name="businessName"
@@ -1781,7 +2209,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Phone Number
+            </label>
             <input
               type="tel"
               name="phoneNumber"
@@ -1792,7 +2222,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Email
+            </label>
             <input
               type="email"
               name="email"
@@ -1803,7 +2235,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Agent Name</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Agent Name
+            </label>
             <input
               type="text"
               name="agentName"
@@ -1813,7 +2247,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Cost Price ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Cost Price ($)
+            </label>
             <input
               type="number"
               name="costPrice"
@@ -1825,7 +2261,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Shipping Cost ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Shipping Cost ($)
+            </label>
             <input
               type="number"
               name="shippingCost"
@@ -1837,7 +2275,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Core Price ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Core Price ($)
+            </label>
             <input
               type="number"
               name="corePrice"
@@ -1849,7 +2289,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Total Cost ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Total Cost ($)
+            </label>
             <input
               type="number"
               name="totalCost"
@@ -1861,7 +2303,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Rating (0-5)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Rating (0-5)
+            </label>
             <input
               type="number"
               name="rating"
@@ -1874,7 +2318,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Warranty</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Warranty
+            </label>
             <input
               type="text"
               name="warranty"
@@ -1884,7 +2330,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Mileage</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Mileage
+            </label>
             <input
               type="number"
               name="mileage"
@@ -1909,7 +2357,11 @@ const handleVendorFormSubmit = async (e) => {
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-blue-200" />
+                <FullPageLoader
+                  size="w-4 h-4"
+                  color="text-white"
+                  fill="fill-blue-200"
+                />
               ) : (
                 "Update"
               )}
@@ -1925,7 +2377,9 @@ const handleVendorFormSubmit = async (e) => {
         title="Confirm Action"
       >
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Are you sure you want to {confirmationAction === "confirm" ? "confirm" : "cancel"} this vendor's PO?
+          Are you sure you want to{" "}
+          {confirmationAction === "confirm" ? "confirm" : "cancel"} this
+          vendor's PO?
         </p>
         <div className="flex justify-end space-x-3">
           <button
@@ -1941,7 +2395,11 @@ const handleVendorFormSubmit = async (e) => {
             disabled={actionLoading}
           >
             {actionLoading ? (
-              <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-blue-200" />
+              <FullPageLoader
+                size="w-4 h-4"
+                color="text-white"
+                fill="fill-blue-200"
+              />
             ) : (
               "Confirm"
             )}
@@ -1963,7 +2421,9 @@ const handleVendorFormSubmit = async (e) => {
       <Modal isOpen={showNotesModal} onClose={closeNotesForm} title="Add Note">
         <form onSubmit={handleNotesFormSubmit} className="space-y-3 notes-form">
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Note</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Note
+            </label>
             <textarea
               name="note"
               value={notesForm.note}
@@ -1997,9 +2457,14 @@ const handleVendorFormSubmit = async (e) => {
         onClose={closeProcurementNotesForm}
         title="Add Procurement Note"
       >
-        <form onSubmit={handleProcurementNotesFormSubmit} className="space-y-3 procurement-notes-form">
+        <form
+          onSubmit={handleProcurementNotesFormSubmit}
+          className="space-y-3 procurement-notes-form"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Procurement Note</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Procurement Note
+            </label>
             <textarea
               name="note"
               value={procurementNotesForm.note}
@@ -2031,7 +2496,9 @@ const handleVendorFormSubmit = async (e) => {
       <Modal isOpen={showCostModal} onClose={closeCostForm} title="Edit Costs">
         <form onSubmit={handleCostFormSubmit} className="space-y-3 cost-form">
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Part Cost ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Part Cost ($)
+            </label>
             <input
               type="number"
               name="partCost"
@@ -2044,7 +2511,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Shipping Cost ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Shipping Cost ($)
+            </label>
             <input
               type="number"
               name="shippingCost"
@@ -2057,7 +2526,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Gross Profit ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Gross Profit ($)
+            </label>
             <input
               type="number"
               name="grossProfit"
@@ -2070,7 +2541,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Total Cost ($)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Total Cost ($)
+            </label>
             <input
               type="number"
               name="totalCost"
@@ -2098,10 +2571,19 @@ const handleVendorFormSubmit = async (e) => {
       </Modal>
 
       {/* Edit Order Modal */}
-      <Modal isOpen={showEditOrderModal} onClose={closeEditOrderForm} title="Edit Order Details">
-        <form onSubmit={handleEditOrderFormSubmit} className="space-y-3 edit-order-form">
+      <Modal
+        isOpen={showEditOrderModal}
+        onClose={closeEditOrderForm}
+        title="Edit Order Details"
+      >
+        <form
+          onSubmit={handleEditOrderFormSubmit}
+          className="space-y-3 edit-order-form"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Client Name</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Client Name
+            </label>
             <input
               type="text"
               name="clientName"
@@ -2112,7 +2594,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Phone</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Phone
+            </label>
             <input
               type="tel"
               name="phone"
@@ -2123,7 +2607,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Email
+            </label>
             <input
               type="email"
               name="email"
@@ -2134,7 +2620,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Billing Address</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Billing Address
+            </label>
             <input
               type="text"
               name="billingAddress"
@@ -2144,7 +2632,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">City</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              City
+            </label>
             <input
               type="text"
               name="city"
@@ -2154,7 +2644,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">State</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              State
+            </label>
             <input
               type="text"
               name="state"
@@ -2164,7 +2656,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Zip</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Zip
+            </label>
             <input
               type="text"
               name="zip"
@@ -2174,7 +2668,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Shipping Address</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Shipping Address
+            </label>
             <input
               type="text"
               name="shippingAddress"
@@ -2184,7 +2680,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Shipping City</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Shipping City
+            </label>
             <input
               type="text"
               name="shippingCity"
@@ -2194,7 +2692,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Shipping State</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Shipping State
+            </label>
             <input
               type="text"
               name="shippingState"
@@ -2204,7 +2704,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Shipping Zip</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Shipping Zip
+            </label>
             <input
               type="text"
               name="shippingZip"
@@ -2214,7 +2716,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Make</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Make
+            </label>
             <input
               type="text"
               name="make"
@@ -2224,7 +2728,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Model</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Model
+            </label>
             <input
               type="text"
               name="model"
@@ -2234,7 +2740,9 @@ const handleVendorFormSubmit = async (e) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Year</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Year
+            </label>
             <input
               type="number"
               name="year"
@@ -2263,10 +2771,19 @@ const handleVendorFormSubmit = async (e) => {
       </Modal>
 
       {/* Shipment Modal */}
-      <Modal isOpen={showShipmentModal} onClose={closeShipmentForm} title="Add Shipment Details">
-        <form onSubmit={handleShipmentFormSubmit} className="space-y-3 shipment-form">
+      <Modal
+        isOpen={showShipmentModal}
+        onClose={closeShipmentForm}
+        title="Add Shipment Details"
+      >
+        <form
+          onSubmit={handleShipmentFormSubmit}
+          className="space-y-3 shipment-form"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Weight (lb)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Weight (lb)
+            </label>
             <input
               type="number"
               name="weight"
@@ -2275,10 +2792,13 @@ const handleVendorFormSubmit = async (e) => {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               min="0"
               step="0.01"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Height (cm)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Height (cm)
+            </label>
             <input
               type="number"
               name="height"
@@ -2287,10 +2807,13 @@ const handleVendorFormSubmit = async (e) => {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               min="0"
               step="0.01"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Width (cm)</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Width (cm)
+            </label>
             <input
               type="number"
               name="width"
@@ -2299,26 +2822,58 @@ const handleVendorFormSubmit = async (e) => {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               min="0"
               step="0.01"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Carrier Name</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Carrier Name
+            </label>
             <input
               type="text"
               name="carrierName"
               value={shipmentForm.carrierName}
               onChange={handleShipmentFormChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Tracking Number</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Tracking Number
+            </label>
             <input
               type="text"
               name="trackingNumber"
               value={shipmentForm.trackingNumber}
               onChange={handleShipmentFormChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              BOL Number
+            </label>
+            <input
+              type="text"
+              name="bolNumber"
+              value={shipmentForm.bolNumber}
+              onChange={handleShipmentFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+              Tracking Link
+            </label>
+            <input
+              type="text"
+              name="trackingLink"
+              value={shipmentForm.trackingLink}
+              onChange={handleShipmentFormChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="e.g., https://example.com/track"
             />
           </div>
           <div className="flex justify-end space-x-3 pt-4">

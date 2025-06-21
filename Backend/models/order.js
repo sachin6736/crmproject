@@ -117,15 +117,27 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  bolNumber: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  trackingLink: {
+    type: String,
+    required: false,
+    trim: true,
+    match: [/^https?:\/\/[^\s$.?#].[^\s]*$/, 'Please enter a valid URL']
+  },
   amount: {
-    type: Number,
+    type: Number
+
+,
     required: true,
     min: 0.01,
   },
   status: {
     type: String,
-    enum: ["Locate Pending","PO Pending","PO Sent","PO Confirmed","Vendor Payment Pending","Vendor Payment Confirmed","Shipping Pending","Ship Out",
-       "Intransit","Delivered", "Replacement"],
+    enum: ["Locate Pending", "PO Pending", "PO Sent", "PO Confirmed", "Vendor Payment Pending", "Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"],
     default: "Locate Pending",
   },
   vendors: [{

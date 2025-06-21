@@ -594,7 +594,7 @@ export const createVendorSimple = async (req, res) => {
 
 export const getVendorSimpleList = async (req, res) => {
   try {
-    const vendors = await VendorSimple.find().select('businessName phoneNumber email');
+    const vendors = await VendorSimple.find().select('businessName phoneNumber email agentName rating ');
     res.status(200).json(vendors);
   } catch (error) {
     console.error('Error fetching vendors:', error);
@@ -639,6 +639,15 @@ export const addVendorToOrder = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    // Get the authenticated user's name (assuming req.user is set by auth middleware)
+    const userName = req.user?.name || 'Unknown User';
+
+    // Create procurement note
+    const procurementNote = {
+      text: `Vendor ${businessName} associated by ${userName} with total cost $${totalCost}`,
+      createdAt: new Date()
+    };
+
     // Add vendor to order
     order.vendors.push({
       businessName,
@@ -654,6 +663,12 @@ export const addVendorToOrder = async (req, res) => {
       mileage: mileage || 0,
       isConfirmed: false
     });
+
+    // Add procurement note to order
+    order.procurementnotes.push(procurementNote);
+
+    // Update order status to PO Pending
+    order.status = 'PO Pending';
 
     await order.save();
 
@@ -834,7 +849,7 @@ export const addNoteToOrder = async (req, res) => {
 //Send Purchase order controller
 export const sendPurchaseorder = async (req, res) => {
   try {
-     if (!req.user || req.user.Access !== true) {
+    if (!req.user || req.user.Access !== true) {
       return res.status(403).json({ message: "Access denied: User does not have permission to send purchase orders" });
     }
     const { id } = req.params; // Order ID from the route
@@ -862,7 +877,7 @@ export const sendPurchaseorder = async (req, res) => {
 
     // Check if PO has already been sent, confirmed, or canceled
     if (["PO Sent", "PO Confirmed", "PO Canceled"].includes(vendor.poStatus)) {
-      return res.status(400).json({ message: `Purchase order is already ${vendor.poStatus.toLowerCase()}` });
+      return res.status(400).json({ message: `Purchase order is already ${vendor.poStatus.toLowerCase() || "Unknown"}` });
     }
 
     // Check if leadId exists and has partRequested
@@ -986,7 +1001,7 @@ export const sendPurchaseorder = async (req, res) => {
           <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598983/10462345_g4oluw.png" alt="Instagram" style="width: 32px; height: 32px;" />
         </a>
         <a href="https://twitter.com/parts54611" style="margin: 0 10px; display: inline-block;">
-          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599225/twitter_kivbi6.png" alt="X" style="width: 32px; height: 32px;" />
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599425/twitter_kivbi6.png" alt="X" style="width: 32px; height: 32px;" />
         </a>
       </div>
       
@@ -997,9 +1012,9 @@ export const sendPurchaseorder = async (req, res) => {
         <a href="https://twitter.com/parts54611" style="color: #007BFF; margin: 0 5px;">X</a>
       </p>
   
-      <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
+      <p style="text-align: center; font-size: 12px; color: text-align: center;">
         © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.<br />
-        <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(vendor.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
+        <a href="https://www.firstusedapi.com/preferences?email=${encodeURIComponent(vendor.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
       </p>
     </div>
     `;
@@ -1015,11 +1030,10 @@ export const sendPurchaseorder = async (req, res) => {
       order.status = "PO Sent";
     }
 
-    // Add note for status change
-    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+    // Add procurement note for sending purchase order
+    const userName = req.user?.name || "Unknown User";
     order.procurementnotes.push({
-      text: `'PO Sent' by ${userIdentity} with invoice ${invoiceNumber} to ${vendor.businessName || "N/A"}`,
-      addedBy: userIdentity,
+      text: `Purchase order sent to ${vendor.businessName} by ${userName}`,
       createdAt: new Date(),
     });
 
@@ -1346,26 +1360,78 @@ export const updateOrderDetails = async (req, res) => {
   }
 };
 
-export const updateShipmentDetails=async(req,res)=>{
-   try {
+export const updateShipmentDetails = async (req, res) => {
+  console.log("update shipping working")
+  try {
     const { orderId } = req.params;
-    const { weight, height, width, carrierName, trackingNumber } = req.body;
+    const { weight, height, width, carrierName, trackingNumber, bolNumber, trackingLink } = req.body;
+    const user = req.user; // Assumed to be set by authentication middleware
 
-    // Validate input
+    // Validate required fields
     if (!weight || !height || !width || !carrierName || !trackingNumber) {
-      return res.status(400).json({ message: 'All shipment fields are required' });
+      return res.status(400).json({ message: 'Weight, height, width, carrier name, and tracking number are required' });
     }
 
-    // Find and update the order
+    // Validate trackingLink if provided
+    if (trackingLink && !/^https?:\/\/[^\s$.?#].[^\s]*$/.test(trackingLink)) {
+      return res.status(400).json({ message: 'Invalid tracking link URL' });
+    }
+
+    // Find the order
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    // Store previous values for change detection
+    const previousValues = {
+      weight: order.weightAndDimensions?.weight,
+      height: order.weightAndDimensions?.height,
+      width: order.weightAndDimensions?.width,
+      carrierName: order.carrierName,
+      trackingNumber: order.trackingNumber,
+      bolNumber: order.bolNumber,
+      trackingLink: order.trackingLink,
+    };
+
     // Update shipment details
     order.weightAndDimensions = { weight, height, width };
     order.carrierName = carrierName;
     order.trackingNumber = trackingNumber;
+    order.bolNumber = bolNumber || order.bolNumber; // Preserve existing value if not provided
+    order.trackingLink = trackingLink || order.trackingLink; // Preserve existing value if not provided
+
+    // Detect changes for note
+    const changes = [];
+    if (weight !== previousValues.weight) {
+      changes.push(`weight changed from "${previousValues.weight || 'N/A'}" to "${weight}"`);
+    }
+    if (height !== previousValues.height) {
+      changes.push(`height changed from "${previousValues.height || 'N/A'}" to "${height}"`);
+    }
+    if (width !== previousValues.width) {
+      changes.push(`width changed from "${previousValues.width || 'N/A'}" to "${width}"`);
+    }
+    if (carrierName !== previousValues.carrierName) {
+      changes.push(`carrierName changed from "${previousValues.carrierName || 'N/A'}" to "${carrierName}"`);
+    }
+    if (trackingNumber !== previousValues.trackingNumber) {
+      changes.push(`trackingNumber changed from "${previousValues.trackingNumber || 'N/A'}" to "${trackingNumber}"`);
+    }
+    if (bolNumber && bolNumber !== previousValues.bolNumber) {
+      changes.push(`bolNumber changed from "${previousValues.bolNumber || 'N/A'}" to "${bolNumber}"`);
+    }
+    if (trackingLink && trackingLink !== previousValues.trackingLink) {
+      changes.push(`trackingLink changed from "${previousValues.trackingLink || 'N/A'}" to "${trackingLink}"`);
+    }
+
+    // Add note if there are changes
+    if (changes.length > 0) {
+      order.notes.push({
+        text: `Shipment details updated by ${user.name || user.email || 'Unknown User'}: ${changes.join('; ')}`,
+        createdAt: new Date(),
+      });
+    }
 
     // Save the updated order
     await order.save();
@@ -1375,4 +1441,4 @@ export const updateShipmentDetails=async(req,res)=>{
     console.error('Error updating shipment details:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}
+};
