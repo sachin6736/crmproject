@@ -648,7 +648,19 @@ export const addVendorToOrder = async (req, res) => {
       createdAt: new Date()
     };
 
-    // Add vendor to order
+    // Create vendor note
+    const vendorNote = {
+      text: `Vendor associated by ${userName} with total cost $${totalCost}`,
+      createdAt: new Date()
+    };
+
+    // Create order status note
+    const statusNote = {
+      text: `Order status changed to PO Pending by ${userName}`,
+      createdAt: new Date()
+    };
+
+    // Add vendor to order with notes array
     order.vendors.push({
       businessName,
       phoneNumber,
@@ -661,11 +673,15 @@ export const addVendorToOrder = async (req, res) => {
       rating: rating || 0,
       warranty: warranty || '',
       mileage: mileage || 0,
-      isConfirmed: false
+      isConfirmed: false,
+      notes: [vendorNote]
     });
 
     // Add procurement note to order
     order.procurementnotes.push(procurementNote);
+
+    // Add status note to order notes
+    order.notes.push(statusNote);
 
     // Update order status to PO Pending
     order.status = 'PO Pending';
@@ -676,6 +692,172 @@ export const addVendorToOrder = async (req, res) => {
   } catch (error) {
     console.error('Error adding vendor to order:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const updateVendorPOStatus = async (req, res) => {
+  console.log("update po status working");
+  try {
+    // Check user authorization
+    if (!req.user || req.user.Access !== true) {
+      return res.status(403).json({ message: "Access denied: User does not have permission to update vendor status" });
+    }
+
+    const { orderId, vendorId } = req.params;
+    const { poStatus } = req.body;
+
+    // Validate input
+    if (!["PO Confirmed", "PO Canceled"].includes(poStatus)) {
+      return res.status(400).json({ message: "Invalid PO status. Must be 'PO Confirmed' or 'PO Canceled'" });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Find the vendor
+    const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found for this order" });
+    }
+
+    // Check if current poStatus allows update
+    if (!["PO Sent", "PO Confirmed"].includes(vendor.poStatus)) {
+      return res.status(400).json({ message: "PO status can only be updated from 'PO Sent' or 'PO Confirmed'" });
+    }
+
+    // Prevent setting the same status
+    if (vendor.poStatus === poStatus) {
+      return res.status(400).json({ message: `PO status is already ${poStatus}` });
+    }
+    // Update vendor poStatus
+    vendor.poStatus = poStatus;
+    // Add vendor note
+    vendor.notes = vendor.notes || [];
+    const userName = req.user?.name || "Unknown User";
+    vendor.notes.push({
+      text: `PO status changed to ${poStatus} by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Add procurement note for poStatus change
+    order.procurementnotes.push({
+      text: `PO status for ${vendor.businessName} changed to ${poStatus} by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Update order status and add notes for status change
+    if (poStatus === "PO Confirmed") {
+      // Step 1: Set order status to PO Confirmed
+      order.status = "PO Confirmed";
+      const poConfirmedNote = `Status changed to PO Confirmed due to PO confirmation from ${vendor.businessName} by ${userName}`;
+      order.procurementnotes.push({
+        text: poConfirmedNote,
+        createdAt: new Date(),
+      });
+      order.notes.push({
+        text: poConfirmedNote,
+        createdAt: new Date(),
+      });
+
+      // Step 2: Immediately set order status to Vendor Payment Pending
+      order.status = "Vendor Payment Pending";
+      const vendorPaymentPendingNote = `Status changed to Vendor Payment Pending after PO confirmation from ${vendor.businessName} by ${userName}`;
+      order.procurementnotes.push({
+        text: vendorPaymentPendingNote,
+        createdAt: new Date(),
+      });
+      order.notes.push({
+        text: vendorPaymentPendingNote,
+        createdAt: new Date(),
+      });
+    } else if (poStatus === "PO Canceled") {
+      // Check if any other vendor has poStatus = "PO Pending"
+      const hasPendingVendor = order.vendors.some(
+        (v) => v._id.toString() !== vendorId && v.poStatus === "PO Pending"
+      );
+      // Set order status
+      const newStatus = hasPendingVendor ? "PO Pending" : "Locate Pending";
+      order.status = newStatus;
+      // Add notes for order status change
+      const statusNote = `Status changed to ${newStatus} due to PO cancelation from ${vendor.businessName} by ${userName}`;
+      order.procurementnotes.push({
+        text: statusNote,
+        createdAt: new Date(),
+      });
+      order.notes.push({
+        text: statusNote,
+        createdAt: new Date(),
+      });
+    }
+
+    // Save the order
+    await order.save();
+    return res.status(200).json({ message: `Vendor PO updated to ${poStatus} successfully`, order });
+  } catch (error) {
+    console.error("Error updating vendor PO status:", error);
+    return res.status(500).json({ message: "Failed to update vendor PO status", error: error.message });
+  }
+};
+
+export const confirmVendorPayment = async (req, res) => {
+  try {
+    // Check user authorization
+    if (!req.user || req.user.Access !== true) {
+      return res.status(403).json({ message: "Access denied: User does not have permission to confirm payment" });
+    }
+
+    const { orderId, vendorId } = req.params;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Find the vendor
+    const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found for this order" });
+    }
+
+    // Check if the order status allows payment confirmation
+    if (order.status !== "Vendor Payment Pending") {
+      return res.status(400).json({ message: "Payment can only be confirmed when order status is 'Vendor Payment Pending'" });
+    }
+
+    // Update order status to Vendor Payment Confirmed
+    order.status = "Vendor Payment Confirmed";
+
+    // Add vendor note for payment confirmation
+    const userName = req.user?.name || "Unknown User";
+    vendor.notes = vendor.notes || [];
+    vendor.notes.push({
+      text: `Payment confirmed by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Add procurement note for payment confirmation
+    order.procurementnotes.push({
+      text: `Payment confirmed for ${vendor.businessName} by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Add order note for payment confirmation
+    order.notes.push({
+      text: `Order status changed to Vendor Payment Confirmed for ${vendor.businessName} by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Save the order
+    await order.save();
+
+    return res.status(200).json({ message: "Vendor payment confirmed successfully", order });
+  } catch (error) {
+    console.error("Error confirming vendor payment:", error);
+    return res.status(500).json({ message: "Failed to confirm vendor payment", error: error.message });
   }
 };
 
@@ -708,18 +890,74 @@ export const updateVendorDetails = async (req, res) => {
       return res.status(404).json({ message: 'Vendor not found in order' });
     }
 
-    // Update vendor details
-    if (businessName) vendor.businessName = businessName;
-    if (phoneNumber) vendor.phoneNumber = phoneNumber;
-    if (email) vendor.email = email;
-    if (agentName) vendor.agentName = agentName;
-    if (costPrice != null) vendor.costPrice = costPrice;
-    if (shippingCost != null) vendor.shippingCost = shippingCost;
-    if (corePrice != null) vendor.corePrice = corePrice;
-    if (totalCost != null) vendor.totalCost = totalCost;
-    if (rating != null) vendor.rating = rating;
-    if (warranty != null) vendor.warranty = warranty;
-    if (mileage != null) vendor.mileage = mileage;
+    // Get the authenticated user's name (assuming req.user is set by auth middleware)
+    const userName = req.user?.name || 'Unknown User';
+
+    // Track changes for notes
+    const changes = [];
+    if (businessName && businessName !== vendor.businessName) {
+      changes.push(`businessName changed from "${vendor.businessName}" to "${businessName}"`);
+      vendor.businessName = businessName;
+    }
+    if (phoneNumber && phoneNumber !== vendor.phoneNumber) {
+      changes.push(`phoneNumber changed from "${vendor.phoneNumber}" to "${phoneNumber}"`);
+      vendor.phoneNumber = phoneNumber;
+    }
+    if (email && email !== vendor.email) {
+      changes.push(`email changed from "${vendor.email}" to "${email}"`);
+      vendor.email = email;
+    }
+    if (agentName && agentName !== vendor.agentName) {
+      changes.push(`agentName changed from "${vendor.agentName}" to "${agentName}"`);
+      vendor.agentName = agentName;
+    }
+    if (costPrice != null && costPrice !== vendor.costPrice) {
+      changes.push(`costPrice changed from $${vendor.costPrice.toFixed(2)} to $${costPrice.toFixed(2)}`);
+      vendor.costPrice = costPrice;
+    }
+    if (shippingCost != null && shippingCost !== vendor.shippingCost) {
+      changes.push(`shippingCost changed from $${vendor.shippingCost.toFixed(2)} to $${shippingCost.toFixed(2)}`);
+      vendor.shippingCost = shippingCost;
+    }
+    if (corePrice != null && corePrice !== vendor.corePrice) {
+      changes.push(`corePrice changed from $${vendor.corePrice.toFixed(2)} to $${corePrice.toFixed(2)}`);
+      vendor.corePrice = corePrice;
+    }
+    if (totalCost != null && totalCost !== vendor.totalCost) {
+      changes.push(`totalCost changed from $${vendor.totalCost.toFixed(2)} to $${totalCost.toFixed(2)}`);
+      vendor.totalCost = totalCost;
+    }
+    if (rating != null && rating !== vendor.rating) {
+      changes.push(`rating changed from ${vendor.rating} to ${rating}`);
+      vendor.rating = rating;
+    }
+    if (warranty != null && warranty !== vendor.warranty) {
+      changes.push(`warranty changed from "${vendor.warranty}" to "${warranty}"`);
+      vendor.warranty = warranty;
+    }
+    if (mileage != null && mileage !== vendor.mileage) {
+      changes.push(`mileage changed from ${vendor.mileage} to ${mileage}`);
+      vendor.mileage = mileage;
+    }
+
+    // If there are changes, add notes to order.notes, vendor.notes, and order.procurementnotes
+    if (changes.length > 0) {
+      const changeText = `Vendor details updated by ${userName}: ${changes.join(', ')}`;
+      const note = {
+        text: changeText,
+        createdAt: new Date(),
+      };
+
+      // Add to order notes
+      order.notes.push(note);
+
+      // Add to vendor notes
+      vendor.notes = vendor.notes || [];
+      vendor.notes.push(note);
+
+      // Add to procurement notes
+      order.procurementnotes.push(note);
+    }
 
     await order.save();
 
@@ -730,76 +968,7 @@ export const updateVendorDetails = async (req, res) => {
   }
 };
 
-export const updateVendorConfirmation = async (req, res) => {
-  try {
-    const { orderId, vendorId } = req.params;
-    const { isConfirmed } = req.body;
 
-    // Find the order
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    // Find the vendor in the order
-    const vendor = order.vendors.id(vendorId);
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor not found in order' });
-    }
-
-    // Update confirmation status
-    vendor.isConfirmed = isConfirmed;
-
-    await order.save();
-
-    res.status(200).json({ message: 'Vendor confirmation status updated', order });
-  } catch (error) {
-    console.error('Error updating vendor confirmation:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-//===========================================
-export const confirmVendor = async (req, res) => {
-  try {
-    const { orderId, vendorId } = req.params;
-    const { isConfirmed } = req.body;
-
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    const vendor = order.vendors.id(vendorId);
-    if (!vendor) {
-      return res.status(404).json({ message: "Vendor not found" });
-    }
-
-    vendor.isConfirmed = isConfirmed;
-    vendor.poStatus = isConfirmed ? "PO Confirmed" : "PO Canceled";
-
-    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
-    order.procurementnotes.push({
-      text: `'PO ${isConfirmed ? "Confirmed" : "Canceled"}' by ${userIdentity} for vendor ${vendor.businessName || "N/A"}`,
-      addedBy: userIdentity,
-      createdAt: new Date(),
-    });
-
-    // Update order status based on vendor confirmations
-    const hasConfirmedVendor = order.vendors.some((v) => v.isConfirmed);
-    if (hasConfirmedVendor && order.status !== "PO Confirmed") {
-      order.status = "PO Confirmed";
-    } else if (!hasConfirmedVendor && order.status === "PO Confirmed") {
-      order.status = "PO Sent";
-    }
-
-    await order.save();
-
-    return res.status(200).json({ order, message: `Vendor ${isConfirmed ? "confirmed" : "canceled"} successfully` });
-  } catch (error) {
-    console.error("Error updating vendor status:", error);
-    return res.status(500).json({ message: "Failed to update vendor status" });
-  }
-};
 
 export const addNoteToOrder = async (req, res) => {
   try {
@@ -869,13 +1038,19 @@ export const sendPurchaseorder = async (req, res) => {
       return res.status(400).json({ message: "No vendor details available for this order" });
     }
 
+    // Check if any vendor has PO Sent or PO Confirmed
+    const hasActivePO = order.vendors.some(v => ["PO Sent", "PO Confirmed"].includes(v.poStatus));
+    if (hasActivePO) {
+      return res.status(400).json({ message: "Cannot send PO: Order already has a vendor with PO Sent or PO Confirmed" });
+    }
+
     // Find the specific vendor by vendorId
     const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
     if (!vendor) {
       return res.status(404).json({ message: "Vendor not found for this order" });
     }
 
-    // Check if PO has already been sent, confirmed, or canceled
+    // Check if PO has already been sent, confirmed, or canceled for this vendor
     if (["PO Sent", "PO Confirmed", "PO Canceled"].includes(vendor.poStatus)) {
       return res.status(400).json({ message: `Purchase order is already ${vendor.poStatus.toLowerCase() || "Unknown"}` });
     }
@@ -1011,10 +1186,10 @@ export const sendPurchaseorder = async (req, res) => {
         <a href="https://www.instagram.com/first_used_auto_parts/" style="color: #007BFF; margin: 0 5px;">Instagram</a> |
         <a href="https://twitter.com/parts54611" style="color: #007BFF; margin: 0 5px;">X</a>
       </p>
-  
-      <p style="text-align: center; font-size: 12px; color: text-align: center;">
+      
+      <p style="text-align: center; font-size: 12px; color: #aaa;">
         © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.<br />
-        <a href="https://www.firstusedapi.com/preferences?email=${encodeURIComponent(vendor.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
+        <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(vendor.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
       </p>
     </div>
     `;
@@ -1033,9 +1208,24 @@ export const sendPurchaseorder = async (req, res) => {
     // Add procurement note for sending purchase order
     const userName = req.user?.name || "Unknown User";
     order.procurementnotes.push({
-      text: `Purchase order sent to ${vendor.businessName} by ${userName}`,
+      text: `PO sent by ${userName}-invoice number ${invoiceNumber} to ${vendor.businessName} for $${vendor.totalCost.toFixed(2)} `,
       createdAt: new Date(),
     });
+
+    // Add vendor note for sending purchase order
+    vendor.notes = vendor.notes || [];
+    vendor.notes.push({
+      text: `PO sent by ${userName}-invoice number ${invoiceNumber} to ${vendor.businessName} for $${vendor.totalCost.toFixed(2)}`,
+      createdAt: new Date(),
+    });
+
+    // Add order status note for status change
+    if (order.status === "PO Sent") {
+      order.notes.push({
+        text: `Order status changed to PO Sent by ${userName} for invoice ${invoiceNumber}`,
+        createdAt: new Date(),
+      });
+    }
 
     // Save the updated order
     await order.save();

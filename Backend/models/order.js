@@ -129,9 +129,7 @@ const orderSchema = new mongoose.Schema({
     match: [/^https?:\/\/[^\s$.?#].[^\s]*$/, 'Please enter a valid URL']
   },
   amount: {
-    type: Number
-
-,
+    type: Number,
     required: true,
     min: 0.01,
   },
@@ -208,6 +206,10 @@ const orderSchema = new mongoose.Schema({
       enum: ["PO Pending", "PO Sent", "PO Confirmed", "PO Canceled"],
       default: "PO Pending"
     },
+    notes: [{
+      text: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now }
+    }],
     createdAt: {
       type: Date,
       default: Date.now

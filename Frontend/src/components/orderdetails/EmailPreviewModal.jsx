@@ -7,43 +7,40 @@ const EmailPreviewModal = ({
   emailContent,
   orderId,
   vendorId,
-  onConfirm,
+  onPOConfirmed,
 }) => {
   const [isSending, setIsSending] = React.useState(false);
 
-  const handleConfirm = async () => {
-    setIsSending(true);
-    try {
-      const response = await fetch(
-        `http://localhost:3000/Order/sendpurchaseorder/${orderId}?vendorId=${vendorId}`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      console.log("Response status:", response.status);
-
-      const data = await response.json();
-      console.log("Response data:", data);
-
-      if (response.status === 403) {
-        throw new Error(data.message || "Admin access required");
+const handleConfirm = async () => {
+  setIsSending(true);
+  try {
+    const response = await fetch(
+      `http://localhost:3000/Order/sendpurchaseorder/${orderId}?vendorId=${vendorId}`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       }
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to send purchase order");
-      }
+    );
 
-      toast.success(data.message || "Purchase order sent successfully");
-      //onConfirm(); // Close modal and refresh order
-    } catch (error) {
-      console.error("Error sending purchase order:", error);
-      toast.error(error.message || "Failed to send purchase order");
-    } finally {
-      setIsSending(false);
+    const data = await response.json();
+    if (response.status === 403) {
+      throw new Error(data.message || "Admin access required");
     }
-  };
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to send purchase order");
+    }
+
+    toast.success(data.message || "Purchase order sent successfully");
+    onClose(); // Close the modal
+    onPOConfirmed(); // Trigger refresh in parent component
+  } catch (error) {
+    console.error("Error sending purchase order:", error);
+    toast.error(error.message || "Failed to send purchase order");
+  } finally {
+    setIsSending(false);
+  }
+};
 
   if (!isOpen) return null;
 
