@@ -831,6 +831,9 @@ export const confirmVendorPayment = async (req, res) => {
     // Update order status to Vendor Payment Confirmed
     order.status = "Vendor Payment Confirmed";
 
+    // Set vendor isConfirmed to true
+    vendor.isConfirmed = true;
+
     // Add vendor note for payment confirmation
     const userName = req.user?.name || "Unknown User";
     vendor.notes = vendor.notes || [];
@@ -1548,7 +1551,9 @@ export const updateOrderDetails = async (req, res) => {
     console.error('Error updating order details:', error);
     res.status(500).json({ message: 'Server error while updating order details' });
   }
-};
+};//update order details
+//=============================================================================================
+//=============================================================================================
 
 export const updateShipmentDetails = async (req, res) => {
   console.log("update shipping working")
@@ -1630,5 +1635,122 @@ export const updateShipmentDetails = async (req, res) => {
   } catch (error) {
     console.error('Error updating shipment details:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};//shipping detaials
+//=============================================================================================
+//=============================================================================================
+export const markPicturesReceived = async (req, res) => {
+  try {
+    // Check user authorization
+    if (!req.user || req.user.Access !== true) {
+      return res.status(403).json({ message: "Access denied: User does not have permission to mark pictures received" });
+    }
+
+    const { orderId, vendorId } = req.params;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    // Find the vendor
+    const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found for this order" });
+    }
+    // Check if pictures are already marked as received
+    if (order.picturesReceivedFromYard) {
+      return res.status(400).json({ message: "Pictures already marked as received from yard" });
+    }
+    // Update picturesReceivedFromYard
+    order.picturesReceivedFromYard = true;
+    // Add vendor note
+    const userName = req.user?.name || "Unknown User";
+    vendor.notes = vendor.notes || [];
+    vendor.notes.push({
+      text: `Pictures received from yard confirmed by ${userName}`,
+      createdAt: new Date(),
+    });
+    // Add procurement note
+    order.procurementnotes.push({
+      text: `Pictures received from ${vendor.businessName} confirmed by ${userName}`,
+      createdAt: new Date(),
+    });
+    // Add order note
+    order.notes.push({
+      text: `Pictures received from yard from ${vendor.businessName} confirmed by ${userName}`,
+      createdAt: new Date(),
+    });
+    // Save the order
+    await order.save();
+    return res.status(200).json({ message: "Pictures marked as received successfully", order });
+  } catch (error) {
+    console.error("Error marking pictures received:", error);
+    return res.status(500).json({ message: "Failed to mark pictures received", error: error.message });
+  }
+};
+
+// Mark Pictures Sent to Customer
+export const markPicturesSent = async (req, res) => {
+  try {
+    // Check user authorization
+    if (!req.user || req.user.Access !== true) {
+      return res.status(403).json({ message: "Access denied: User does not have permission to mark pictures sent" });
+    }
+
+    const { orderId, vendorId } = req.params;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Find the vendor
+    const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found for this order" });
+    }
+
+    // Check if pictures are already marked as sent
+    if (order.picturesSentToCustomer) {
+      return res.status(400).json({ message: "Pictures already marked as sent to customer" });
+    }
+
+    // Check if pictures have been received from yard
+    if (!order.picturesReceivedFromYard) {
+      return res.status(400).json({ message: "Cannot mark pictures as sent before receiving them from yard" });
+    }
+
+    // Update picturesSentToCustomer
+    order.picturesSentToCustomer = true;
+
+    // Add vendor note
+    const userName = req.user?.name || "Unknown User";
+    vendor.notes = vendor.notes || [];
+    vendor.notes.push({
+      text: `Pictures sent to customer by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Add procurement note
+    order.procurementnotes.push({
+      text: `Pictures sent to customer from ${vendor.businessName} by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Add order note
+    order.notes.push({
+      text: `Pictures sent to customer from ${vendor.businessName} by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Save the order
+    await order.save();
+
+    return res.status(200).json({ message: "Pictures marked as sent successfully", order });
+  } catch (error) {
+    console.error("Error marking pictures sent:", error);
+    return res.status(500).json({ message: "Failed to mark pictures sent", error: error.message });
   }
 };

@@ -707,6 +707,60 @@ const handleSendPOClick = async (vendorId) => {
   await fetchOrderData(); // Refresh order data
 };
 
+const handlePictureReceived = async (vendorId) => {
+  setActionLoading(true);
+  try {
+    const response = await fetch(
+      `http://localhost:3000/Order/order/${order._id}/vendor/${vendorId}/pictures-received`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      }
+    );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to mark pictures received");
+    }
+    const data = await response.json();
+    setOrder(data.order);
+    toast.success("Pictures marked as received successfully");
+    await fetchOrderData(); // Refresh order data
+  } catch (error) {
+    console.error("Error marking pictures received:", error);
+    toast.error(error.message || "Failed to mark pictures received");
+  } finally {
+    setActionLoading(false);
+  }
+};
+
+const handlePictureSent = async (vendorId) => {
+  setActionLoading(true);
+  try {
+    const response = await fetch(
+      `http://localhost:3000/Order/order/${order._id}/vendor/${vendorId}/pictures-sent`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      }
+    );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to mark pictures sent");
+    }
+    const data = await response.json();
+    setOrder(data.order);
+    toast.success("Pictures marked as sent successfully");
+    await fetchOrderData(); // Refresh order data
+  } catch (error) {
+    console.error("Error marking pictures sent:", error);
+    toast.error(error.message || "Failed to mark pictures sent");
+  } finally {
+    setActionLoading(false);
+  }
+};
+
   // Notes form handlers
   const handleNotesFormChange = (e) => {
     const { name, value } = e.target;
@@ -1549,7 +1603,7 @@ const handleSendPOClick = async (vendorId) => {
                   </div>
                 </section>
                 {/* Active Vendors */}
-<section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
     Active Vendor
   </h3>
@@ -1664,18 +1718,31 @@ const handleSendPOClick = async (vendorId) => {
             <div className="absolute top-4 right-4 flex flex-col space-y-2 sm:space-y-2">
               <button
                 onClick={() => handleEditVendorClick(vendor)}
-                className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
+                className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+                  actionLoading
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                }`}
                 aria-label={`Edit vendor ${vendor.businessName}`}
+                disabled={actionLoading}
               >
-                Edit Details
+                {actionLoading ? (
+                  <FullPageLoader
+                    size="w-4 h-4"
+                    color="text-white"
+                    fill="fill-green-200"
+                  />
+                ) : (
+                  <span>Edit Details</span>
+                )}
               </button>
               <div className="relative group">
                 <button
                   onClick={() => handleConfirmPayment(vendor._id)}
-                  className={`px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
                     actionLoading || ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   }`}
                   aria-label={`Confirm payment for vendor ${vendor.businessName}`}
                   disabled={actionLoading || ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)}
@@ -1712,44 +1779,198 @@ const handleSendPOClick = async (vendorId) => {
                     className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
                     role="tooltip"
                   >
-                    Payment Already Confirmed
+                    Not Allowed, since payment confirmed
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => handleCancelPO(vendor._id)}
-                className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors text-sm"
-                aria-label={`Cancel PO for vendor ${vendor.businessName}`}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <FullPageLoader
-                    size="w-4 h-4"
-                    color="text-white"
-                    fill="fill-red-200"
-                  />
-                ) : (
-                  "Cancel PO"
-                )}
-              </button>
-              {order.status === "Vendor Payment Confirmed" && (
+              <div className="relative group">
                 <button
-                  onClick={() => handleToggleVendorConfirmation(vendor._id, "confirm")}
-                  className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm"
-                  aria-label={`Confirm vendor ${vendor.businessName}`}
-                  disabled={actionLoading}
+                  onClick={() => handleCancelPO(vendor._id)}
+                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+                    actionLoading || ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  }`}
+                  aria-label={`Cancel PO for vendor ${vendor.businessName}`}
+                  disabled={actionLoading || ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)}
                 >
                   {actionLoading ? (
                     <FullPageLoader
                       size="w-4 h-4"
                       color="text-white"
-                      fill="fill-purple-200"
+                      fill="fill-green-200"
                     />
                   ) : (
-                    "Confirm Vendor"
+                    <>
+                      <span>Cancel PO</span>
+                      {(actionLoading || ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)) && (
+                        <svg
+                          className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 2-4 2-4 2 2.9 2 4zm0 0c0 1.1.9 2 2 2s2-.9 2-2-2-4-2-4-2 2.9-2 4zm-6 7h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2z"
+                          />
+                        </svg>
+                      )}
+                    </>
                   )}
                 </button>
-              )}
+                {(actionLoading || ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)) && (
+                  <span
+                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
+                    role="tooltip"
+                  >
+                    Not Allowed, since payment confirmed
+                  </span>
+                )}
+              </div>
+              <div className="relative group">
+                <button
+                  onClick={() => handleToggleVendorConfirmation(vendor._id, "cancel")}
+                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+                    actionLoading || !vendor.isConfirmed
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  }`}
+                  aria-label={`Cancel vendor ${vendor.businessName}`}
+                  disabled={actionLoading || !vendor.isConfirmed}
+                >
+                  {actionLoading ? (
+                    <FullPageLoader
+                      size="w-4 h-4"
+                      color="text-white"
+                      fill="fill-green-200"
+                    />
+                  ) : (
+                    <>
+                      <span>Cancel Vendor</span>
+                      {(actionLoading || !vendor.isConfirmed) && (
+                        <svg
+                          className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 2-4 2-4 2 2.9 2 4zm0 0c0 1.1.9 2 2 2s2-.9 2-2-2-4-2-4-2 2.9-2 4zm-6 7h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2z"
+                          />
+                        </svg>
+                      )}
+                    </>
+                  )}
+                </button>
+                {(actionLoading || !vendor.isConfirmed) && (
+                  <span
+                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
+                    role="tooltip"
+                  >
+                    Vendor Not Confirmed
+                  </span>
+                )}
+              </div>
+              <div className="relative group">
+                <button
+                  onClick={() => handlePictureReceived(vendor._id)}
+                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+                    actionLoading || order.picturesReceivedFromYard
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  }`}
+                  aria-label={`Mark picture received from yard for ${vendor.businessName}`}
+                  disabled={actionLoading || order.picturesReceivedFromYard}
+                >
+                  {actionLoading ? (
+                    <FullPageLoader
+                      size="w-4 h-4"
+                      color="text-white"
+                      fill="fill-green-200"
+                    />
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span>Picture Received</span>
+                    </>
+                  )}
+                </button>
+                {(actionLoading || order.picturesReceivedFromYard) && (
+                  <span
+                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
+                    role="tooltip"
+                  >
+                    {order.picturesReceivedFromYard ? "Already Received" : "Action in Progress"}
+                  </span>
+                )}
+              </div>
+              <div className="relative group">
+                <button
+                  onClick={() => handlePictureSent(vendor._id)}
+                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+                    actionLoading || order.picturesSentToCustomer || !order.picturesReceivedFromYard
+                      ? "bg-green-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  }`}
+                  aria-label={`Mark picture sent to customer for ${vendor.businessName}`}
+                  disabled={actionLoading || order.picturesSentToCustomer || !order.picturesReceivedFromYard}
+                >
+                  {actionLoading ? (
+                    <FullPageLoader
+                      size="w-4 h-4"
+                      color="text-white"
+                      fill="fill-green-200"
+                    />
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span>Picture Sent</span>
+                    </>
+                  )}
+                </button>
+                {(actionLoading || order.picturesSentToCustomer || !order.picturesReceivedFromYard) && (
+                  <span
+                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
+                    role="tooltip"
+                  >
+                    {order.picturesSentToCustomer
+                      ? "Already Sent"
+                      : !order.picturesReceivedFromYard
+                      ? "Receive Pictures First"
+                      : "Action in Progress"}
+                  </span>
+                )}
+              </div>
             </div>
           </li>
         ))}
@@ -1761,14 +1982,14 @@ const handleSendPOClick = async (vendorId) => {
   )}
 </section>
                 {/* Not Confirmed Vendors */}
-<section className="pb-6">
+                <section className="pb-6">
   <button
     onClick={() => setShowNotConfirmedVendors(!showNotConfirmedVendors)}
     className="flex items-center text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
     aria-expanded={showNotConfirmedVendors}
   >
     <span>
-      {showNotConfirmedVendors ? "Hide" : "Show"} Not Confirmed Vendors
+      {showNotConfirmedVendors ? "Hide" : "Show"} Vendor History
     </span>
     <svg
       className={`ml-2 w-4 h-4 sm:w-5 sm:h-5 transform ${showNotConfirmedVendors ? "rotate-180" : ""}`}
@@ -1786,10 +2007,9 @@ const handleSendPOClick = async (vendorId) => {
   </button>
   {showNotConfirmedVendors && (
     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-      {order.vendors && order.vendors.filter((v) => !v.isConfirmed).length > 0 ? (
+      {order.vendors && order.vendors.length > 0 ? (
         <ul className="space-y-4">
           {order.vendors
-            .filter((v) => !v.isConfirmed)
             .sort((a, b) => {
               // Push "PO Canceled" to bottom
               if (a.poStatus === "PO Canceled" && b.poStatus !== "PO Canceled") return 1;
@@ -1803,16 +2023,34 @@ const handleSendPOClick = async (vendorId) => {
                 className="p-3 bg-gray-100 dark:bg-gray-600 rounded-md"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex flex-col sm:items-center">
+                  <div className="flex flex-col sm:items-start">
                     <span className="text-sm sm:text-base font-semibold">
                       {vendor.businessName}
+                    </span>
+                    <span
+                      className={`text-xs sm:text-sm ${
+                        vendor.isConfirmed && vendor.poStatus === "PO Confirmed"
+                          ? "text-green-600 dark:text-green-400 font-bold bg-green-100 dark:bg-green-900/30 px-1 rounded"
+                          : "text-gray-600 dark:text-gray-400"
+                      }`}
+                    >
+                    isConfirmed: {vendor.isConfirmed ? "Confirmed" : "Not Confirmed"}
+                    </span>
+                    <span
+                      className={`text-xs sm:text-sm ${
+                        vendor.isConfirmed && vendor.poStatus === "PO Confirmed"
+                          ? "text-green-600 dark:text-green-400 font-bold bg-green-100 dark:bg-green-900/30 px-1 rounded"
+                          : "text-gray-600 dark:text-gray-400"
+                      }`}
+                    >
+                      PO Status: {vendor.poStatus}
                     </span>
                   </div>
                   <div className="flex space-x-2 mt-2 sm:mt-0 items-center">
                     <select
                       value={vendor.poStatus}
                       onChange={(e) => handleUpdatePOStatus(vendor._id, e.target.value)}
-                      disabled={!["PO Sent", "PO Confirmed"].includes(vendor.poStatus)}
+                      disabled={vendor.isConfirmed || !["PO Sent", "PO Confirmed"].includes(vendor.poStatus)}
                       className={`text-xs sm:text-sm border rounded-md p-1 ${
                         vendor.poStatus === "PO Confirmed"
                           ? "text-green-600 dark:text-green-400 border-green-600"
@@ -1822,7 +2060,7 @@ const handleSendPOClick = async (vendorId) => {
                           ? "text-blue-600 dark:text-blue-400 border-blue-600"
                           : "text-gray-600 dark:text-gray-400 border-gray-600"
                       } ${
-                        !["PO Sent", "PO Confirmed"].includes(vendor.poStatus)
+                        vendor.isConfirmed || !["PO Sent", "PO Confirmed"].includes(vendor.poStatus)
                           ? "bg-gray-200 dark:bg-gray-600 cursor-not-allowed"
                           : "bg-white dark:bg-gray-800 cursor-pointer"
                       } focus:outline-none focus:ring-2 focus:ring-blue-500`}
@@ -1883,7 +2121,7 @@ const handleSendPOClick = async (vendorId) => {
         </ul>
       ) : (
         <p className="text-gray-600 dark:text-gray-400 text-sm">
-          No unconfirmed vendors.
+          No vendors available.
         </p>
       )}
     </div>

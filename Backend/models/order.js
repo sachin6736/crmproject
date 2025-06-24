@@ -138,6 +138,14 @@ const orderSchema = new mongoose.Schema({
     enum: ["Locate Pending", "PO Pending", "PO Sent", "PO Confirmed", "Vendor Payment Pending", "Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"],
     default: "Locate Pending",
   },
+  picturesReceivedFromYard: {
+    type: Boolean,
+    default: false,
+  },
+  picturesSentToCustomer: {
+    type: Boolean,
+    default: false,
+  },
   vendors: [{
     businessName: {
       type: String,

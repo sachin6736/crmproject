@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,changeOrderStatus,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,changeOrderStatus,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -27,5 +27,7 @@ router.post('/sendpurchaseorder/:id',protect,sendPurchaseorder); //sent purchase
 router.patch('/update-status/:id',protect,changeOrderStatus);
 router.patch("/update/:orderId", protect,updateOrderDetails); // editorder details in customer-relations
 router.put('/updateShipment/:orderId', protect,updateShipmentDetails);//edit shipment details
+router.patch("/order/:orderId/vendor/:vendorId/pictures-received",protect,markPicturesReceived);
+router.patch("/order/:orderId/vendor/:vendorId/pictures-sent",protect,markPicturesSent);
 
 export default router;
