@@ -129,9 +129,7 @@ const orderSchema = new mongoose.Schema({
     match: [/^https?:\/\/[^\s$.?#].[^\s]*$/, 'Please enter a valid URL']
   },
   amount: {
-    type: Number
-
-,
+    type: Number,
     required: true,
     min: 0.01,
   },
@@ -139,6 +137,14 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ["Locate Pending", "PO Pending", "PO Sent", "PO Confirmed", "Vendor Payment Pending", "Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"],
     default: "Locate Pending",
+  },
+  picturesReceivedFromYard: {
+    type: Boolean,
+    default: false,
+  },
+  picturesSentToCustomer: {
+    type: Boolean,
+    default: false,
   },
   vendors: [{
     businessName: {
@@ -208,6 +214,10 @@ const orderSchema = new mongoose.Schema({
       enum: ["PO Pending", "PO Sent", "PO Confirmed", "PO Canceled"],
       default: "PO Pending"
     },
+    notes: [{
+      text: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now }
+    }],
     createdAt: {
       type: Date,
       default: Date.now

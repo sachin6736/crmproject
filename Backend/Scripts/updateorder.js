@@ -1,5 +1,6 @@
+
 // import mongoose from "mongoose";
-// import { Order, Counter } from '../models/order.js'; // Path to order.js in models folder
+// import { Order, Counter } from '../models/order.js'; // Adjust path to your order model
 // import dotenv from 'dotenv';
 
 // dotenv.config();
@@ -23,28 +24,30 @@
 
 //       let modifiedCount = 0;
 
-//       // Update each order to add new fields with blank values
+//       // Update each order to add notes array to vendors
 //       for (const order of allOrders) {
 //         try {
-//           await Order.updateOne(
+//           const result = await Order.updateOne(
 //             { _id: order._id },
 //             { 
 //               $set: { 
-//                 weightAndDimensions: {}, // Empty object for weightAndDimensions
-//                 carrierName: "",        // Empty string for carrierName
-//                 trackingNumber: ""      // Empty string for trackingNumber
+//                 'vendors.$[].notes': [] // Initialize notes as empty array for all vendors
 //               } 
 //             }
 //           );
-//           modifiedCount++;
-//           console.log(`✅ Updated order _id: ${order._id} with blank fields (weightAndDimensions, carrierName, trackingNumber)`);
+//           if (result.modifiedCount > 0) {
+//             modifiedCount++;
+//             console.log(`✅ Updated order _id: ${order._id} with blank notes array for vendors`);
+//           } else {
+//             console.log(`ℹ️ Order _id: ${order._id} already has notes array for vendors`);
+//           }
 //         } catch (err) {
 //           console.error(`❌ Error updating order _id: ${order._id}`, err);
 //         }
 //       }
 
 //       console.log(
-//         `✅ Successfully updated ${modifiedCount} orders with blank fields.`
+//         `✅ Successfully updated ${modifiedCount} orders with blank notes array for vendors.`
 //       );
 //     } catch (err) {
 //       console.error("❌ Error updating orders", err);
@@ -60,8 +63,6 @@
 //   .catch((err) => {
 //     console.error("❌ Error connecting to MongoDB", err);
 //   });
-//==========adding weight,tracking etc
-
 
 import mongoose from "mongoose";
 import { Order, Counter } from '../models/order.js'; // Adjust path to your order model
@@ -88,27 +89,35 @@ mongoose
 
       let modifiedCount = 0;
 
-      // Update each order to add new fields with blank values
+      // Update each order to add picturesReceivedFromYard and picturesSentToCustomer fields
       for (const order of allOrders) {
         try {
-          await Order.updateOne(
+          const result = await Order.updateOne(
             { _id: order._id },
             { 
               $set: { 
-                bolNumber: "",      // Empty string for bolNumber
-                trackingLink: ""    // Empty string for trackingLink
+                picturesReceivedFromYard: false, // Initialize as false
+                picturesSentToCustomer: false // Initialize as false
               } 
+            },
+            { 
+              // Only update if fields don't exist
+              $setOnInsert: { picturesReceivedFromYard: false, picturesSentToCustomer: false }
             }
           );
-          modifiedCount++;
-          console.log(`✅ Updated order _id: ${order._id} with blank fields (bolNumber, trackingLink)`);
+          if (result.modifiedCount > 0) {
+            modifiedCount++;
+            console.log(`✅ Updated order _id: ${order._id} with pictures fields`);
+          } else {
+            console.log(`ℹ️ Order _id: ${order._id} already has pictures fields`);
+          }
         } catch (err) {
           console.error(`❌ Error updating order _id: ${order._id}`, err);
         }
       }
 
       console.log(
-        `✅ Successfully updated ${modifiedCount} orders with blank fields.`
+        `✅ Successfully updated ${modifiedCount} orders with pictures fields.`
       );
     } catch (err) {
       console.error("❌ Error updating orders", err);
