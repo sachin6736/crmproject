@@ -1556,7 +1556,7 @@ export const updateOrderDetails = async (req, res) => {
 //=============================================================================================
 
 export const updateShipmentDetails = async (req, res) => {
-  console.log("update shipping working")
+  console.log("update shipping working");
   try {
     const { orderId } = req.params;
     const { weight, height, width, carrierName, trackingNumber, bolNumber, trackingLink } = req.body;
@@ -1596,6 +1596,12 @@ export const updateShipmentDetails = async (req, res) => {
     order.bolNumber = bolNumber || order.bolNumber; // Preserve existing value if not provided
     order.trackingLink = trackingLink || order.trackingLink; // Preserve existing value if not provided
 
+    // Update status to Shipping Pending if not at a later stage
+    const laterStatuses = ["Ship Out", "Intransit", "Delivered", "Replacement"];
+    if (!laterStatuses.includes(order.status)) {
+      order.status = "Shipping Pending";
+    }
+
     // Detect changes for note
     const changes = [];
     if (weight !== previousValues.weight) {
@@ -1622,15 +1628,33 @@ export const updateShipmentDetails = async (req, res) => {
 
     // Add note if there are changes
     if (changes.length > 0) {
+      const noteText = `Shipment details updated by ${user.name || user.email || 'Unknown User'}: ${changes.join('; ')}`;
+      
+      // Add to order notes
       order.notes.push({
-        text: `Shipment details updated by ${user.name || user.email || 'Unknown User'}: ${changes.join('; ')}`,
+        text: noteText,
         createdAt: new Date(),
       });
+
+      // Add to procurement notes
+      order.procurementnotes.push({
+        text: noteText,
+        createdAt: new Date(),
+      });
+
+      // Add to active vendor's notes (if exists)
+      const activeVendor = order.vendors.find(v => v.poStatus === "PO Confirmed");
+      if (activeVendor) {
+        activeVendor.notes = activeVendor.notes || [];
+        activeVendor.notes.push({
+          text: noteText,
+          createdAt: new Date(),
+        });
+      }
     }
 
     // Save the updated order
     await order.save();
-
     res.status(200).json({ message: 'Shipment details updated successfully', order });
   } catch (error) {
     console.error('Error updating shipment details:', error);
