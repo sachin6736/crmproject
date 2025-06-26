@@ -1367,6 +1367,36 @@ const handlePictureSent = async (vendorId) => {
                       </span>
                     </div>
                   </div>
+                  <div className="mt-4">
+                    <button
+                      // onClick={handleSendShipmentDetails}
+                      className={`px-4 py-2 text-white rounded-md transition-colors text-sm ${
+                        actionLoading ||
+                        !order?.email ||
+                        !order?.trackingNumber ||
+                        !order?.carrierName
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      }`}
+                      disabled={
+                        actionLoading ||
+                        !order?.email ||
+                        !order?.trackingNumber ||
+                        !order?.carrierName
+                      }
+                      aria-label="Send shipment details to customer"
+                    >
+                      {actionLoading ? (
+                        <FullPageLoader
+                          size="w-4 h-4"
+                          color="text-white"
+                          fill="fill-teal-200"
+                        />
+                      ) : (
+                        "Send Shipment Details"
+                      )}
+                    </button>
+                  </div>
                 </section>
                 {/* Billing Address */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
