@@ -1098,6 +1098,32 @@ const OrderDetails = () => {
     });
   };
 
+  const handleShipmentDelivered = async () => {
+  setActionLoading(true);
+  try {
+    const response = await fetch(
+      `http://localhost:3000/Order/orders/${orderId}/shipment-delivered`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      }
+    );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to mark shipment as delivered");
+    }
+    const data = await response.json();
+    toast.success(data.message || "Shipment marked as delivered successfully");
+    await fetchOrderData(); // Refresh order data to reflect updated status
+  } catch (error) {
+    console.error("Error marking shipment as delivered:", error);
+    toast.error(error.message || "Failed to mark shipment as delivered");
+  } finally {
+    setActionLoading(false);
+  }
+};
+
   // Export to Excel
   const handleExportToExcel = () => {
     if (!order) {
@@ -2505,6 +2531,34 @@ const OrderDetails = () => {
                 Edit Order Details
               </button>
             )}
+            {["procurement", "admin"].includes(user?.role) && (
+  <button
+    onClick={handleShipmentDelivered}
+    className={`w-full px-4 py-2 text-white rounded-md transition-colors text-sm sm:text-base ${
+      actionLoading ||
+      !order?.trackingNumber ||
+      order.status === "Delivered"
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+    }`}
+    disabled={
+      actionLoading ||
+      !order?.trackingNumber ||
+      order.status === "Delivered"
+    }
+    aria-label="Mark shipment as delivered"
+  >
+    {actionLoading ? (
+      <FullPageLoader
+        size="w-4 h-4"
+        color="text-white"
+        fill="fill-teal-200"
+      />
+    ) : (
+      "Shipment Delivered"
+    )}
+  </button>
+)}
             <button
               onClick={handleExportToExcel}
               className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"

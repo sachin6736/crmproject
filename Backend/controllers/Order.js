@@ -1904,3 +1904,200 @@ export const markPicturesSent = async (req, res) => {
     return res.status(500).json({ message: "Failed to mark pictures sent", error: error.message });
   }
 };
+
+
+// New controller for marking shipment as delivered
+export const markShipmentDelivered = async (req, res) => {
+  try {
+    // Check user authorization
+    if (!req.user || !['procurement', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied: Only procurement or admin can mark shipment as delivered" });
+    }
+
+    const { orderId } = req.params;
+
+    // Find the order
+    const order = await Order.findById(orderId).populate("leadId").populate("vendors");
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Check if order is in a valid state to mark as delivered
+    if (!["PO Confirmed", "Shipping Pending", "Ship Out", "Intransit"].includes(order.status)) {
+      return res.status(400).json({ message: `Cannot mark shipment as delivered: Order status is ${order.status}` });
+    }
+
+    // Check if tracking number exists
+    if (!order.trackingNumber) {
+      return res.status(400).json({ message: "Tracking number is required to mark shipment as delivered" });
+    }
+
+    // Check if already delivered
+    if (order.status === "Delivered") {
+      return res.status(400).json({ message: "Shipment is already marked as delivered" });
+    }
+
+    // Update order status to Delivered
+    order.status = "Delivered";
+
+    // Add notes
+    const userName = req.user?.name || "Unknown User";
+    const noteText = `Shipment marked as delivered by ${userName}`;
+    
+    // Add to order notes
+    order.notes.push({
+      text: noteText,
+      createdAt: new Date(),
+    });
+
+    // Add to procurement notes
+    order.procurementnotes.push({
+      text: noteText,
+      createdAt: new Date(),
+    });
+
+    // Add to active vendor's notes (if exists)
+    const activeVendor = order.vendors.find(v => v.poStatus === "PO Confirmed");
+    if (activeVendor) {
+      activeVendor.notes = activeVendor.notes || [];
+      activeVendor.notes.push({
+        text: noteText,
+        createdAt: new Date(),
+      });
+    }
+
+    // Save the updated order
+    await order.save();
+
+    // Prepare email content for customer notification
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
+      <div style="text-align: center;">
+        <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598236/Picsart_24-04-02_10-36-01-714_xpnbgi.png" alt="First Used Autoparts Logo" style="max-width: 250px; margin-bottom: 24px;" />
+      </div>
+      
+      <h2 style="color: #2a2a2a;">Shipment Delivered</h2>
+      <p style="color: #555;">
+        Dear ${order.clientName || "Customer"},<br />
+        We are pleased to inform you that your order has been successfully delivered.
+      </p>
+  
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Order Information</h3>
+      <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Order ID:</strong> ${order.order_id || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Part Requested:</strong> ${order.leadId?.partRequested || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Make:</strong> ${order.make || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Model:</strong> ${order.model || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Year:</strong> ${order.year || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Amount:</strong> $${order.amount?.toFixed(2) || "N/A"}</li>
+      </ul>
+      
+      <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Shipment Information</h3>
+      <ul style="list-style: none; padding: 0; color: #333;">
+        <li style="margin-bottom: 8px;"><strong>Carrier Name:</strong> ${order.carrierName || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Tracking Number:</strong> ${order.trackingNumber || "N/A"}</li>
+        <li style="margin-bottom: 8px;"><strong>Tracking Link:</strong> <a href="${order.trackingLink || "#"}" style="color: #007BFF; text-decoration: none;">${order.trackingLink || "N/A"}</a></li>
+        <li style="margin-bottom: 8px;"><strong>Shipping Address:</strong> ${order.shippingAddress || "N/A"}, ${order.shippingCity || "N/A"}, ${order.shippingState?.toUpperCase() || "N/A"} ${order.shippingZip || "N/A"}</li>
+      </ul>
+      
+      <p style="color: #555;">
+        Thank you for choosing First Used Autoparts. If you have any questions or need further assistance, please contact us at +1 888-282-7476 or reply to this email.
+      </p>
+  
+      <p style="color: #555;">Best regards,<br />
+      <strong>First Used Autoparts Team</strong></p>
+  
+      <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;" />
+  
+      <div style="font-size: 14px; color: #888;">
+        <p><strong>Address:</strong><br />
+        330 N Brand Blvd, STE 700<br />
+        Glendale, California 91203</p>
+  
+        <p><strong>Contact:</strong><br />
+        +1 888-282-7476<br />
+        <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF; text-decoration: none;">contact@firstusedautoparts.com</a></p>
+      </div>
+  
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599473/fb_n6h6ja.png" alt="Facebook" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599377/linkedin_v3pufc.png" alt="LinkedIn" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://www.instagram.com/first_used_auto_parts/" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598983/10462345_g4oluw.png" alt="Instagram" style="width: 32px; height: 32px;" />
+        </a>
+        <a href="https://twitter.com/parts54611" style="margin: 0 10px; display: inline-block;">
+          <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599425/twitter_kivbi6.png" alt="X" style="width: 32px; height: 32px;" />
+        </a>
+      </div>
+      
+      <p style="text-align: center; margin-top: 10px;">
+        <a href="https://www.facebook.com/profile.php?id=61558228601060" style="color: #007BFF; margin: 0 5px;">Facebook</a> |
+        <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="color: #007BFF; margin: 0 5px;">LinkedIn</a> |
+        <a href="https://www.instagram.com/first_used_auto_parts/" style="color: #007BFF; margin: 0 5px;">Instagram</a> |
+        <a href="https://twitter.com/parts54611" style="color: #007BFF; margin: 0 5px;">X</a>
+      </p>
+      
+      <p style="text-align: center; font-size: 12px; color: #aaa;">
+        © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.<br />
+        <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(order.email)}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
+      </p>
+    </div>
+    `;
+
+    // Send email to customer
+    await sendEmail(order.email, `Shipment Delivered for Order #${order.order_id}`, htmlContent);
+
+    // Create notification for customer relations person
+    const customerRelationsNotification = new Notification({
+      recipient: order.customerRelationsPerson,
+      message: `Order #${order.order_id} for ${order.clientName} has been marked as delivered`,
+      type: "order_update",
+      order: order._id,
+    });
+    await customerRelationsNotification.save();
+
+    // Emit notification to customer relations person
+    io.to(order.customerRelationsPerson.toString()).emit("newNotification", {
+      _id: customerRelationsNotification._id.toString(),
+      recipient: customerRelationsNotification.recipient,
+      message: customerRelationsNotification.message,
+      type: customerRelationsNotification.type,
+      order: { _id: order._id.toString() },
+      createdAt: customerRelationsNotification.createdAt.toISOString(),
+      isRead: customerRelationsNotification.isRead,
+    });
+
+    // Create notifications for admins
+    const admins = await User.find({ role: "admin" });
+    const adminNotifications = admins.map((admin) => ({
+      recipient: admin._id,
+      message: `Order #${order.order_id} for ${order.clientName} has been marked as delivered by ${userName}`,
+      type: "order_update",
+      order: order._id,
+    }));
+    const savedAdminNotifications = await Notification.insertMany(adminNotifications);
+
+    // Emit notifications to admins
+    const now = new Date();
+    admins.forEach((admin, index) => {
+      io.to(admin._id.toString()).emit("newNotification", {
+        _id: savedAdminNotifications[index]._id.toString(),
+        recipient: admin._id,
+        message: savedAdminNotifications[index].message,
+        type: savedAdminNotifications[index].type,
+        order: { _id: order._id.toString() },
+        createdAt: now.toISOString(),
+        isRead: false,
+      });
+    });
+
+    return res.status(200).json({ message: "Shipment marked as delivered successfully", order });
+  } catch (error) {
+    console.error("Error marking shipment delivered:", error);
+    return res.status(500).json({ message: "Failed to mark shipment as delivered", error: error.message });
+  }
+};
