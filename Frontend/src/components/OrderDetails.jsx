@@ -738,6 +738,11 @@ const OrderDetails = () => {
     await fetchOrderData(); // Refresh order data
   };
 
+  const YourComponent = () => {
+    const [dropdownState, setDropdownState] = useState({});
+    // ... rest of your component
+  };
+
   const handlePictureReceived = async (vendorId) => {
     setActionLoading(true);
     try {
@@ -1304,312 +1309,179 @@ const OrderDetails = () => {
             </div>
           ) : order ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 max-w-4xl mx-auto w-full">
-              <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  Order #{order.order_id}
-                </h2>
-                <button
-                  onClick={() => navigate("/home/orders")}
-                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
-                >
-                  Back to Orders
-                </button>
-              </div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+  <div className="flex items-center gap-4">
+    <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+      Order No: {order.order_id}
+    </h2>
+    <span
+      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+        {
+          "Locate Pending": "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
+          "PO Pending": "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+          "PO Sent": "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+          "PO Confirmed": "bg-blue-100 text-blue-500 dark:bg-blue-900/20 dark:text-blue-300",
+          "Vendor Payment Pending": "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+          "Vendor Payment Confirmed": "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+          "Shipping Pending": "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+          "Ship Out": "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
+          Intransit: "bg-teal-100 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400",
+          Delivered: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-500",
+          Replacement: "bg-pink-100 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400",
+          default: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
+        }[order.status] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+      }`}
+    >
+      {order.status || "Unknown"}
+    </span>
+  </div>
+  <button
+    onClick={() => navigate("/home/orders")}
+    className="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 font-medium text-sm sm:text-base"
+  >
+    Back to Orders
+  </button>
+</div>
               <div className="space-y-6">
                 {/* Customer Information */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Customer Details
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Name
-                      </strong>
-                      <p>{order.clientName || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Phone
-                      </strong>
-                      <p>{order.phone || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Email
-                      </strong>
-                      <p>{order.email || "N/A"}</p>
-                    </div>
-                  </div>
-                </section>
-                {/* Order Information */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Order Information
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Order ID
-                      </strong>
-                      <p>{order.order_id || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Order Status
-                      </strong>
-                      <p>{order.status || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Lead Status
-                      </strong>
-                      <p>{order.leadId?.status || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Sales Person
-                      </strong>
-                      <p>
-                        {order.salesPerson?.name ||
-                          order.salesPerson?._id ||
-                          "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Order Created At
-                      </strong>
-                      <p>
-                        {order.createdAt
-                          ? new Date(order.createdAt).toLocaleString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Lead Created At
-                      </strong>
-                      <p>
-                        {order.leadId?.createdAt
-                          ? new Date(order.leadId.createdAt).toLocaleString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-                {/* Billing Address */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Billing Address
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Address
-                      </strong>
-                      <p>{order.billingAddress || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        City
-                      </strong>
-                      <p>{order.city || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        State
-                      </strong>
-                      <p>{order.state?.toUpperCase() || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Zip
-                      </strong>
-                      <p>{order.zip || "N/A"}</p>
-                    </div>
-                  </div>
-                </section>
-                {/* Shipping Address */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Shipping Address
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Address
-                      </strong>
-                      <p>{order.shippingAddress || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        City
-                      </strong>
-                      <p>{order.shippingCity || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        State
-                      </strong>
-                      <p>{order.shippingState?.toUpperCase() || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Zip
-                      </strong>
-                      <p>{order.shippingZip || "N/A"}</p>
-                    </div>
-                  </div>
-                </section>
-                {/* Vehicle Information */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Vehicle Information
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Make
-                      </strong>
-                      <p>{order.make || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Model
-                      </strong>
-                      <p>{order.model || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Year
-                      </strong>
-                      <p>{order.year || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Trim
-                      </strong>
-                      <p>{order.leadId?.trim || "N/A"}</p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Part Requested
-                      </strong>
-                      <p>{order.leadId?.partRequested || "N/A"}</p>
-                    </div>
-                  </div>
-                </section>
-                {/* Payment Information */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Payment Information
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Card Number
-                      </strong>
-                      <p>
-                        {user?.role === "admin"
-                          ? order.cardNumber || "N/A"
-                          : "**** **** **** ****"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Card Expiry
-                      </strong>
-                      <p>
-                        {order.cardMonth && order.cardYear
-                          ? `${order.cardMonth}/${order.cardYear}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Part Cost
-                      </strong>
-                      <p>
-                        {order.leadId?.partCost
-                          ? `$${order.leadId.partCost.toFixed(2)}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Shipping Cost
-                      </strong>
-                      <p>
-                        {order.leadId?.shippingCost
-                          ? `$${order.leadId.shippingCost.toFixed(2)}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Gross Profit
-                      </strong>
-                      <p>
-                        {order.leadId?.grossProfit
-                          ? `$${order.leadId.grossProfit.toFixed(2)}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Total Cost
-                      </strong>
-                      <p>
-                        {order.leadId?.totalCost
-                          ? `$${order.leadId.totalCost.toFixed(2)}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Amount
-                      </strong>
-                      <p>
-                        {order.amount ? `$${order.amount.toFixed(2)}` : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-                {/* Card Details (Visible only to admins) */}
-                {user?.role === "admin" && (
-                  <section>
-                    <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                      Card Details
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          Card Number
-                        </strong>
-                        <p>{order.cardNumber || "N/A"}</p>
-                      </div>
-                      <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          Card Month
-                        </strong>
-                        <p>{order.cardMonth || "N/A"}</p>
-                      </div>
-                      <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          Card Year
-                        </strong>
-                        <p>{order.cardYear || "N/A"}</p>
-                      </div>
-                      <div>
-                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          CVV
-                        </strong>
-                        <p>{order.cvv || "N/A"}</p>
-                      </div>
-                    </div>
-                  </section>
-                )}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-8">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {/* Customer Details */}
+    <div className="space-y-6">
+      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Customer Details</h3>
+      <div className="space-y-4">
+        {[
+          { label: "Name", value: order.clientName || "N/A" },
+          { label: "Phone", value: order.phone || "N/A" },
+          { label: "Email", value: order.email || "N/A" },
+        ].map((item, index) => (
+          <div key={index} className="flex justify-between items-center">
+            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
+            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Order Information */}
+    <div className="space-y-6">
+      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Order Information</h3>
+      <div className="space-y-4">
+        {[
+          { label: "Order ID", value: order.order_id || "N/A" },
+          { label: "Order Status", value: order.status || "N/A" },
+          { label: "Lead Status", value: order.leadId?.status || "N/A" },
+          { label: "Sales Person", value: order.salesPerson?.name || order.salesPerson?._id || "N/A" },
+          { label: "Order Created At", value: order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A" },
+          { label: "Lead Created At", value: order.leadId?.createdAt ? new Date(order.leadId.createdAt).toLocaleString() : "N/A" },
+        ].map((item, index) => (
+          <div key={index} className="flex justify-between items-center">
+            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
+            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+<section className="border-b border-gray-200 dark:border-gray-700 pb-8">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {/* Billing Address */}
+    <div className="space-y-6">
+      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Billing Address</h3>
+      <div className="space-y-4">
+        {[
+          { label: "Address", value: order.billingAddress || "N/A" },
+          { label: "City", value: order.city || "N/A" },
+          { label: "State", value: order.state?.toUpperCase() || "N/A" },
+          { label: "Zip", value: order.zip || "N/A" },
+        ].map((item, index) => (
+          <div key={index} className="flex justify-between items-center">
+            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
+            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Shipping Address */}
+    <div className="space-y-6">
+      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Shipping Address</h3>
+      <div className="space-y-4">
+        {[
+          { label: "Address", value: order.shippingAddress || "N/A" },
+          { label: "City", value: order.shippingCity || "N/A" },
+          { label: "State", value: order.shippingState?.toUpperCase() || "N/A" },
+          { label: "Zip", value: order.shippingZip || "N/A" },
+        ].map((item, index) => (
+          <div key={index} className="flex justify-between items-center">
+            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
+            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+              {/* Vehicle Information */}
+<section className="border-b border-gray-200 dark:border-gray-700 pb-8">
+  <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Vehicle Details</h3>
+  <div className="space-y-4">
+    {[
+      { label: "Make", value: order.make || "N/A" },
+      { label: "Model", value: order.model || "N/A" },
+      { label: "Year", value: order.year || "N/A" },
+      { label: "Trim", value: order.leadId?.trim || "N/A" },
+      { label: "Part", value: order.leadId?.partRequested || "N/A" },
+    ].map((item, index) => (
+      <div key={index} className="flex justify-between items-center">
+        <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
+        <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+{/* Payment Information */}
+<section className="border-b border-gray-200 dark:border-gray-700 pb-8">
+  <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Payment Details</h3>
+  <div className="space-y-4">
+    {[
+      { label: "Card", value: user?.role === "admin" ? order.cardNumber || "N/A" : "**** **** **** ****" },
+      { label: "Expiry", value: order.cardMonth && order.cardYear ? `${order.cardMonth}/${order.cardYear}` : "N/A" },
+      { label: "Part Cost", value: order.leadId?.partCost ? `$${order.leadId.partCost.toFixed(2)}` : "N/A" },
+      { label: "Shipping", value: order.leadId?.shippingCost ? `$${order.leadId.shippingCost.toFixed(2)}` : "N/A" },
+      { label: "Profit", value: order.leadId?.grossProfit ? `$${order.leadId.grossProfit.toFixed(2)}` : "N/A" },
+      { label: "Total", value: order.leadId?.totalCost ? `$${order.leadId.totalCost.toFixed(2)}` : "N/A" },
+      { label: "Amount", value: order.amount ? `$${order.amount.toFixed(2)}` : "N/A" },
+    ].map((item, index) => (
+      <div key={index} className="flex justify-between items-center">
+        <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
+        <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+{/* Card Details (Visible only to admins) */}
+{user?.role === "admin" && (
+  <section className="pb-8">
+    <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Card Details</h3>
+    <div className="space-y-4">
+      {[
+        { label: "Card", value: order.cardNumber || "N/A" },
+        { label: "Month", value: order.cardMonth || "N/A" },
+        { label: "Year", value: order.cardYear || "N/A" },
+        { label: "CVV", value: order.cvv || "N/A" },
+      ].map((item, index) => (
+        <div key={index} className="flex justify-between items-center">
+          <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
+          <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
                 {/* Shipment Details */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
@@ -1703,7 +1575,7 @@ const OrderDetails = () => {
                 </section>
 
                 {/* Active Vendors */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+  <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
                     Active Vendor
                   </h3>

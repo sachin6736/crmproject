@@ -1507,36 +1507,7 @@ export const previewPurchaseOrder = async (req, res) => {
   }
 };
 //=================================================
-//Change order status Controller
-export const changeOrderStatus=async(req,res)=>{
-  console.log("Edit order status controller working");
-  
-  try{
-  const id=req.params.id;
-  console.log("Id to change order status",id);
-  const {status}=req.body;
-  console.log("newstatus",status);
-  const order=await Order.findById(id);
-   if (!order) {
-      return res.status(404).json({ message: "order not found" });
-    }
 
-    order.status = status;
-   
-    console.log("User Role testing", req.user);
-    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
-    order.notes.push({
-      text: `changed to order '${status}' by ${userIdentity}`,
-      addedBy: userIdentity,
-      createdAt: new Date(),
-    });
-    await order.save();
-    return res.status(200).json({ message: "Order status updated", order });
-  } catch (error) {
-    console.log("Error updating order status:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}
 
 //=========================================================procurement notes
 export const addProcurementNote = async (req, res) => {
@@ -1688,20 +1659,26 @@ export const updateShipmentDetails = async (req, res) => {
     const { weight, height, width, carrierName, trackingNumber, bolNumber, trackingLink } = req.body;
     const user = req.user; // Assumed to be set by authentication middleware
 
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Restrict updating shipment details for certain statuses
+    const restrictedStatuses = ["Locate Pending", "PO Pending", "PO Sent", "PO Confirmed", "Vendor Payment Pending"];
+    if (restrictedStatuses.includes(order.status)) {
+      return res.status(400).json({ message: `Cannot update shipment details for order in "${order.status}" status` });
+    }
+
     // Validate required fields
-    if (!weight || !height || !width || !carrierName || !trackingNumber) {
-      return res.status(400).json({ message: 'Weight, height, width, carrier name, and tracking number are required' });
+    if (!weight || !height || !width || !carrierName || !trackingNumber || !bolNumber || !trackingLink) {
+      return res.status(400).json({ message: 'All fields are necessary' });
     }
 
     // Validate trackingLink if provided
     if (trackingLink && !/^https?:\/\/[^\s$.?#].[^\s]*$/.test(trackingLink)) {
       return res.status(400).json({ message: 'Invalid tracking link URL' });
-    }
-
-    // Find the order
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
     }
 
     // Store previous values for change detection
@@ -1786,7 +1763,7 @@ export const updateShipmentDetails = async (req, res) => {
     console.error('Error updating shipment details:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};//shipping detaials
+}   ;//shipping detaials
 //=============================================================================================
 //=============================================================================================
 export const markPicturesReceived = async (req, res) => {

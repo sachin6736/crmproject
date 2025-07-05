@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
@@ -19,59 +18,43 @@ const OrdersHistory = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showOrderStatusDropdown, setShowOrderStatusDropdown] = useState(null); // Track dropdown for each order
   const itemsPerPage = 10;
-  const statusHeaderRef = useRef(null);
-  const orderStatusRefs = useRef({}); // Refs for each order's status dropdown
 
   const statusTextColors = {
-    "Locate Pending": "text-yellow-500 dark:text-yellow-300",
-    "PO Pending": "text-orange-500 dark:text-orange-300",
+    "Locate Pending": "text-yellow-600 dark:text-yellow-400",
+    "PO Pending": "text-orange-600 dark:text-orange-400",
+    "PO Sent": "text-blue-600 dark:text-blue-400",
     "PO Confirmed": "text-blue-500 dark:text-blue-300",
-    "Vendor Payment Pending": "text-red-500 dark:text-red-300",
-    "Vendor Payment Confirmed": "text-green-500 dark:text-green-300",
-    "Shipping Pending": "text-purple-500 dark:text-purple-300",
-    "Ship Out": "text-indigo-500 dark:text-indigo-300",
-    Instransit: "text-teal-500 dark:text-teal-300",
-    Delivered: "text-green-600 dark:text-green-400",
-    Replacement: "text-pink-500 dark:text-pink-300",
+    "Vendor Payment Pending": "text-red-600 dark:text-red-400",
+    "Vendor Payment Confirmed": "text-green-600 dark:text-green-400",
+    "Shipping Pending": "text-purple-600 dark:text-purple-400",
+    "Ship Out": "text-indigo-600 dark:text-indigo-400",
+    Intransit: "text-teal-600 dark:text-teal-400",
+    Delivered: "text-green-700 dark:text-green-500",
+    Replacement: "text-pink-600 dark:text-pink-400",
     default: "text-gray-600 dark:text-gray-400",
   };
 
   const debouncedSearch = useCallback(
     debounce((value) => {
-      console.log("Debounced search triggered with value:", value);
       setSearchQuery(value);
     }, 500),
     []
   );
 
-  // Close header status dropdown on outside click
+  // Close status filter dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        statusHeaderRef.current &&
-        !statusHeaderRef.current.contains(event.target)
-      ) {
-        console.log("Clicked outside, closing header dropdown");
+      const statusHeaderRef = document.getElementById("status-header");
+      if (statusHeaderRef && !statusHeaderRef.contains(event.target)) {
         setShowStatusDropdown(false);
-      }
-      // Close order status dropdowns
-      if (
-        showOrderStatusDropdown &&
-        !Object.values(orderStatusRefs.current).some((ref) =>
-          ref?.contains(event.target)
-        )
-      ) {
-        console.log("Clicked outside, closing order status dropdown");
-        setShowOrderStatusDropdown(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showOrderStatusDropdown]);
+  }, []);
 
   // Fetch user data
   useEffect(() => {
@@ -117,14 +100,6 @@ const OrdersHistory = () => {
           throw new Error("Unauthorized role");
         }
 
-        console.log("Fetching orders with params:", {
-          endpoint,
-          currentPage,
-          itemsPerPage,
-          searchQuery,
-          statusFilter,
-        });
-
         const response = await fetch(
           `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
             searchQuery
@@ -157,7 +132,7 @@ const OrdersHistory = () => {
 
   // Handle search input change
   const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
+    debouncedSearch(e.target.value);
   };
 
   const handleExportToExcel = () => {
@@ -193,87 +168,69 @@ const OrdersHistory = () => {
   };
 
   const handleStatusSelect = (status) => {
-    console.log("Selected status:", status);
     setStatusFilter(status);
     setShowStatusDropdown(false);
   };
 
-  const handleOrderStatusSelect = async (orderId, newStatus) => {
-    try {
-      const response = await fetch(
-        `http://localhost:3000/Order/update-status/${orderId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: newStatus }),
-          credentials: "include",
-        }
-      );
-      if (!response.ok) throw new Error("Failed to update order status");
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order._id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
-      toast.success("Order status updated successfully");
-    } catch (error) {
-      console.error("Error updating order status:", error);
-      toast.error("Failed to update order status");
-    } finally {
-      setShowOrderStatusDropdown(null);
-    }
-  };
-
   return (
-    <div className="p-4 md:p-6 min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="p-4 sm:p-6 min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {loadingUser || loadingOrders ? (
-        <div className="flex justify-center items-center py-8">
-          <FullPageLoader
-            size="w-10 h-10"
-            color="text-blue-500 dark:text-blue-400"
-            fill="fill-blue-300 dark:fill-blue-600"
-          />
+        <div className="flex justify-center items-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 dark:border-blue-400"></div>
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
               <input
                 type="text"
-                placeholder="Search by Client Name, Order ID, Phone, Email, or Part Requested..."
-                className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
+                placeholder="Search by Client Name, Order ID, Phone, Email, or Part..."
+                className="px-4 py-2 border rounded-lg w-full sm:w-80 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 transition-all duration-200"
                 onChange={handleSearchChange}
               />
-              <select
-                className="border px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                {[
-                  "Locate Pending",
-                  "PO Pending",
-                  "PO Sent",
-                  "PO Confirmed",
-                  "Vendor Payment Pending",
-                  "Vendor Payment Confirmed",
-                  "Shipping Pending",
-                  "Ship Out",
-                  "Intransit",
-                  "Delivered",
-                  "Replacement",
-                ].map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+              <div className="relative w-full sm:w-auto">
+                <select
+                  className="w-full sm:w-48 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 appearance-none"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">All Statuses</option>
+                  {[
+                    "Locate Pending",
+                    "PO Pending",
+                    "PO Sent",
+                    "PO Confirmed",
+                    "Vendor Payment Pending",
+                    "Vendor Payment Confirmed",
+                    "Shipping Pending",
+                    "Ship Out",
+                    "Intransit",
+                    "Delivered",
+                    "Replacement",
+                  ].map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+                <svg
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
               {user?.role === "admin" && (
                 <button
                   onClick={handleExportToExcel}
-                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600"
+                  className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm font-medium"
                   disabled={loadingOrders || orders.length === 0}
                 >
                   Download as Excel
@@ -282,85 +239,32 @@ const OrdersHistory = () => {
             </div>
           </div>
 
-          <div className="mt-4 bg-white dark:bg-gray-800 rounded-md shadow-md overflow-x-auto h-[720px] flex-grow relative">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-x-auto flex-grow relative">
             {loadingOrders ? (
-              <div className="flex justify-center items-center py-8">
-                <FullPageLoader
-                  size="w-10 h-10"
-                  color="text-blue-500 dark:text-blue-400"
-                  fill="fill-blue-300 dark:fill-blue-600"
-                />
+              <div className="flex justify-center items-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 dark:border-blue-400"></div>
               </div>
             ) : (
-              <table className="w-full text-left text-sm md:text-base">
-                <thead className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0 z-10">
                   <tr>
                     {[
-                      "Order ID ⬍",
-                      "Client Name ⬍",
-                      "Phone ⬍",
-                      "Email ⬍",
-                      "Date ⬍",
-                      "Part Requested ⬍",
-                      "Total Cost ⬍",
+                      "Order ID",
+                      "Client Name",
+                      "Phone",
+                      "Email",
+                      "Date",
+                      "Part Requested",
+                      "Total Cost",
+                      "Status",
                     ].map((header, i) => (
                       <th
                         key={i}
-                        className="px-3 md:px-4 py-2 border-b border-gray-300 dark:border-gray-600 whitespace-nowrap"
+                        className="px-4 py-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-sm sm:text-base"
                       >
                         {header}
                       </th>
                     ))}
-                    <th
-                      ref={statusHeaderRef}
-                      className="px-3 md:px-4 py-2 border-b border-gray-300 dark:border-gray-600 whitespace-nowrap relative cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log("Toggling status dropdown");
-                        setShowStatusDropdown(!showStatusDropdown);
-                      }}
-                    >
-                      Status ⬍
-                      {showStatusDropdown && (
-                        <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-30">
-                          <div
-                            className={`px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 ${
-                              statusFilter === ""
-                                ? "bg-blue-100 dark:bg-blue-600"
-                                : ""
-                            }`}
-                            onClick={() => handleStatusSelect("")}
-                          >
-                            All
-                          </div>
-                          {[
-                            "Locate Pending",
-                            "PO Pending",
-                            "PO Sent",
-                            "PO Confirmed",
-                            "Vendor Payment Pending",
-                            "Vendor Payment Confirmed",
-                            "Shipping Pending",
-                            "Ship Out",
-                            "Intransit",
-                            "Delivered",
-                            "Replacement",
-                          ].map((status) => (
-                            <div
-                              key={status}
-                              className={`px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 ${
-                                statusFilter === status
-                                  ? "bg-blue-100 dark:bg-blue-600"
-                                  : ""
-                              }`}
-                              onClick={() => handleStatusSelect(status)}
-                            >
-                              {status}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -368,92 +272,49 @@ const OrdersHistory = () => {
                     orders.map((order, index) => (
                       <tr
                         key={order._id || index}
-                        className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                          order.isOwnOrder &&
-                          user?.role === "customer_relations"
-                            ? "bg-red-100 dark:bg-red-900"
+                        className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
+                          order.isOwnOrder && user?.role === "customer_relations"
+                            ? "bg-red-50 dark:bg-red-900/20"
                             : ""
                         }`}
                       >
                         <td
-                          className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer whitespace-nowrap"
+                          className="px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                           onClick={() => handleOrderClick(order._id)}
                         >
                           {order.order_id || "N/A"}
                         </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.clientName || "N/A"}
                         </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.phone || "N/A"}
                         </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.email || "N/A"}
                         </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.createdAt
                             ? new Date(order.createdAt).toLocaleString()
                             : "N/A"}
                         </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.leadId?.partRequested || "N/A"}
                         </td>
-                        <td className="px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
                           {order.leadId?.totalCost
-                            ? `$${order.leadId.totalCost}`
+                            ? `$${order.leadId.totalCost.toFixed(2)}`
                             : "N/A"}
                         </td>
-                        <td
-                          className="px-3 md:px-4 py-2 relative"
-                          ref={(el) => (orderStatusRefs.current[order._id] = el)}
-                          onClick={() =>
-                            setShowOrderStatusDropdown(
-                              showOrderStatusDropdown === order._id
-                                ? null
-                                : order._id
-                            )
-                          }
-                        >
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <span
-                            className={`font-semibold cursor-pointer ${
+                            className={`font-semibold ${
                               statusTextColors[order.status] ||
                               statusTextColors.default
                             }`}
                           >
                             {order.status || "Unknown"}
                           </span>
-                          {showOrderStatusDropdown === order._id && (
-                            <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-30">
-                              {[
-                                "Locate Pending",
-                                "PO Pending",
-                                "PO Sent",
-                                "PO Confirmed",
-                                "Vendor Payment Pending",
-                                "Vendor Payment Confirmed",
-                                "Shipping Pending",
-                                "Ship Out",
-                                "Intransit",
-                                "Delivered",
-                                "Replacement",
-                              ].map((status) => (
-                                <div
-                                  key={status}
-                                  className={`px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 ${
-                                    order.status === status
-                                      ? "bg-blue-100 dark:bg-blue-600"
-                                      : ""
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOrderStatusSelect(order._id, status);
-                                  }}
-                                >
-                                  {status}
-                                </div>
-                              ))}
-                            </div>
-                          )}
                         </td>
                       </tr>
                     ))
@@ -461,7 +322,7 @@ const OrdersHistory = () => {
                     <tr>
                       <td
                         colSpan={8}
-                        className="text-center py-4 text-gray-900 dark:text-gray-100"
+                        className="text-center py-6 text-gray-600 dark:text-gray-400"
                       >
                         No orders found
                       </td>
@@ -473,10 +334,10 @@ const OrdersHistory = () => {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 z-20 relative">
+            <div className="flex justify-center items-center mt-6 space-x-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                className="px-3 py-1 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500"
+                className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
                 disabled={currentPage === 1}
               >
                 Prev
@@ -485,11 +346,11 @@ const OrdersHistory = () => {
                 <button
                   key={index}
                   onClick={() => setCurrentPage(index + 1)}
-                  className={`px-3 py-1 border rounded ${
+                  className={`px-4 py-2 border rounded-lg ${
                     currentPage === index + 1
-                      ? "bg-blue-500 dark:bg-blue-600 text-white"
+                      ? "bg-blue-600 dark:bg-blue-500 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  } hover:bg-blue-100 dark:hover:bg-blue-500 border-gray-300 dark:border-gray-600`}
+                  } hover:bg-blue-100 dark:hover:bg-blue-600 border-gray-300 dark:border-gray-600 transition-all duration-200 text-sm font-medium`}
                 >
                   {index + 1}
                 </button>
@@ -498,7 +359,7 @@ const OrdersHistory = () => {
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
-                className="px-3 py-1 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500"
+                className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
                 disabled={currentPage === totalPages}
               >
                 Next
