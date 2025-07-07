@@ -9,6 +9,7 @@ import sendEmail from '../sendEmail.js';
 import CustomerRelationsRoundRobinState from '../models/customerRelationsRoundRobinState.js';
 import ProcurementRoundRobinState from '../models/procurementRoundRobinState.js';
 import VendorSimple from '../models/VendorSimple.js.js';
+import CanceledVendor from '../models/cancelledVendor.js'
 
 export const createOrder = async (req, res) => {
   try {
@@ -1879,5 +1880,72 @@ export const markPicturesSent = async (req, res) => {
   } catch (error) {
     console.error("Error marking pictures sent:", error);
     return res.status(500).json({ message: "Failed to mark pictures sent", error: error.message });
+  }
+};
+//===========================================================================
+//==================================================
+export const cancelVendor = async (req, res) => {
+  const { orderId, cancellationReason } = req.body;
+  console.log("cancel vendor working")
+  try {
+    // Validate input
+    if (!cancellationReason || typeof cancellationReason !== "string") {
+      return res.status(400).json({ message: "Cancellation reason is required" });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Find the first vendor with isConfirmed: true and poStatus: "PO Confirmed"
+    const vendorIndex = order.vendors.findIndex(
+      (vendor) => vendor.isConfirmed === true && vendor.poStatus === "PO Confirmed"
+    );
+    if (vendorIndex === -1) {
+      return res.status(404).json({
+        message: "No vendor found with isConfirmed: true and poStatus: PO Confirmed",
+      });
+    }
+
+    // Extract vendor details
+    const vendorToCancel = order.vendors[vendorIndex];
+
+    // Create a new CanceledVendor document
+    const canceledVendor = new CanceledVendor({
+      orderId: order._id,
+      vendor: {
+        businessName: vendorToCancel.businessName,
+        phoneNumber: vendorToCancel.phoneNumber,
+        email: vendorToCancel.email,
+        agentName: vendorToCancel.agentName,
+        totalCost: vendorToCancel.totalCost,
+        notes: vendorToCancel.notes,
+      },
+      cancellationReason,
+      canceledAt: new Date(),
+    });
+
+    // Update vendor fields in the order
+    order.vendors[vendorIndex].isConfirmed = false;
+    order.vendors[vendorIndex].poStatus = "PO Canceled";
+
+    // Add a note to the order
+    order.notes.push({
+      text: `Vendor ${vendorToCancel.businessName} canceled: ${cancellationReason}`,
+      createdAt: new Date(),
+    });
+
+    // Save both the canceled vendor and the updated order
+    await Promise.all([canceledVendor.save(), order.save()]);
+
+    return res.status(200).json({
+      message: "Vendor canceled successfully",
+      canceledVendor,
+    });
+  } catch (error) {
+    console.error("Error canceling vendor:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };

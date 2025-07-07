@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails,cancelVendor, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -29,5 +29,6 @@ router.patch("/update/:orderId", protect,updateOrderDetails); // editorder detai
 router.put('/updateShipment/:orderId', protect,updateShipmentDetails);//edit shipment details
 router.patch("/order/:orderId/vendor/:vendorId/pictures-received",protect,markPicturesReceived);
 router.patch("/order/:orderId/vendor/:vendorId/pictures-sent",protect,markPicturesSent);
+router.post("/cancel-vendor",protect,cancelVendor)
 
 export default router;

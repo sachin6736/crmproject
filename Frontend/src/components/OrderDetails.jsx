@@ -151,6 +151,9 @@ const OrderDetails = () => {
     bolNumber: "",
     trackingLink: "",
   });
+  const [showCancelReasonModal, setShowCancelReasonModal] = useState(false);
+const [cancelReason, setCancelReason] = useState("");
+const [selectedVendorId, setSelectedVendorId] = useState(null)
   const [simpleVendors, setSimpleVendors] = useState([]);
   const [editingVendorId, setEditingVendorId] = useState(null);
   const [showNotConfirmedVendors, setShowNotConfirmedVendors] = useState(false);
@@ -642,9 +645,14 @@ const OrderDetails = () => {
   };
 
   const handleToggleVendorConfirmation = (vendorId, action) => {
-    setConfirmationVendorId(vendorId);
-    setConfirmationAction(action);
-    setShowConfirmationModal(true);
+    if (action === "cancel") {
+      setSelectedVendorId(vendorId);
+      setShowCancelReasonModal(true); // Open the cancellation reason modal
+    } else {
+      setConfirmationVendorId(vendorId);
+      setConfirmationAction(action);
+      setShowConfirmationModal(true);
+    }
   };
 
   const confirmAction = async () => {
@@ -702,6 +710,43 @@ const OrderDetails = () => {
     } catch (error) {
       console.error("Error confirming payment:", error);
       toast.error(error.message || "Failed to confirm payment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelVendorWithReason = async () => {
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a cancellation reason");
+      return;
+    }
+  
+    setActionLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3000/Order/cancel-vendor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          orderId: orderId,
+          cancellationReason: cancelReason,
+        }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to cancel vendor");
+      }
+  
+      const data = await response.json();
+      toast.success(data.message);
+      setShowCancelReasonModal(false);
+      setCancelReason("");
+      setSelectedVendorId(null);
+      await fetchOrderData(); // Refresh order data
+    } catch (error) {
+      console.error("Error canceling vendor:", error);
+      toast.error(error.message || "Failed to cancel vendor");
     } finally {
       setActionLoading(false);
     }
@@ -1574,7 +1619,7 @@ const OrderDetails = () => {
                   </div>
                 </section>
 
-                {/* Active Vendors */}
+                {/* Active Vendors */} 
   <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
                     Active Vendor
@@ -1874,51 +1919,43 @@ const OrderDetails = () => {
                                 )}
                               </div>
                               <div className="relative group">
-                                <button
-                                  onClick={() =>
-                                    handleToggleVendorConfirmation(
-                                      vendor._id,
-                                      "cancel"
-                                    )
-                                  }
-                                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
-                                    actionLoading || !vendor.isConfirmed
-                                      ? "bg-green-400 cursor-not-allowed"
-                                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  }`}
-                                  aria-label={`Cancel vendor ${vendor.businessName}`}
-                                  disabled={
-                                    actionLoading || !vendor.isConfirmed
-                                  }
-                                >
-                                  {actionLoading ? (
-                                    <FullPageLoader
-                                      size="w-4 h-4"
-                                      color="text-white"
-                                      fill="fill-green-200"
-                                    />
-                                  ) : (
-                                    <>
-                                      <span>Cancel Vendor</span>
-                                      {(actionLoading ||
-                                        !vendor.isConfirmed) && (
-                                        <svg
-                                          className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 2-4 2-4 2 2.9 2 4zm0 0c0 1.1.9 2 2 2s2-.9 2-2-2-4-2-4-2 2.9-2 4zm-6 7h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2z"
-                                          />
-                                        </svg>
-                                      )}
-                                    </>
-                                  )}
-                                </button>
+                              <button
+  onClick={() => handleToggleVendorConfirmation(vendor._id, "cancel")}
+  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+    actionLoading || !vendor.isConfirmed
+      ? "bg-green-400 cursor-not-allowed"
+      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+  }`}
+  aria-label={`Cancel vendor ${vendor.businessName}`}
+  disabled={actionLoading || !vendor.isConfirmed}
+>
+  {actionLoading ? (
+    <FullPageLoader
+      size="w-4 h-4"
+      color="text-white"
+      fill="fill-green-200"
+    />
+  ) : (
+    <>
+      <span>Cancel Vendor</span>
+      {(actionLoading || !vendor.isConfirmed) && (
+        <svg
+          className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 2-4 2-4 2 2.9 2 4zm0 0c0 1.1.9 2 2 2s2-.9 2-2-2-4-2-4-2 2.9-2 4zm-6 7h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2z"
+          />
+        </svg>
+      )}
+    </>
+  )}
+</button>
                                 {(actionLoading || !vendor.isConfirmed) && (
                                   <span
                                     className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
@@ -3432,6 +3469,61 @@ const OrderDetails = () => {
           </div>
         </form>
       </Modal>
+      <Modal
+  isOpen={showCancelReasonModal}
+  onClose={() => {
+    setShowCancelReasonModal(false);
+    setCancelReason("");
+    setSelectedVendorId(null);
+  }}
+  title="Cancel Vendor"
+>
+  <form onSubmit={(e) => { e.preventDefault(); handleCancelVendorWithReason(); }} className="space-y-3">
+    <div>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+        Cancellation Reason
+      </label>
+      <textarea
+        name="cancelReason"
+        value={cancelReason}
+        onChange={(e) => setCancelReason(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        rows="4"
+        placeholder="Enter the reason for cancellation"
+        required
+      />
+    </div>
+    <div className="flex justify-end space-x-3 pt-4">
+      <button
+        type="button"
+        onClick={() => {
+          setShowCancelReasonModal(false);
+          setCancelReason("");
+          setSelectedVendorId(null);
+        }}
+        className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-md hover:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
+        disabled={actionLoading}
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center text-sm"
+        disabled={actionLoading}
+      >
+        {actionLoading ? (
+          <FullPageLoader
+            size="w-4 h-4"
+            color="text-white"
+            fill="fill-blue-200"
+          />
+        ) : (
+          "Submit"
+        )}
+      </button>
+    </div>
+  </form>
+</Modal>
     </div>
   );
 };
