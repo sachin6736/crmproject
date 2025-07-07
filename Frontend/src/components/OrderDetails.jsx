@@ -1148,6 +1148,32 @@ const [selectedVendorId, setSelectedVendorId] = useState(null)
     });
   };
 
+  const handleShipmentDelivered = async () => {
+  setActionLoading(true);
+  try {
+    const response = await fetch(
+      `http://localhost:3000/Order/orders/${orderId}/shipment-delivered`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      }
+    );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to mark shipment as delivered");
+    }
+    const data = await response.json();
+    toast.success(data.message || "Shipment marked as delivered successfully");
+    await fetchOrderData(); // Refresh order data to reflect updated status
+  } catch (error) {
+    console.error("Error marking shipment as delivered:", error);
+    toast.error(error.message || "Failed to mark shipment as delivered");
+  } finally {
+    setActionLoading(false);
+  }
+};
+
   // Export to Excel
   const handleExportToExcel = () => {
     if (!order) {
@@ -1389,148 +1415,272 @@ const [selectedVendorId, setSelectedVendorId] = useState(null)
 </div>
               <div className="space-y-6">
                 {/* Customer Information */}
-                <section className="border-b border-gray-200 dark:border-gray-700 pb-8">
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    {/* Customer Details */}
-    <div className="space-y-6">
-      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Customer Details</h3>
-      <div className="space-y-4">
-        {[
-          { label: "Name", value: order.clientName || "N/A" },
-          { label: "Phone", value: order.phone || "N/A" },
-          { label: "Email", value: order.email || "N/A" },
-        ].map((item, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
-            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                    Customer Details
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Name
+                      </strong>
+                      <p>{order.clientName || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Phone
+                      </strong>
+                      <p>{order.phone || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Email
+                      </strong>
+                      <p>{order.email || "N/A"}</p>
+                    </div>
+                  </div>
+                </section>
+                {/* Order Information */}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                    Order Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Order ID
+                      </strong>
+                      <p>{order.order_id || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Order Status
+                      </strong>
+                      <p>{order.status || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Lead Status
+                      </strong>
+                      <p>{order.leadId?.status || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Sales Person
+                      </strong>
+                      <p>
+                        {order.salesPerson?.name ||
+                          order.salesPerson?._id ||
+                          "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Order Created At
+                      </strong>
+                      <p>
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleString()
+                          : "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Lead Created At
+                      </strong>
+                      <p>
+                        {order.leadId?.createdAt
+                          ? new Date(order.leadId.createdAt).toLocaleString()
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+                {/* Billing Address */}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                    Billing Address
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Address
+                      </strong>
+                      <p>{order.billingAddress || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        City
+                      </strong>
+                      <p>{order.city || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        State
+                      </strong>
+                      <p>{order.state?.toUpperCase() || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Zip
+                      </strong>
+                      <p>{order.zip || "N/A"}</p>
+                    </div>
+                  </div>
+                </section>
+                {/* Shipping Address */}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                    Shipping Address
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Address
+                      </strong>
+                      <p>{order.shippingAddress || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        City
+                      </strong>
+                      <p>{order.shippingCity || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        State
+                      </strong>
+                      <p>{order.shippingState?.toUpperCase() || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Zip
+                      </strong>
+                      <p>{order.shippingZip || "N/A"}</p>
+                    </div>
+                  </div>
+                </section>
+                {/* Vehicle Information */}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                    Part information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Make
+                      </strong>
+                      <p>{order.make || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Model
+                      </strong>
+                      <p>{order.model || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Year
+                      </strong>
+                      <p>{order.year || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Trim
+                      </strong>
+                      <p>{order.leadId?.trim || "N/A"}</p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Part Requested
+                      </strong>
+                      <p>{order.leadId?.partRequested || "N/A"}</p>
+                    </div>
+                  </div>
+                </section>
+                {/* Payment Information */}
+                <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                    Payment Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Card Holder Name
+                      </strong>
+                      <p>
+                        {order.clientName}
+                      </p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Card Number
+                      </strong>
+                      <p>
+                        {user?.role === "admin"
+                          ? order.cardNumber || "N/A"
+                          : "**** **** **** ****"}
+                      </p>
+                    </div>
 
-    {/* Order Information */}
-    <div className="space-y-6">
-      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Order Information</h3>
-      <div className="space-y-4">
-        {[
-          { label: "Order ID", value: order.order_id || "N/A" },
-          { label: "Order Status", value: order.status || "N/A" },
-          { label: "Lead Status", value: order.leadId?.status || "N/A" },
-          { label: "Sales Person", value: order.salesPerson?.name || order.salesPerson?._id || "N/A" },
-          { label: "Order Created At", value: order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A" },
-          { label: "Lead Created At", value: order.leadId?.createdAt ? new Date(order.leadId.createdAt).toLocaleString() : "N/A" },
-        ].map((item, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
-            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-</section>
-<section className="border-b border-gray-200 dark:border-gray-700 pb-8">
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    {/* Billing Address */}
-    <div className="space-y-6">
-      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Billing Address</h3>
-      <div className="space-y-4">
-        {[
-          { label: "Address", value: order.billingAddress || "N/A" },
-          { label: "City", value: order.city || "N/A" },
-          { label: "State", value: order.state?.toUpperCase() || "N/A" },
-          { label: "Zip", value: order.zip || "N/A" },
-        ].map((item, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
-            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    {/* Shipping Address */}
-    <div className="space-y-6">
-      <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">Shipping Address</h3>
-      <div className="space-y-4">
-        {[
-          { label: "Address", value: order.shippingAddress || "N/A" },
-          { label: "City", value: order.shippingCity || "N/A" },
-          { label: "State", value: order.shippingState?.toUpperCase() || "N/A" },
-          { label: "Zip", value: order.shippingZip || "N/A" },
-        ].map((item, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
-            <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-</section>
-              {/* Vehicle Information */}
-<section className="border-b border-gray-200 dark:border-gray-700 pb-8">
-  <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Vehicle Details</h3>
-  <div className="space-y-4">
-    {[
-      { label: "Make", value: order.make || "N/A" },
-      { label: "Model", value: order.model || "N/A" },
-      { label: "Year", value: order.year || "N/A" },
-      { label: "Trim", value: order.leadId?.trim || "N/A" },
-      { label: "Part", value: order.leadId?.partRequested || "N/A" },
-    ].map((item, index) => (
-      <div key={index} className="flex justify-between items-center">
-        <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
-        <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
-      </div>
-    ))}
-  </div>
-</section>
-
-{/* Payment Information */}
-<section className="border-b border-gray-200 dark:border-gray-700 pb-8">
-  <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Payment Details</h3>
-  <div className="space-y-4">
-    {[
-      { label: "Card", value: user?.role === "admin" ? order.cardNumber || "N/A" : "**** **** **** ****" },
-      { label: "Expiry", value: order.cardMonth && order.cardYear ? `${order.cardMonth}/${order.cardYear}` : "N/A" },
-      { label: "Part Cost", value: order.leadId?.partCost ? `$${order.leadId.partCost.toFixed(2)}` : "N/A" },
-      { label: "Shipping", value: order.leadId?.shippingCost ? `$${order.leadId.shippingCost.toFixed(2)}` : "N/A" },
-      { label: "Profit", value: order.leadId?.grossProfit ? `$${order.leadId.grossProfit.toFixed(2)}` : "N/A" },
-      { label: "Total", value: order.leadId?.totalCost ? `$${order.leadId.totalCost.toFixed(2)}` : "N/A" },
-      { label: "Amount", value: order.amount ? `$${order.amount.toFixed(2)}` : "N/A" },
-    ].map((item, index) => (
-      <div key={index} className="flex justify-between items-center">
-        <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
-        <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
-      </div>
-    ))}
-  </div>
-</section>
-
-{/* Card Details (Visible only to admins) */}
-{user?.role === "admin" && (
-  <section className="pb-8">
-    <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Card Details</h3>
-    <div className="space-y-4">
-      {[
-        { label: "Card", value: order.cardNumber || "N/A" },
-        { label: "Month", value: order.cardMonth || "N/A" },
-        { label: "Year", value: order.cardYear || "N/A" },
-        { label: "CVV", value: order.cvv || "N/A" },
-      ].map((item, index) => (
-        <div key={index} className="flex justify-between items-center">
-          <strong className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.label}</strong>
-          <p className="text-sm text-gray-900 dark:text-gray-200 text-right">{item.value}</p>
-        </div>
-      ))}
-    </div>
-  </section>
-)}
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Card Expiry
+                      </strong>
+                      <p>
+                        {order.cardMonth && order.cardYear
+                          ? `${order.cardMonth}/${order.cardYear}`
+                          : "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Amount
+                      </strong>
+                      <p>
+                        {order.amount ? `$${order.amount.toFixed(2)}` : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+                {/* Card Details (Visible only to admins) */}
+                {user?.role === "admin" && (
+                  <section>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                      Card Details
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Card Number
+                        </strong>
+                        <p>{order.cardNumber || "N/A"}</p>
+                      </div>
+                      <div>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Card Month
+                        </strong>
+                        <p>{order.cardMonth || "N/A"}</p>
+                      </div>
+                      <div>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Card Year
+                        </strong>
+                        <p>{order.cardYear || "N/A"}</p>
+                      </div>
+                      <div>
+                        <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          CVV
+                        </strong>
+                        <p>{order.cvv || "N/A"}</p>
+                      </div>
+                    </div>
+                  </section>
+                )}
                 {/* Shipment Details */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Shipment Details
+                    Shipping and Tracking
                   </h3>
                   <div className="flex flex-wrap gap-8 text-sm">
                     <div>
@@ -1874,7 +2024,7 @@ const [selectedVendorId, setSelectedVendorId] = useState(null)
                                     />
                                   ) : (
                                     <>
-                                      <span>Cancel PO</span>
+                                      <span>Po Cancelled</span>
                                       {(actionLoading ||
                                         [
                                           "Vendor Payment Confirmed",
@@ -2414,6 +2564,34 @@ const [selectedVendorId, setSelectedVendorId] = useState(null)
                 Edit Order Details
               </button>
             )}
+           {["procurement", "admin"].includes(user?.role) && order?.status === "Intransit" && (
+  <button
+    onClick={handleShipmentDelivered}
+    className={`w-full px-4 py-2 text-white rounded-md transition-colors text-sm sm:text-base ${
+      actionLoading ||
+      !order?.trackingNumber ||
+      order.status === "Delivered"
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+    }`}
+    disabled={
+      actionLoading ||
+      !order?.trackingNumber ||
+      order.status === "Delivered"
+    }
+    aria-label="Mark shipment as delivered"
+  >
+    {actionLoading ? (
+      <FullPageLoader
+        size="w-4 h-4"
+        color="text-white"
+        fill="fill-teal-200"
+      />
+    ) : (
+      "Shipment Delivered"
+    )}
+  </button>
+)}
             <button
               onClick={handleExportToExcel}
               className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
