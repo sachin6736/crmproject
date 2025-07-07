@@ -1491,7 +1491,7 @@ const OrderDetails = () => {
                 {/* Vehicle Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Vehicle Information
+                    Part information
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -1534,6 +1534,14 @@ const OrderDetails = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Card Holder Name
+                      </strong>
+                      <p>
+                        {order.clientName}
+                      </p>
+                    </div>
+                    <div>
+                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Card Number
                       </strong>
                       <p>
@@ -1542,6 +1550,7 @@ const OrderDetails = () => {
                           : "**** **** **** ****"}
                       </p>
                     </div>
+
                     <div>
                       <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         Card Expiry
@@ -1549,46 +1558,6 @@ const OrderDetails = () => {
                       <p>
                         {order.cardMonth && order.cardYear
                           ? `${order.cardMonth}/${order.cardYear}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Part Cost
-                      </strong>
-                      <p>
-                        {order.leadId?.partCost
-                          ? `$${order.leadId.partCost.toFixed(2)}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Shipping Cost
-                      </strong>
-                      <p>
-                        {order.leadId?.shippingCost
-                          ? `$${order.leadId.shippingCost.toFixed(2)}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Gross Profit
-                      </strong>
-                      <p>
-                        {order.leadId?.grossProfit
-                          ? `$${order.leadId.grossProfit.toFixed(2)}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <strong className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Total Cost
-                      </strong>
-                      <p>
-                        {order.leadId?.totalCost
-                          ? `$${order.leadId.totalCost.toFixed(2)}`
                           : "N/A"}
                       </p>
                     </div>
@@ -1639,7 +1608,7 @@ const OrderDetails = () => {
                 {/* Shipment Details */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
                   <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                    Shipment Details
+                    Shipping and Tracking
                   </h3>
                   <div className="flex flex-wrap gap-8 text-sm">
                     <div>
@@ -1983,7 +1952,7 @@ const OrderDetails = () => {
                                     />
                                   ) : (
                                     <>
-                                      <span>Cancel PO</span>
+                                      <span>Po Cancelled</span>
                                       {(actionLoading ||
                                         [
                                           "Vendor Payment Confirmed",
@@ -2531,7 +2500,7 @@ const OrderDetails = () => {
                 Edit Order Details
               </button>
             )}
-            {["procurement", "admin"].includes(user?.role) && (
+           {["procurement", "admin"].includes(user?.role) && order?.status === "Intransit" && (
   <button
     onClick={handleShipmentDelivered}
     className={`w-full px-4 py-2 text-white rounded-md transition-colors text-sm sm:text-base ${
