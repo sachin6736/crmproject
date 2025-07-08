@@ -32,7 +32,7 @@ const canceledVendorSchema = new mongoose.Schema({
     },
     totalCost: {
       type: Number,
-      required: true,
+      required: true, 
       min: [0, 'Total cost cannot be negative'],
     },
     notes: [{

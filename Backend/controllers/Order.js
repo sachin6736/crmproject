@@ -2120,7 +2120,10 @@ export const cancelVendor = async (req, res) => {
         email: vendorToCancel.email,
         agentName: vendorToCancel.agentName,
         totalCost: vendorToCancel.totalCost,
+<<<<<<< HEAD
         // notes: vendorToCancel.notes,
+=======
+>>>>>>> 3a7282c72fc73ead34a558dd9f3ad6385e6fe3ae
       },
       cancellationReason,
       canceledAt: new Date(),
