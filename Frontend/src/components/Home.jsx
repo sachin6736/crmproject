@@ -274,6 +274,14 @@ const handleStatusChange = async (selectedStatus) => {
         setShowSidebar(false);
       },
     },
+     {
+      label: 'Cancelled Vendors',
+      icon: <PenTool className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        navigate('/home/cancelledvendors');
+        setShowSidebar(false);
+      },
+    },
     {
       label: 'Your Account',
       icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,

@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import OrdersHistory from './components/Ordersshow';
 import OrderDetails from './components/OrderDetails';
 import AdminStatusLogs from './components/AdminStatusLogs';
+import CancelledVendor from './components/CancelledVendors'
 
 function App() {
   const { theme } = useTheme();
@@ -42,6 +43,7 @@ function App() {
           <Route path='/home/userform' element={<Userfrom />} />
           <Route path='/home/order/:id' element={<OrderForm />} />
           <Route path='/home/orders' element={<OrdersHistory />} />
+          <Route path="/home/cancelledvendors" element={<CancelledVendor/>}/>
           <Route path='/home/order/details/:orderId' element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
           <Route path='/home/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path='/home/salesdashboard' element={<SalesDashboard />} />

@@ -2081,6 +2081,8 @@ export const markShipmentDelivered = async (req, res) => {
 };
 //===========================================================================
 //==================================================
+
+//Cancelvendor
 export const cancelVendor = async (req, res) => {
   const { orderId, cancellationReason } = req.body;
   console.log("cancel vendor working")
@@ -2118,7 +2120,7 @@ export const cancelVendor = async (req, res) => {
         email: vendorToCancel.email,
         agentName: vendorToCancel.agentName,
         totalCost: vendorToCancel.totalCost,
-        notes: vendorToCancel.notes,
+        // notes: vendorToCancel.notes,
       },
       cancellationReason,
       canceledAt: new Date(),
@@ -2144,5 +2146,80 @@ export const cancelVendor = async (req, res) => {
   } catch (error) {
     console.error("Error canceling vendor:", error);
     return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+//AllCancelledVendors
+export const getAllCancelledVendors = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '' } = req.query;
+    const query = {};
+
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { 'vendor.businessName': { $regex: search, $options: 'i' } },
+        { 'vendor.phoneNumber': { $regex: search, $options: 'i' } },
+        { 'vendor.email': { $regex: search, $options: 'i' } },
+        { 'vendor.agentName': { $regex: search, $options: 'i' } },
+        { cancellationReason: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // Fetch canceled vendors with pagination
+    const cancelledVendors = await CanceledVendor.find(query)
+      .populate('orderId', 'clientName make model year order_id')
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    // Get total count for pagination
+    const totalVendors = await CanceledVendor.countDocuments(query);
+    const totalPages = Math.ceil(totalVendors / limit);
+
+    res.status(200).json({
+      cancelledVendors,
+      totalPages,
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error('Error fetching cancelled vendors:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+//Addvendortocancelvendor
+
+export const addNoteToCancelledVendor = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const { note } = req.body;
+
+    // Validate note
+    if (!note || typeof note !== 'string' || note.trim() === '') {
+      return res.status(400).json({ message: 'Note is required and must be a non-empty string' });
+    }
+
+    // Find cancelled vendor
+    const cancelledVendor = await CanceledVendor.findById(vendorId);
+    if (!cancelledVendor) {
+      return res.status(404).json({ message: 'Cancelled vendor not found' });
+    }
+
+    // Add note to vendor
+    cancelledVendor.vendor.notes = cancelledVendor.vendor.notes || [];
+    cancelledVendor.vendor.notes.push({
+      text: note.trim(),
+      createdAt: new Date(),
+    });
+
+    await cancelledVendor.save();
+
+    res.status(201).json({ message: 'Note added successfully', cancelledVendor });
+  } catch (error) {
+    console.error('Error adding note to cancelled vendor:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
