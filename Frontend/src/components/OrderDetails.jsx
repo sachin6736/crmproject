@@ -81,6 +81,7 @@ const OrderDetails = () => {
   const [showShipmentModal, setShowShipmentModal] = useState(false);
   const [emailPreviewContent, setEmailPreviewContent] = useState("");
   const [confirmationAction, setConfirmationAction] = useState(null);
+  const [dropdownState, setDropdownState] = useState({});
   const [confirmationVendorId, setConfirmationVendorId] = useState(null);
   const [vendorForm, setVendorForm] = useState({
     businessName: "",
@@ -1958,358 +1959,297 @@ const OrderDetails = () => {
                                 <p>{order.status || "N/A"}</p>
                               </div>
                             </div>
-                            <div className="absolute top-4 right-4 flex flex-col space-y-2 sm:space-y-2">
-                              <button
-                                onClick={() => handleEditVendorClick(vendor)}
-                                className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
-                                  actionLoading
-                                    ? "bg-green-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                }`}
-                                aria-label={`Edit vendor ${vendor.businessName}`}
-                                disabled={actionLoading}
-                              >
-                                {actionLoading ? (
-                                  <FullPageLoader
-                                    size="w-4 h-4"
-                                    color="text-white"
-                                    fill="fill-green-200"
-                                  />
-                                ) : (
-                                  <span>Edit Details</span>
-                                )}
-                              </button>
-                              <div className="relative group">
-                                <button
-                                  onClick={() =>
-                                    handleConfirmPayment(vendor._id)
-                                  }
-                                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
-                                    actionLoading ||
-                                    [
-                                      "Vendor Payment Confirmed",
-                                      "Shipping Pending",
-                                      "Ship Out",
-                                      "Intransit",
-                                      "Delivered",
-                                      "Replacement",
-                                    ].includes(order.status)
-                                      ? "bg-green-400 cursor-not-allowed"
-                                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  }`}
-                                  aria-label={`Confirm payment for vendor ${vendor.businessName}`}
-                                  disabled={
-                                    actionLoading ||
-                                    [
-                                      "Vendor Payment Confirmed",
-                                      "Shipping Pending",
-                                      "Ship Out",
-                                      "Intransit",
-                                      "Delivered",
-                                      "Replacement",
-                                    ].includes(order.status)
-                                  }
-                                >
-                                  {actionLoading ? (
-                                    <FullPageLoader
-                                      size="w-4 h-4"
-                                      color="text-white"
-                                      fill="fill-green-200"
-                                    />
-                                  ) : (
-                                    <>
-                                      <span>Confirm Payment</span>
-                                      {(actionLoading ||
-                                        [
-                                          "Vendor Payment Confirmed",
-                                          "Shipping Pending",
-                                          "Ship Out",
-                                          "Intransit",
-                                          "Delivered",
-                                          "Replacement",
-                                        ].includes(order.status)) && (
-                                        <svg
-                                          className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 2-4 2-4 2 2.9 2 4zm0 0c0 1.1.9 2 2 2s2-.9 2-2-2-4-2-4-2 2.9-2 4zm-6 7h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2z"
-                                          />
-                                        </svg>
-                                      )}
-                                    </>
-                                  )}
-                                </button>
-                                {(actionLoading ||
-                                  [
-                                    "Vendor Payment Confirmed",
-                                    "Shipping Pending",
-                                    "Ship Out",
-                                    "Intransit",
-                                    "Delivered",
-                                    "Replacement",
-                                  ].includes(order.status)) && (
-                                  <span
-                                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
-                                    role="tooltip"
-                                  >
-                                    Not Allowed, since payment confirmed
-                                  </span>
-                                )}
-                              </div>
-                              <div className="relative group">
-                                <button
-                                  onClick={() => handleCancelPO(vendor._id)}
-                                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
-                                    actionLoading ||
-                                    [
-                                      "Vendor Payment Confirmed",
-                                      "Shipping Pending",
-                                      "Ship Out",
-                                      "Intransit",
-                                      "Delivered",
-                                      "Replacement",
-                                    ].includes(order.status)
-                                      ? "bg-green-400 cursor-not-allowed"
-                                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  }`}
-                                  aria-label={`Cancel PO for vendor ${vendor.businessName}`}
-                                  disabled={
-                                    actionLoading ||
-                                    [
-                                      "Vendor Payment Confirmed",
-                                      "Shipping Pending",
-                                      "Ship Out",
-                                      "Intransit",
-                                      "Delivered",
-                                      "Replacement",
-                                    ].includes(order.status)
-                                  }
-                                >
-                                  {actionLoading ? (
-                                    <FullPageLoader
-                                      size="w-4 h-4"
-                                      color="text-white"
-                                      fill="fill-green-200"
-                                    />
-                                  ) : (
-                                    <>
-                                      <span>PO Cancelled</span>
-                                      {(actionLoading ||
-                                        [
-                                          "Vendor Payment Confirmed",
-                                          "Shipping Pending",
-                                          "Ship Out",
-                                          "Intransit",
-                                          "Delivered",
-                                          "Replacement",
-                                        ].includes(order.status)) && (
-                                        <svg
-                                          className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 2-4 2-4 2 2.9 2 4zm0 0c0 1.1.9 2 2 2s2-.9 2-2-2-4-2-4-2 2.9-2 4zm-6 7h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2z"
-                                          />
-                                        </svg>
-                                      )}
-                                    </>
-                                  )}
-                                </button>
-                                {(actionLoading ||
-                                  [
-                                    "Vendor Payment Confirmed",
-                                    "Shipping Pending",
-                                    "Ship Out",
-                                    "Intransit",
-                                    "Delivered",
-                                    "Replacement",
-                                  ].includes(order.status)) && (
-                                  <span
-                                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
-                                    role="tooltip"
-                                  >
-                                    Not Allowed, since payment confirmed
-                                  </span>
-                                )}
-                              </div>
-                              <div className="relative group">
-                                <button
-                                  onClick={() =>
-                                    handleToggleVendorConfirmation(
-                                      vendor._id,
-                                      "cancel"
-                                    )
-                                  }
-                                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
-                                    actionLoading || !vendor.isConfirmed
-                                      ? "bg-green-400 cursor-not-allowed"
-                                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  }`}
-                                  aria-label={`Cancel vendor ${vendor.businessName}`}
-                                  disabled={
-                                    actionLoading || !vendor.isConfirmed
-                                  }
-                                >
-                                  {actionLoading ? (
-                                    <FullPageLoader
-                                      size="w-4 h-4"
-                                      color="text-white"
-                                      fill="fill-green-200"
-                                    />
-                                  ) : (
-                                    <>
-                                      <span>Cancel Vendor</span>
-                                      {(actionLoading ||
-                                        !vendor.isConfirmed) && (
-                                        <svg
-                                          className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 2-4 2-4 2 2.9 2 4zm0 0c0 1.1.9 2 2 2s2-.9 2-2-2-4-2-4-2 2.9-2 4zm-6 7h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2z"
-                                          />
-                                        </svg>
-                                      )}
-                                    </>
-                                  )}
-                                </button>
-                                {(actionLoading || !vendor.isConfirmed) && (
-                                  <span
-                                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
-                                    role="tooltip"
-                                  >
-                                    Vendor Not Confirmed
-                                  </span>
-                                )}
-                              </div>
-                              <div className="relative group">
-                                <button
-                                  onClick={() =>
-                                    handlePictureReceived(vendor._id)
-                                  }
-                                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
-                                    actionLoading ||
-                                    order.picturesReceivedFromYard
-                                      ? "bg-green-400 cursor-not-allowed"
-                                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  }`}
-                                  aria-label={`Mark picture received from yard for ${vendor.businessName}`}
-                                  disabled={
-                                    actionLoading ||
-                                    order.picturesReceivedFromYard
-                                  }
-                                >
-                                  {actionLoading ? (
-                                    <FullPageLoader
-                                      size="w-4 h-4"
-                                      color="text-white"
-                                      fill="fill-green-200"
-                                    />
-                                  ) : (
-                                    <>
-                                      <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth="2"
-                                          d="M5 13l4 4L19 7"
-                                        />
-                                      </svg>
-                                      <span>Picture Received</span>
-                                    </>
-                                  )}
-                                </button>
-                                {(actionLoading ||
-                                  order.picturesReceivedFromYard) && (
-                                  <span
-                                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
-                                    role="tooltip"
-                                  >
-                                    {order.picturesReceivedFromYard
-                                      ? "Already Received"
-                                      : "Action in Progress"}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="relative group">
-                                <button
-                                  onClick={() => handlePictureSent(vendor._id)}
-                                  className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
-                                    actionLoading ||
-                                    order.picturesSentToCustomer ||
-                                    !order.picturesReceivedFromYard
-                                      ? "bg-green-400 cursor-not-allowed"
-                                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  }`}
-                                  aria-label={`Mark picture sent to customer for ${vendor.businessName}`}
-                                  disabled={
-                                    actionLoading ||
-                                    order.picturesSentToCustomer ||
-                                    !order.picturesReceivedFromYard
-                                  }
-                                >
-                                  {actionLoading ? (
-                                    <FullPageLoader
-                                      size="w-4 h-4"
-                                      color="text-white"
-                                      fill="fill-green-200"
-                                    />
-                                  ) : (
-                                    <>
-                                      <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth="2"
-                                          d="M5 13l4 4L19 7"
-                                        />
-                                      </svg>
-                                      <span>Picture Sent</span>
-                                    </>
-                                  )}
-                                </button>
-                                {(actionLoading ||
-                                  order.picturesSentToCustomer ||
-                                  !order.picturesReceivedFromYard) && (
-                                  <span
-                                    className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600/80 text-white text-xs rounded-md"
-                                    role="tooltip"
-                                  >
-                                    {order.picturesSentToCustomer
-                                      ? "Already Sent"
-                                      : !order.picturesReceivedFromYard
-                                      ? "Receive Pictures First"
-                                      : "Action in Progress"}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                            {/* Replace the button group in the Active Vendor section */}
+  <div className="absolute top-4 right-4 flex flex-col space-y-2 sm:space-y-2">
+    <button
+      onClick={() => handleEditVendorClick(vendor)}
+      className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+        actionLoading
+          ? "bg-green-400 cursor-not-allowed"
+          : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      }`}
+      aria-label={`Edit vendor ${vendor.businessName}`}
+      disabled={actionLoading}
+    >
+      {actionLoading ? (
+        <FullPageLoader
+          size="w-4 h-4"
+          color="text-white"
+          fill="fill-green-200"
+        />
+      ) : (
+        <span>Edit Details</span>
+      )}
+    </button>
+    <div className="relative">
+      <button
+        onClick={() =>
+          setDropdownState((prev) => ({
+            ...prev,
+            [vendor._id]: prev[vendor._id] === "confirmPayment" ? null : "confirmPayment",
+          }))
+        }
+        className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+          actionLoading ||
+          ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)
+            ? "bg-green-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        }`}
+        aria-label={`Confirm payment for vendor ${vendor.businessName}`}
+        disabled={
+          actionLoading ||
+          ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)
+        }
+      >
+        {actionLoading ? (
+          <FullPageLoader
+            size="w-4 h-4"
+            color="text-white"
+            fill="fill-green-200"
+          />
+        ) : (
+          <span>Confirm Payment</span>
+        )}
+      </button>
+      {dropdownState[vendor._id] === "confirmPayment" && (
+        <div className="absolute z-10 w-32 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+          <button
+            onClick={() => {
+              handleConfirmPayment(vendor._id);
+              setDropdownState((prev) => ({ ...prev, [vendor._id]: null }));
+            }}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setDropdownState((prev) => ({ ...prev, [vendor._id]: null }))}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            No
+          </button>
+        </div>
+      )}
+    </div>
+    <div className="relative">
+      <button
+        onClick={() =>
+          setDropdownState((prev) => ({
+            ...prev,
+            [vendor._id]: prev[vendor._id] === "cancelPO" ? null : "cancelPO",
+          }))
+        }
+        className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+          actionLoading ||
+          ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)
+            ? "bg-green-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        }`}
+        aria-label={`Cancel PO for vendor ${vendor.businessName}`}
+        disabled={
+          actionLoading ||
+          ["Vendor Payment Confirmed", "Shipping Pending", "Ship Out", "Intransit", "Delivered", "Replacement"].includes(order.status)
+        }
+      >
+        {actionLoading ? (
+          <FullPageLoader
+            size="w-4 h-4"
+            color="text-white"
+            fill="fill-green-200"
+          />
+        ) : (
+          <span>PO Cancelled</span>
+        )}
+      </button>
+      {dropdownState[vendor._id] === "cancelPO" && (
+        <div className="absolute z-10 w-32 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+          <button
+            onClick={() => {
+              handleCancelPO(vendor._id);
+              setDropdownState((prev) => ({ ...prev, [vendor._id]: null }));
+            }}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setDropdownState((prev) => ({ ...prev, [vendor._id]: null }))}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            No
+          </button>
+        </div>
+      )}
+    </div>
+    <div className="relative">
+      <button
+        onClick={() =>
+          setDropdownState((prev) => ({
+            ...prev,
+            [vendor._id]: prev[vendor._id] === "cancelVendor" ? null : "cancelVendor",
+          }))
+        }
+        className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+          actionLoading || !vendor.isConfirmed
+            ? "bg-green-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        }`}
+        aria-label={`Cancel vendor ${vendor.businessName}`}
+        disabled={actionLoading || !vendor.isConfirmed}
+      >
+        {actionLoading ? (
+          <FullPageLoader
+            size="w-4 h-4"
+            color="text-white"
+            fill="fill-green-200"
+          />
+        ) : (
+          <span>Cancel Vendor</span>
+        )}
+      </button>
+      {dropdownState[vendor._id] === "cancelVendor" && (
+        <div className="absolute z-10 w-32 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+          <button
+            onClick={() => {
+              handleToggleVendorConfirmation(vendor._id, "cancel");
+              setDropdownState((prev) => ({ ...prev, [vendor._id]: null }));
+            }}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setDropdownState((prev) => ({ ...prev, [vendor._id]: null }))}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            No
+          </button>
+        </div>
+      )}
+    </div>
+    <div className="relative">
+      <button
+        onClick={() =>
+          setDropdownState((prev) => ({
+            ...prev,
+            [vendor._id]: prev[vendor._id] === "pictureReceived" ? null : "pictureReceived",
+          }))
+        }
+        className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+          actionLoading || order.picturesReceivedFromYard
+            ? "bg-green-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        }`}
+        aria-label={`Mark picture received from yard for ${vendor.businessName}`}
+        disabled={actionLoading || order.picturesReceivedFromYard}
+      >
+        {actionLoading ? (
+          <FullPageLoader
+            size="w-4 h-4"
+            color="text-white"
+            fill="fill-green-200"
+          />
+        ) : (
+          <>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <span>Picture Received</span>
+          </>
+        )}
+      </button>
+      {dropdownState[vendor._id] === "pictureReceived" && (
+        <div className="absolute z-10 w-32 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+          <button
+            onClick={() => {
+              handlePictureReceived(vendor._id);
+              setDropdownState((prev) => ({ ...prev, [vendor._id]: null }));
+            }}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setDropdownState((prev) => ({ ...prev, [vendor._id]: null }))}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            No
+          </button>
+        </div>
+      )}
+    </div>
+    <div className="relative">
+      <button
+        onClick={() =>
+          setDropdownState((prev) => ({
+            ...prev,
+            [vendor._id]: prev[vendor._id] === "pictureSent" ? null : "pictureSent",
+          }))
+        }
+        className={`w-32 px-3 py-1 text-white rounded-md transition-colors text-sm flex items-center justify-center space-x-1 ${
+          actionLoading || order.picturesSentToCustomer || !order.picturesReceivedFromYard
+            ? "bg-green-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        }`}
+        aria-label={`Mark picture sent to customer for ${vendor.businessName}`}
+        disabled={actionLoading || order.picturesSentToCustomer || !order.picturesReceivedFromYard}
+      >
+        {actionLoading ? (
+          <FullPageLoader
+            size="w-4 h-4"
+            color="text-white"
+            fill="fill-green-200"
+          />
+        ) : (
+          <>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <span>Picture Sent</span>
+          </>
+        )}
+      </button>
+      {dropdownState[vendor._id] === "pictureSent" && (
+        <div className="absolute z-10 w-32 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+          <button
+            onClick={() => {
+              handlePictureSent(vendor._id);
+              setDropdownState((prev) => ({ ...prev, [vendor._id]: null }));
+            }}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setDropdownState((prev) => ({ ...prev, [vendor._id]: null }))}
+            className="block w-full px-3 py-1 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            No
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
                           </li>
                         ))}
                     </ul>
