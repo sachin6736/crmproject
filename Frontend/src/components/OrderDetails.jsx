@@ -2637,7 +2637,6 @@ const OrderDetails = () => {
           </div>
         </div>
       </div>
-
       {/* Add Vendor Modal */}
       <Modal
         isOpen={showAddVendorModal}
