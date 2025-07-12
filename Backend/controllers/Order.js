@@ -2223,3 +2223,66 @@ export const addNoteToCancelledVendor = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
+export const setOrderToLitigation = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.status(403).json({ message: "Access denied: User not authenticated" });
+    }
+
+    const { orderId } = req.params;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Update order status to Litigation
+    order.status = "Litigation";
+
+    // Add order note for litigation status change
+    const userName = req.user?.name || "Unknown User";
+    order.notes = order.notes || [];
+    order.notes.push({
+      text: `Order status changed to Litigation by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Add procurement note for litigation status change
+    order.procurementnotes = order.procurementnotes || [];
+    order.procurementnotes.push({
+      text: `Order moved to Litigation by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Add note to confirmed vendors with PO Confirmed status
+    if (order.vendors && order.vendors.length > 0) {
+      order.vendors.forEach((vendor) => {
+        if (vendor.isConfirmed && vendor.poStatus === "PO Confirmed") {
+          vendor.notes = vendor.notes || [];
+          vendor.notes.push({
+            text: `Order status changed to Litigation by ${userName}`,
+            createdAt: new Date(),
+          });
+        }
+      });
+    }
+
+    // Save the updated order
+    await order.save();
+
+    return res.status(200).json({
+      message: "Order status updated to Litigation successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Error setting order to litigation:", error);
+    return res.status(500).json({
+      message: "Failed to set order to litigation",
+      error: error.message,
+    });
+  }
+};

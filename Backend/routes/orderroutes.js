@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails,cancelVendor, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent,markShipmentDelivered,getAllCancelledVendors,addNoteToCancelledVendor} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails,cancelVendor, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent,markShipmentDelivered,getAllCancelledVendors,addNoteToCancelledVendor,setOrderToLitigation} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -27,11 +27,12 @@ router.post('/sendpurchaseorder/:id',protect,sendPurchaseorder); //sent purchase
 router.post('/orders/:id/send-shipment-details',protect, sendShipmentDetails);
 router.patch("/update/:orderId", protect,updateOrderDetails); // editorder details in customer-relations
 router.put('/updateShipment/:orderId', protect,updateShipmentDetails);//edit shipment details
-router.patch("/order/:orderId/vendor/:vendorId/pictures-received",protect,markPicturesReceived);
-router.patch("/order/:orderId/vendor/:vendorId/pictures-sent",protect,markPicturesSent);
-router.patch("/orders/:orderId/shipment-delivered", protect, markShipmentDelivered);
-router.post("/cancel-vendor",protect,cancelVendor);
-router.get('/cancelledvendorlist',protect,getAllCancelledVendors);
+router.patch("/order/:orderId/vendor/:vendorId/pictures-received",protect,markPicturesReceived);//marking picture recived from yard
+router.patch("/order/:orderId/vendor/:vendorId/pictures-sent",protect,markPicturesSent);//markingpictures sent to customer
+router.patch("/orders/:orderId/shipment-delivered", protect, markShipmentDelivered);//marking shipment deliverd
+router.post("/cancel-vendor",protect,cancelVendor);//cancel the vendor after payment
+router.get('/cancelledvendorlist',protect,getAllCancelledVendors);  
 router.post('/cancelledvendor/:vendorId/notes', protect, addNoteToCancelledVendor);
+router.patch('/litigation/:orderId',protect,setOrderToLitigation)
 
 export default router;

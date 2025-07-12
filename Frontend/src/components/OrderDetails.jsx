@@ -91,6 +91,8 @@ const OrderDetails = () => {
     address: "",
     rating: "",
   });
+  const [isLitigationDropdownOpen, setIsLitigationDropdownOpen] = useState(false);
+const [litigationLoading, setLitigationLoading] = useState(false);
   const [vendorDetailsForm, setVendorDetailsForm] = useState({
     businessName: "",
     phoneNumber: "",
@@ -451,6 +453,42 @@ const OrderDetails = () => {
       toast.error(error.message || "Failed to send shipment details");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleLitigationClick = () => {
+    setIsLitigationDropdownOpen((prev) => !prev);
+  };
+  
+  const handleLitigationSelect = async (choice) => {
+    if (choice === "Yes") {
+      try {
+        setLitigationLoading(true);
+        const response = await fetch(`http://localhost:3000/Order/litigation/${orderId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status: "Litigation" }),
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to update order status");
+        }
+  
+        const data = await response.json();
+        setOrder(data.order);
+        toast.success("Order status updated to Litigation");
+        setTimeout(() => {
+          setIsLitigationDropdownOpen(false);
+        }, 1500);
+      } catch (err) {
+        toast.error(err.message || "Failed to update order status");
+      } finally {
+        setLitigationLoading(false);
+      }
+    } else {
+      setIsLitigationDropdownOpen(false);
     }
   };
 
@@ -1426,54 +1464,93 @@ const OrderDetails = () => {
           ) : order ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 max-w-4xl mx-auto w-full">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
-                    No: {order.order_id || "N/A"}
-                  </h2>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      {
-                        "Locate Pending":
-                          "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
-                        "PO Pending":
-                          "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-                        "PO Sent":
-                          "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-                        "PO Confirmed":
-                          "bg-blue-100 text-blue-500 dark:bg-blue-900/20 dark:text-blue-300",
-                        "Vendor Payment Pending":
-                          "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-                        "Vendor Payment Confirmed":
-                          "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-                        "Shipping Pending":
-                          "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-                        "Ship Out":
-                          "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
-                        Intransit:
-                          "bg-teal-100 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400",
-                        Delivered:
-                          "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-500",
-                        Replacement:
-                          "bg-pink-100 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400",
-                        default:
-                          "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
-                      }[order.status] ||
-                      "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-                    }`}
-                  >
-                    {order.status || "Unknown"}
-                  </span>
-                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                    Profit Margin: {getActiveVendorProfitMargin(order)}
-                  </span>
-                </div>
-                <button
-                  onClick={() => navigate("/home/orders")}
-                  className="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 font-medium text-sm sm:text-base"
-                >
-                  Back to Orders
-                </button>
-              </div>
+  <div className="flex items-center gap-4">
+    <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+      No: {order.order_id || "N/A"}
+    </h2>
+    <span
+      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+        {
+          "Locate Pending": "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
+          "PO Pending": "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+          "PO Sent": "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+          "PO Confirmed": "bg-blue-100 text-blue-500 dark:bg-blue-900/20 dark:text-blue-300",
+          "Vendor Payment Pending": "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+          "Vendor Payment Confirmed": "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+          "Shipping Pending": "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+          "Ship Out": "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
+          Intransit: "bg-teal-100 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400",
+          Delivered: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-500",
+          Replacement: "bg-pink-100 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400",
+          Litigation: "bg-red-200 text-red-700 dark:bg-red-800/30 dark:text-red-300",
+          "Replacement Cancelled": "bg-gray-200 text-gray-700 dark:bg-gray-800/30 dark:text-gray-300",
+          default: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
+        }[order.status] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+      }`}
+    >
+      {order.status || "Unknown"}
+    </span>
+    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+      Profit Margin: {getActiveVendorProfitMargin(order)}
+    </span>
+  </div>
+  <div className="relative">
+    <button
+      onClick={handleLitigationClick}
+      className={`px-6 py-3 text-white rounded-lg transition-all duration-200 font-medium text-sm sm:text-base ${
+        litigationLoading
+          ? "bg-red-400 cursor-not-allowed"
+          : "bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-700"
+      }`}
+      aria-label="Toggle litigation status dropdown"
+      aria-expanded={isLitigationDropdownOpen}
+      disabled={litigationLoading}
+    >
+      {litigationLoading ? (
+        <span className="flex items-center gap-2">
+          <FullPageLoader
+            size="w-4 h-4"
+            color="text-white"
+            fill="fill-red-200"
+          />
+          Updating...
+        </span>
+      ) : (
+        "Litigation"
+      )}
+    </button>
+    {isLitigationDropdownOpen && (
+      <div className="absolute top-full right-0 mt-2 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-300 dark:border-gray-600 animate-fade-in">
+        <ul className="py-1 text-gray-800 dark:text-gray-100">
+          <li
+            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
+            onClick={() => handleLitigationSelect("Yes")}
+            onKeyDown={(e) =>
+              e.key === "Enter" && handleLitigationSelect("Yes")
+            }
+            role="button"
+            tabIndex={0}
+            aria-label="Set order status to Litigation"
+          >
+            Yes
+          </li>
+          <li
+            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
+            onClick={() => handleLitigationSelect("No")}
+            onKeyDown={(e) =>
+              e.key === "Enter" && handleLitigationSelect("No")
+            }
+            role="button"
+            tabIndex={0}
+            aria-label="Cancel litigation status change"
+          >
+            No
+          </li>
+        </ul>
+      </div>
+    )}
+  </div>
+</div>
               <div className="space-y-6">
                 {/* Customer Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
