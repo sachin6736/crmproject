@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   Clock,
+  Gavel,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -31,7 +32,7 @@ function Home() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false); // For mobile sidebar toggle
+  const [showSidebar, setShowSidebar] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -39,7 +40,6 @@ function Home() {
   const notificationDropdownRef = useRef(null);
   const socketRef = useRef(null);
 
-  // Helper function to format date with fallback
   const formatDate = (date) => {
     try {
       const parsedDate = new Date(date);
@@ -70,7 +70,6 @@ function Home() {
       setLoading(false);
     }
   };
-  
 
   const fetchNotifications = async () => {
     if (!user?._id) return;
@@ -150,53 +149,51 @@ function Home() {
     }
   };
 
-const handleStatusChange = async (selectedStatus) => {
-  if (!user?._id) {
-    toast.error('User ID not found');
-    setShowStatusDropdown(false);
-    return;
-  }
-
-  // Prevent selecting the same status
-  if (selectedStatus === user.status) {
-    toast.info('Status is already set to ' + selectedStatus);
-    setShowStatusDropdown(false);
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `http://localhost:3000/Sales/changestatus/${user._id}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: selectedStatus }),
-      }
-    );
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || `HTTP error! Status: ${res.status}`);
-    }
-
-    // If status is "LoggedOut", proceed with logout
-    if (selectedStatus === 'LoggedOut') {
-      await handleLogout();
+  const handleStatusChange = async (selectedStatus) => {
+    if (!user?._id) {
+      toast.error('User ID not found');
+      setShowStatusDropdown(false);
       return;
     }
 
-    await fetchUser();
-    toast.success('Status updated successfully');
-  } catch (err) {
-    console.error('Error changing status:', err);
-    toast.error(err.message || 'Failed to update status');
-  } finally {
-    setShowStatusDropdown(false);
-  }
-};
+    if (selectedStatus === user.status) {
+      toast.info('Status is already set to ' + selectedStatus);
+      setShowStatusDropdown(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `http://localhost:3000/Sales/changestatus/${user._id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ status: selectedStatus }),
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `HTTP error! Status: ${res.status}`);
+      }
+
+      if (selectedStatus === 'LoggedOut') {
+        await handleLogout();
+        return;
+      }
+
+      await fetchUser();
+      toast.success('Status updated successfully');
+    } catch (err) {
+      console.error('Error changing status:', err);
+      toast.error(err.message || 'Failed to update status');
+    } finally {
+      setShowStatusDropdown(false);
+    }
+  };
 
   const markNotificationAsRead = async (notificationId) => {
     try {
@@ -274,7 +271,15 @@ const handleStatusChange = async (selectedStatus) => {
         setShowSidebar(false);
       },
     },
-     {
+    {
+      label: 'Litigation and Replacement',
+      icon: <Gavel className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        navigate('/home/litigation-orders');
+        setShowSidebar(false);
+      },
+    },
+    {
       label: 'Cancelled Vendors',
       icon: <PenTool className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
@@ -286,7 +291,6 @@ const handleStatusChange = async (selectedStatus) => {
       label: 'Your Account',
       icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
-        // Placeholder for account navigation
         setShowSidebar(false);
       },
     },
@@ -489,20 +493,6 @@ const handleStatusChange = async (selectedStatus) => {
                     </div>
                   )}
                 </div>
-                {/* <ul className='py-1 text-sm text-gray-700 dark:text-white'>
-                  <li className='px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'>
-                    Profile
-                  </li>
-                  <li className='px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'>
-                    Settings
-                  </li>
-                  <li
-                    className='px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </li>
-                </ul> */}
               </div>
             )}
           </div>

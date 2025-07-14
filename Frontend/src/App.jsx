@@ -17,8 +17,9 @@ import OrdersHistory from './components/Ordersshow';
 import OrderDetails from './components/OrderDetails';
 import AdminStatusLogs from './components/AdminStatusLogs';
 import CancelledVendor from './components/CancelledVendors';
-import LitigationOrders from './components/Litigationorders';
-import Littigation from './components/Littigation';
+import LitigationOrders from './components/LitigationOrders';
+import Litigationdetails from './components/Litigationdetails';
+
 function App() {
   const { theme } = useTheme();
 
@@ -37,18 +38,20 @@ function App() {
         <Route path='/signup' element={<SignUp />} />
         <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
-          <Route path='/home/sales' element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+          <Route path='sales' element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
             <Route index element={<LeadTableHeader />} />
-            <Route path='/home/sales/lead/:id' element={<Lead />} />
+            <Route path='lead/:id' element={<Lead />} />
           </Route>
-          <Route path='/home/userform' element={<Userfrom />} />
-          <Route path='/home/order/:id' element={<OrderForm />} />
-          <Route path='/home/orders' element={<OrdersHistory />} />
-          <Route path="/home/cancelledvendors" element={<CancelledVendor/>}/>
-          <Route path='/home/order/details/:orderId' element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
-          <Route path='/home/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path='/home/salesdashboard' element={<SalesDashboard />} />
-          <Route path='/home/admin/status-logs' element={<ProtectedRoute><AdminStatusLogs /></ProtectedRoute>} />
+          <Route path='userform' element={<Userfrom />} />
+          <Route path='order/:id' element={<OrderForm />} />
+          <Route path='orders' element={<OrdersHistory />} />
+          <Route path='litigation-orders' element={<ProtectedRoute><LitigationOrders /></ProtectedRoute>} />
+          <Route path='cancelledvendors' element={<CancelledVendor />} />
+          <Route path='order/details/:orderId' element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
+          <Route path='litigation/details/:orderId' element={<ProtectedRoute><Litigationdetails /></ProtectedRoute>} />
+          <Route path='dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path='salesdashboard' element={<SalesDashboard />} />
+          <Route path='admin/status-logs' element={<ProtectedRoute><AdminStatusLogs /></ProtectedRoute>} />
         </Route>
       </Routes>
     </Router>
