@@ -17,7 +17,7 @@ import OrdersHistory from './components/Ordersshow';
 import OrderDetails from './components/OrderDetails';
 import AdminStatusLogs from './components/AdminStatusLogs';
 import CancelledVendor from './components/CancelledVendors';
-import LitigationOrders from './components/LitigationOrders';
+import LitigationOrders from './components/Litigationorders';
 import Litigationdetails from './components/Litigationdetails';
 
 function App() {
