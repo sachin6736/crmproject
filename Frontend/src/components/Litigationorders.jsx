@@ -18,17 +18,19 @@ const LitigationOrders = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const itemsPerPage = 10;
 
-  const statusTextColors = {
-    Litigation: "text-red-600 dark:text-red-400",
-    default: "text-gray-600 dark:text-gray-400",
-  };
-
   const debouncedSearch = useCallback(
     debounce((value) => {
       setSearchQuery(value);
     }, 500),
     []
   );
+
+  // Status color mapping
+  const statusTextColors = {
+    Litigation: "text-green-600 dark:text-green-400",
+    Replacement: "text-orange-600 dark:text-orange-400",
+    "Replacement Cancelled": "text-red-600 dark:text-red-400",
+  };
 
   // Fetch user data
   useEffect(() => {
@@ -56,39 +58,28 @@ const LitigationOrders = () => {
     fetchUser();
   }, [navigate]);
 
-  // Debounced fetch litigation orders
-  const fetchLitigationOrders = useCallback(
+  // Debounced fetch orders function
+  const fetchOrders = useCallback(
     debounce(async (user, searchQuery, currentPage) => {
       setLoadingOrders(true);
       try {
-        let endpoint;
-        if (user?.role === "admin") {
-          endpoint = "/getallorders";
-        } else if (user?.role === "sales") {
-          endpoint = "/getmyorders";
-        } else if (user?.role === "customer_relations") {
-          endpoint = "/getcustomerorders";
-        } else if (user?.role === "procurement") {
-          endpoint = "/getprocurementorders";
-        } else {
-          throw new Error("Unauthorized role");
-        }
-
         const response = await fetch(
-          `http://localhost:3000/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
+          `http://localhost:3000/LiteReplace/getLitigation?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
             searchQuery
-          )}&status=Litigation`,
+          )}`,
           { credentials: "include" }
         );
-        if (!response.ok)
-          throw new Error(`Failed to fetch litigation orders: ${response.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `Failed to fetch orders: ${response.statusText}`);
+        }
         const data = await response.json();
         setOrders(data.orders || []);
         setTotalPages(data.totalPages || 1);
         setCurrentPage(data.currentPage || 1);
       } catch (error) {
         console.error("Error fetching litigation orders:", error);
-        toast.error("Failed to load litigation orders");
+        toast.error(error.message || "Failed to load orders");
       } finally {
         setLoadingOrders(false);
       }
@@ -96,13 +87,13 @@ const LitigationOrders = () => {
     []
   );
 
-  // Trigger fetchLitigationOrders when dependencies change
+  // Trigger fetchOrders when dependencies change
   useEffect(() => {
     if (user) {
-      fetchLitigationOrders(user, searchQuery, currentPage);
+      fetchOrders(user, searchQuery, currentPage);
     }
-    return () => fetchLitigationOrders.cancel(); // Cleanup debounce on unmount
-  }, [user, searchQuery, currentPage, fetchLitigationOrders]);
+    return () => fetchOrders.cancel(); // Cleanup debounce on unmount
+  }, [user, searchQuery, currentPage, fetchOrders]);
 
   // Handle search input change
   const handleSearchChange = (e) => {
@@ -111,7 +102,7 @@ const LitigationOrders = () => {
 
   const handleExportToExcel = () => {
     if (orders.length === 0) {
-      toast.error("No litigation orders available to export");
+      toast.error("No orders available to export");
       return;
     }
 
@@ -120,25 +111,23 @@ const LitigationOrders = () => {
       ClientName: order.clientName || "N/A",
       Phone: order.phone || "N/A",
       Email: order.email || "N/A",
-      Date: order.createdAt
-        ? new Date(order.createdAt).toLocaleString()
-        : "N/A",
-      PartRequested: order.leadId?.partRequested || "N/A",
-      TotalCost: order.leadId?.totalCost ? `$${order.leadId.totalCost}` : "N/A",
-      Status: order.status || "Litigation",
+      Date: order.date ? new Date(order.date).toLocaleString() : "N/A",
+      PartRequested: order.partRequested || "N/A",
+      TotalCost: order.totalCost ? `$${order.totalCost.toFixed(2)}` : "N/A",
+      Status: order.status || "N/A",
     }));
 
     try {
       exportToExcel(formattedOrders, "litigation_orders.xlsx");
-      toast.success("Litigation orders exported to Excel successfully");
+      toast.success("Orders exported to Excel successfully");
     } catch (error) {
-      toast.error("Error exporting litigation orders to Excel");
+      toast.error("Error exporting orders to Excel");
       console.error("Error exporting to Excel:", error);
     }
   };
 
   const handleOrderClick = (orderId) => {
-    navigate(`/home/order/details/${orderId}`);
+    navigate(`/home/litigation/details/${orderId}`);
   };
 
   return (
@@ -153,7 +142,7 @@ const LitigationOrders = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
               <input
                 type="text"
-                placeholder="Search Litigation Orders by Client Name, Order ID, Phone, Email, or Part..."
+                placeholder="Search by Client Name, Order ID, Phone, Email, or Part..."
                 className="px-4 py-2 border rounded-lg w-full sm:w-80 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 transition-all duration-200"
                 onChange={handleSearchChange}
               />
@@ -169,7 +158,7 @@ const LitigationOrders = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-x-auto flex-grow">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-x-auto flex-grow relative">
             {loadingOrders ? (
               <div className="flex justify-center items-center py-16">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 dark:border-blue-400"></div>
@@ -202,11 +191,7 @@ const LitigationOrders = () => {
                     orders.map((order, index) => (
                       <tr
                         key={order._id || index}
-                        className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
-                          order.isOwnOrder && user?.role === "customer_relations"
-                            ? "bg-red-50 dark:bg-red-900/20"
-                            : ""
-                        }`}
+                        className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         <td
                           className="px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
@@ -224,27 +209,20 @@ const LitigationOrders = () => {
                           {order.email || "N/A"}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.createdAt
-                            ? new Date(order.createdAt).toLocaleString()
+                          {order.date
+                            ? new Date(order.date).toLocaleString()
                             : "N/A"}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.leadId?.partRequested || "N/A"}
+                          {order.partRequested || "N/A"}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.leadId?.totalCost
-                            ? `$${order.leadId.totalCost.toFixed(2)}`
+                          {order.totalCost
+                            ? `$${order.totalCost.toFixed(2)}`
                             : "N/A"}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`font-semibold ${
-                              statusTextColors[order.status] ||
-                              statusTextColors.default
-                            }`}
-                          >
-                            {order.status || "Litigation"}
-                          </span>
+                        <td className={`px-4 py-3 whitespace-nowrap ${statusTextColors[order.status] || "text-gray-900 dark:text-gray-100"}`}>
+                          {order.status || "N/A"}
                         </td>
                       </tr>
                     ))
@@ -254,7 +232,7 @@ const LitigationOrders = () => {
                         colSpan={8}
                         className="text-center py-6 text-gray-600 dark:text-gray-400"
                       >
-                        No litigation orders found
+                        No orders found
                       </td>
                     </tr>
                   )}
@@ -266,11 +244,11 @@ const LitigationOrders = () => {
           {totalPages > 1 && (
             <div className="flex justify-center items-center mt-6 space-x-2">
               <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
-              disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
+                disabled={currentPage === 1}
               >
-              Prev
+                Prev
               </button>
               {[...Array(totalPages)].map((_, index) => (
                 <button
