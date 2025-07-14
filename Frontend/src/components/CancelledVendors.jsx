@@ -58,6 +58,7 @@ const CancelledVendors = () => {
   const [noteText, setNoteText] = useState('');
   const [noteError, setNoteError] = useState(null);
   const [noteSuccess, setNoteSuccess] = useState(null);
+  const [paymentStatusError, setPaymentStatusError] = useState(null); // New state for payment status errors
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -168,6 +169,37 @@ const CancelledVendors = () => {
     }
   };
 
+  const handlePaymentStatusChange = async (vendorId, newStatus) => {
+    try {
+      setPaymentStatusError(null); // Clear previous errors
+      const response = await fetch(
+        `http://localhost:3000/Order/cancelledvendor/${vendorId}/paymentStatus`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ paymentStatus: newStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update payment status');
+      }
+
+      setCancelledVendors((prevVendors) =>
+        prevVendors.map((vendor) =>
+          vendor._id === vendorId
+            ? { ...vendor, paymentStatus: newStatus }
+            : vendor
+        )
+      );
+    } catch (err) {
+      setPaymentStatusError(err.message || 'Failed to update payment status. Please check your network connection.');
+      console.error('Payment status update error:', err);
+    }
+  };
+
   const handleCloseAddNoteModal = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -185,6 +217,7 @@ const CancelledVendors = () => {
 
   const handleRetry = () => {
     setError(null);
+    setPaymentStatusError(null); // Clear payment status error on retry
     setLoading(true);
     setPage(1);
     setSearch('');
@@ -238,9 +271,9 @@ const CancelledVendors = () => {
             <FullPageLoader />
             <span className="ml-2 text-gray-100">Loading...</span>
           </div>
-        ) : error ? (
+        ) : error || paymentStatusError ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="text-red-400 bg-red-900/30 p-4 rounded-lg mb-4">{error}</div>
+            <div className="text-red-400 bg-red-900/30 p-4 rounded-lg mb-4">{error || paymentStatusError}</div>
             <button
               onClick={handleRetry}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
@@ -264,6 +297,7 @@ const CancelledVendors = () => {
                   <th className="px-6 py-4">Total Cost</th>
                   <th className="px-6 py-4">Reason</th>
                   <th className="px-6 py-4">Canceled At</th>
+                  <th className="px-6 py-4">Payment Status</th>
                   <th className="px-6 py-4">Notes</th>
                   <th className="px-6 py-4">Action</th>
                 </tr>
@@ -285,6 +319,17 @@ const CancelledVendors = () => {
                     <td className="px-6 py-4 text-sm">{vendorData.cancellationReason || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm">
                       {vendorData.canceledAt ? new Date(vendorData.canceledAt).toLocaleString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <select
+                        value={vendorData.paymentStatus || 'pending'}
+                        onChange={(e) => handlePaymentStatusChange(vendorData._id, e.target.value)}
+                        className="bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
+                        aria-label={`Payment status for vendor ${vendorData.vendor.businessName}`}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                      </select>
                     </td>
                     <td
                       className="px-6 py-4 text-sm cursor-pointer hover:text-blue-400 transition-colors duration-200"

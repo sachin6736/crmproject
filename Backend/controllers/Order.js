@@ -2154,7 +2154,9 @@ export const cancelVendor = async (req, res) => {
 export const getAllCancelledVendors = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '' } = req.query;
-    const query = {};
+    const query = {
+      paymentStatus: 'pending', // Filter for pending payment status
+    };
 
     // Add search functionality
     if (search) {
@@ -2190,7 +2192,7 @@ export const getAllCancelledVendors = async (req, res) => {
 };
 
 
-//Addvendortocancelvendor
+//Addnotetocancelvendor
 
 export const addNoteToCancelledVendor = async (req, res) => {
   try {
@@ -2224,7 +2226,7 @@ export const addNoteToCancelledVendor = async (req, res) => {
   }
 };
 
-
+//Setting order to littigation
 export const setOrderToLitigation = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -2284,5 +2286,52 @@ export const setOrderToLitigation = async (req, res) => {
       message: "Failed to set order to litigation",
       error: error.message,
     });
+  }
+};
+
+
+// New controller to update payment status of a canceled vendor
+export const updateCancelledVendorPaymentStatus = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const { paymentStatus } = req.body;
+
+    // Validate payment status
+    if (!['pending', 'paid'].includes(paymentStatus)) {
+      return res.status(400).json({ message: 'Invalid payment status. Must be "pending" or "paid"' });
+    }
+
+    // Find the canceled vendor
+    const cancelledVendor = await CanceledVendor.findById(vendorId);
+    if (!cancelledVendor) {
+      return res.status(404).json({ message: 'Cancelled vendor not found' });
+    }
+
+    // Check if payment status is already the same
+    if (cancelledVendor.paymentStatus === paymentStatus) {
+      return res.status(400).json({ message: `Payment status is already ${paymentStatus}` });
+    }
+
+    // Update payment status
+    cancelledVendor.paymentStatus = paymentStatus;
+
+    // Add a note to track the change
+    const userName = req.user?.name || 'Unknown User';
+    cancelledVendor.vendor.notes = cancelledVendor.vendor.notes || [];
+    cancelledVendor.vendor.notes.push({
+      text: `Payment status changed to ${paymentStatus} by ${userName}`,
+      createdAt: new Date(),
+    });
+
+    // Save the updated canceled vendor
+    await cancelledVendor.save();
+
+    return res.status(200).json({
+      message: 'Payment status updated successfully',
+      cancelledVendor,
+    });
+  } catch (error) {
+    console.error('Error updating cancelled vendor payment status:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
