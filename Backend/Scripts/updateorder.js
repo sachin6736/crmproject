@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { Order, Counter } from '../models/order.js'; // Adjust path to your order model
-import dotenv from 'dotenv';
+import { Order, Counter } from "../models/order.js";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ mongoose
     console.log("✅ Connected to MongoDB");
 
     try {
-      // Find all orders to verify their status values
+      // Find all orders to verify their order_id values
       const allOrders = await Order.find({});
 
       if (allOrders.length === 0) {
@@ -22,46 +22,34 @@ mongoose
 
       console.log(`🔄 Found ${allOrders.length} orders in the collection.`);
 
-      // Verify that all orders have valid status values
-      const validStatuses = [
-        "Locate Pending",
-        "PO Pending",
-        "PO Sent",
-        "PO Confirmed",
-        "Vendor Payment Pending",
-        "Vendor Payment Confirmed",
-        "Shipping Pending",
-        "Ship Out",
-        "Intransit",
-        "Delivered",
-        "Replacement",
-        "Litigation",
-        "Replacement Cancelled"
-      ];
-
       let invalidOrders = 0;
 
       for (const order of allOrders) {
         try {
-          if (!validStatuses.includes(order.status)) {
-            console.warn(`⚠️ Order _id: ${order._id} has invalid status: ${order.status}`);
+          if (typeof order.order_id === "number") {
+            console.warn(`⚠️ Order _id: ${order._id} has numeric order_id: ${order.order_id}, converting to string`);
+            order.order_id = order.order_id.toString();
+            await order.save();
+            console.log(`✅ Converted order_id for order _id: ${order._id} to ${order.order_id}`);
             invalidOrders++;
+          } else if (typeof order.order_id === "string") {
+            console.log(`✅ Order _id: ${order._id} has valid string order_id: ${order.order_id}`);
           } else {
-            console.log(`✅ Order _id: ${order._id} has valid status: ${order.status}`);
+            console.warn(`⚠️ Order _id: ${order._id} has invalid order_id type: ${typeof order.order_id}`);
+            invalidOrders++;
           }
         } catch (err) {
-          console.error(`❌ Error checking order _id: ${order._id}`, err);
+          console.error(`❌ Error processing order _id: ${order._id}`, err);
         }
       }
 
       if (invalidOrders === 0) {
-        console.log("✅ All orders have valid status values.");
+        console.log("✅ All orders have valid string order_id values.");
       } else {
-        console.warn(`⚠️ Found ${invalidOrders} orders with invalid status values. No updates needed, but review recommended.`);
+        console.log(`✅ Updated ${invalidOrders} orders with numeric or invalid order_id values to strings.`);
       }
 
-      // Since the schema change (adding enum values) is non-destructive, no updates are required
-      console.log("✅ Schema updated to include new status values: 'Litigation', 'Replacement Cancelled'.");
+      console.log("✅ Migration to string order_id completed.");
     } catch (err) {
       console.error("❌ Error during migration", err);
     } finally {

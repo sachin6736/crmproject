@@ -9,7 +9,7 @@ const Counter = mongoose.model("Counter", counterSchema);
 
 const orderSchema = new mongoose.Schema({
   order_id: {
-    type: Number,
+    type: String,
     unique: true,
   },
   leadId: {
@@ -253,14 +253,14 @@ const orderSchema = new mongoose.Schema({
 
 // Pre-save hook to assign auto-incrementing order_id
 orderSchema.pre("save", async function (next) {
-  if (this.isNew) {
+  if (this.isNew && !this.order_id) { // Only assign if order_id is not set
     try {
       const counter = await Counter.findOneAndUpdate(
         { _id: "order_id" },
         { $inc: { seq: 1 } },
         { new: true, upsert: true }
       );
-      this.order_id = counter.seq;
+      this.order_id = counter.seq.toString();
       next();
     } catch (error) {
       next(error);
