@@ -62,6 +62,32 @@ const LitigationDetails = () => {
     fetchOrder();
   }, [orderId, navigate]);
 
+  // Function to handle status update to "Replacement"
+  const handleReplacement = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/LiteReplace/updateStatus/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ status: "Replacement" }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update order status");
+      }
+
+      const updatedOrder = await response.json();
+      setOrder(updatedOrder.order); // Update the order state with new data
+      toast.success("Order status updated to Replacement");
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast.error(error.message || "Failed to update order status");
+    }
+  };
+
   // Format address
   const formatAddress = (address, city, state, zip) => {
     if (!address && !city && !state && !zip) return "N/A";
@@ -143,7 +169,7 @@ const LitigationDetails = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-16 min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 dark:border-blue-400"></div>
+        <div className="animate-spin rounded-full h-12 w-12 borderüd:2C0B0B-4 border-b-4 border-blue-600 dark:border-blue-400"></div>
       </div>
     );
   }
@@ -166,19 +192,19 @@ const LitigationDetails = () => {
         {/* Header with Back and Litigation Form Buttons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold">Order {order.order_id || "N/A"}</h1>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex space-x-2">
+            <button
+              onClick={handleReplacement} // Call the new function here
+              className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium"
+            >
+              Replacement
+            </button>
             <button
               onClick={() => navigate("/home/litigation-orders")}
               className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               Back to Orders
-            </button>
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium"
-            >
-              Litigation Form
             </button>
           </div>
         </div>
@@ -359,7 +385,7 @@ const LitigationDetails = () => {
         {/* Billing and Shipping Address */}
         <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
           <h2 className="text-xl sm:text-2xl font-semibold mb-4">Billing and Shipping Address</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className= "grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="font-medium text-gray-700 dark:text-gray-300">Billing Address:</p>
               <p>{formatAddress(order.billingAddress, order.city, order.state, order.zip)}</p>

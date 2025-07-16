@@ -1,13 +1,10 @@
-import express from 'express';
+import express from "express";
 import { protect } from "../middleware/authmiddleware.js";
-import { getLitigation } from '../controllers/litireplace.js';
+import { getLitigation, updateOrderStatus } from "../controllers/litireplace.js";
 
-const router = express.Router(); 
+const router = express.Router();
 
-router.get("/getLitigation",protect,getLitigation) 
-
-
-
-
+router.get("/getLitigation", protect, getLitigation);
+router.patch("/updateStatus/:orderId", protect, updateOrderStatus);
 
 export default router;
