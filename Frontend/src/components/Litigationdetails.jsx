@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "../context/ThemeContext";
-import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, X } from "lucide-react";
 
 const LitigationDetails = () => {
   const { orderId } = useParams();
@@ -15,6 +15,17 @@ const LitigationDetails = () => {
     vendorNotes: false,
     procurementNotes: false,
     orderNotes: false,
+  });
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    deliveryDate: "",
+    installationDate: "",
+    problemOccurredDate: "",
+    problemInformedDate: "",
+    receivedPictures: false,
+    receivedDiagnosticReport: false,
+    problemDescription: "",
+    resolutionNotes: "",
   });
 
   // Status color mapping
@@ -81,6 +92,54 @@ const LitigationDetails = () => {
     }));
   };
 
+  // Handle form input changes
+  const handleFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  // Handle form submission
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`http://localhost:3000/Order/update-litigation/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update litigation details");
+      }
+      toast.success("Litigation details updated successfully");
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error updating litigation details:", error);
+      toast.error(error.message || "Failed to update litigation details");
+    }
+  };
+
+  // Close form modal
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setFormData({
+      deliveryDate: "",
+      installationDate: "",
+      problemOccurredDate: "",
+      problemInformedDate: "",
+      receivedPictures: false,
+      receivedDiagnosticReport: false,
+      problemDescription: "",
+      resolutionNotes: "",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-16 min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -104,17 +163,143 @@ const LitigationDetails = () => {
   return (
     <div className="p-4 sm:p-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8">
-        {/* Header with Back Button */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Header with Back and Litigation Form Buttons */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold">Order {order.order_id || "N/A"}</h1>
-          <button
-            onClick={() => navigate("/home/litigation-orders")}
-            className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Orders
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => navigate("/home/litigation-orders")}
+              className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Back to Orders
+            </button>
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium"
+            >
+              Litigation Form
+            </button>
+          </div>
         </div>
+
+        {/* Litigation Form Modal */}
+        {isFormOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl sm:text-2xl font-semibold">Update Litigation Details</h2>
+                <button
+                  onClick={closeForm}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <form onSubmit={handleFormSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Delivery Date</label>
+                  <input
+                    type="date"
+                    name="deliveryDate"
+                    value={formData.deliveryDate}
+                    onChange={handleFormChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Installation Date</label>
+                  <input
+                    type="date"
+                    name="installationDate"
+                    value={formData.installationDate}
+                    onChange={handleFormChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Problem Occurred Date</label>
+                  <input
+                    type="date"
+                    name="problemOccurredDate"
+                    value={formData.problemOccurredDate}
+                    onChange={handleFormChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Problem Informed Date</label>
+                  <input
+                    type="date"
+                    name="problemInformedDate"
+                    value={formData.problemInformedDate}
+                    onChange={handleFormChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      name="receivedPictures"
+                      checked={formData.receivedPictures}
+                      onChange={handleFormChange}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                    />
+                    Received Pictures of Defective Part
+                  </label>
+                </div>
+                <div>
+                  <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      name="receivedDiagnosticReport"
+                      checked={formData.receivedDiagnosticReport}
+                      onChange={handleFormChange}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                    />
+                    Received Diagnostic Report
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">What's the Problem</label>
+                  <textarea
+                    name="problemDescription"
+                    value={formData.problemDescription}
+                    onChange={handleFormChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                    rows="4"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Resolution Notes</label>
+                  <textarea
+                    name="resolutionNotes"
+                    value={formData.resolutionNotes}
+                    onChange={handleFormChange}
+                    className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                    rows="4"
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeForm}
+                    className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-700 transition-all duration-200 text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium"
+                  >
+                    Save
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Customer Information */}
         <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
