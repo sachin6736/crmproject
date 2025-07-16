@@ -1,7 +1,8 @@
 import { Order } from "../models/order.js";
+import Litigation from "../models/Litigation.js";
 
 // Existing getLitigation controller
-export const getLitigation = async (req, res, next) => {
+export const litigation = async (req, res, next) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Access denied: User not authenticated" });
@@ -128,5 +129,111 @@ export const updateOrderStatus = async (req, res) => {
       message: "Failed to update order status",
       error: error.message,
     });
+  }
+};//
+
+export const createLitigation = async (req, res) => {
+  try {
+    const { orderId, deliveryDate, installationDate, problemOccurredDate, problemInformedDate, receivedPictures, receivedDiagnosticReport, problemDescription, resolutionNotes } = req.body;
+
+    // Validate orderId
+    if (!orderId) {
+      return res.status(400).json({ message: 'Order ID is required' });
+    }
+
+    // Check if order exists and is in Litigation status
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    if (order.status !== 'Litigation') {
+      return res.status(400).json({ message: 'Order is not in Litigation status' });
+    }
+
+    // Check if litigation already exists for this order
+    const existingLitigation = await Litigation.findOne({ orderId });
+    if (existingLitigation) {
+      return res.status(400).json({ message: 'Litigation already exists for this order' });
+    }
+
+    // Create new litigation record
+    const litigation = new Litigation({
+      orderId,
+      deliveryDate: deliveryDate || null,
+      installationDate: installationDate || null,
+      problemOccurredDate: problemOccurredDate || null,
+      problemInformedDate: problemInformedDate || null,
+      receivedPictures: receivedPictures || false,
+      receivedDiagnosticReport: receivedDiagnosticReport || false,
+      problemDescription: problemDescription || '',
+      resolutionNotes: resolutionNotes || ''
+    });
+
+    await litigation.save();
+    res.status(201).json({ message: 'Litigation created successfully', litigation });
+  } catch (error) {
+    console.error('Error creating litigation:', error);
+    res.status(500).json({ message: error.message || 'Failed to create litigation' });
+  }
+};
+
+// Update an existing litigation record
+export const updateLitigation = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { deliveryDate, installationDate, problemOccurredDate, problemInformedDate, receivedPictures, receivedDiagnosticReport, problemDescription, resolutionNotes } = req.body;
+
+    // Validate orderId
+    if (!orderId) {
+      return res.status(400).json({ message: 'Order ID is required' });
+    }
+
+    // Check if order exists and is in Litigation status
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    if (order.status !== 'Litigation') {
+      return res.status(400).json({ message: 'Order is not in Litigation status' });
+    }
+
+    // Prepare update object
+    const updateData = {
+      deliveryDate: deliveryDate || null,
+      installationDate: installationDate || null,
+      problemOccurredDate: problemOccurredDate || null,
+      problemInformedDate: problemInformedDate || null,
+      receivedPictures: receivedPictures || false,
+      receivedDiagnosticReport: receivedDiagnosticReport || false,
+      problemDescription: problemDescription || '',
+      resolutionNotes: resolutionNotes || ''
+    };
+
+    // Update or create litigation record (upsert)
+    const litigation = await Litigation.findOneAndUpdate(
+      { orderId },
+      { $set: updateData },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({ message: 'Litigation updated successfully', litigation });
+  } catch (error) {
+    console.error('Error updating litigation:', error);
+    res.status(500).json({ message: error.message || 'Failed to update litigation' });
+  }
+};
+
+// Get litigation details for an order
+export const getLitigation = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const litigation = await Litigation.findOne({ orderId });
+    if (!litigation) {
+      return res.status(404).json({ message: 'Litigation not found' });
+    }
+    res.status(200).json(litigation);
+  } catch (error) {
+    console.error('Error fetching litigation:', error);
+    res.status(500).json({ message: error.message || 'Failed to fetch litigation' });
   }
 };
