@@ -99,6 +99,28 @@ const LitigationDetails = () => {
     setIsFormOpen(true);
   };
 
+  const handleSendRMA = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/LiteReplace/send-rma/${orderId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to send RMA form");
+      }
+  
+      toast.success("RMA form sent successfully");
+    } catch (error) {
+      console.error("Error sending RMA form:", error);
+      toast.error(error.message || "Failed to send RMA form");
+    }
+  };
+
   // Function to handle status update to "Replacement"
   const handleReplacement = async () => {
     try {
@@ -480,6 +502,12 @@ const LitigationDetails = () => {
           >
             Litigation
           </button>
+          <button
+    onClick={handleSendRMA}
+    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium"
+  >
+    Send RMA Form
+  </button>
           <div className="relative">
             <button
               onClick={() => setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
