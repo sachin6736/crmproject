@@ -170,35 +170,46 @@ const CancelledVendors = () => {
   };
 
   const handlePaymentStatusChange = async (vendorId, newStatus) => {
-    try {
-      setPaymentStatusError(null); // Clear previous errors
-      const response = await fetch(
-        `http://localhost:3000/Order/cancelledvendor/${vendorId}/paymentStatus`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ paymentStatus: newStatus }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update payment status');
+  try {
+    setPaymentStatusError(null); // Clear previous errors
+    const response = await fetch(
+      `http://localhost:3000/Order/cancelledvendor/${vendorId}/paymentStatus`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ paymentStatus: newStatus }),
       }
+    );
 
-      setCancelledVendors((prevVendors) =>
-        prevVendors.map((vendor) =>
-          vendor._id === vendorId
-            ? { ...vendor, paymentStatus: newStatus }
-            : vendor
-        )
-      );
-    } catch (err) {
-      setPaymentStatusError(err.message || 'Failed to update payment status. Please check your network connection.');
-      console.error('Payment status update error:', err);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update payment status');
     }
-  };
+
+    // Re-fetch the cancelled vendors list to ensure UI is in sync with the server
+    const fetchResponse = await fetch(
+      `http://localhost:3000/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(search)}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      }
+    );
+
+    if (!fetchResponse.ok) {
+      const errorData = await fetchResponse.json();
+      throw new Error(errorData.message || 'Failed to fetch updated vendor list');
+    }
+
+    const data = await fetchResponse.json();
+    setCancelledVendors(data.cancelledVendors || []);
+    setTotalPages(data.totalPages || 1);
+  } catch (err) {
+    setPaymentStatusError(err.message || 'Failed to update payment status. Please check your network connection.');
+    console.error('Payment status update error:', err);
+  }
+};
 
   const handleCloseAddNoteModal = () => {
     if (timeoutRef.current) {
