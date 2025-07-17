@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "../context/ThemeContext";
 import EmailPreviewModal from "./orderdetails/EmailPreviewModal";
 import { exportToExcel } from "./utilities/exportToExcel";
+import { X } from 'lucide-react';
 
 const FullPageLoader = ({
   size = "w-6 h-6",
@@ -91,6 +92,18 @@ const OrderDetails = () => {
     address: "",
     rating: "",
   });
+  const [isProcurementModalOpen, setIsProcurementModalOpen] = useState(false);
+const [procurementFormData, setProcurementFormData] = useState({
+  vendorInformedDate: "",
+  sentPicturesToVendor: false,
+  sentDiagnosticReportToVendor: false,
+  yardAgreedReturnShipping: false,
+  yardAgreedReplacement: false,
+  yardAgreedReplacementShippingCost: false,
+  replacementPartReadyDate: "",
+  additionalCostReplacementPart: "",
+  additionalCostReplacementShipping: "",
+});
   const [isLitigationDropdownOpen, setIsLitigationDropdownOpen] = useState(false);
 const [litigationLoading, setLitigationLoading] = useState(false);
   const [vendorDetailsForm, setVendorDetailsForm] = useState({
@@ -232,6 +245,16 @@ const [litigationLoading, setLitigationLoading] = useState(false);
       totalCost: calculatedTotalCost,
     }));
   }, [costForm.partCost, costForm.shippingCost, costForm.grossProfit]);
+
+  useEffect(() => {
+    const costPrice = parseFloat(editVendorForm.costPrice) || 0;
+    const shippingCost = parseFloat(editVendorForm.shippingCost) || 0;
+    const calculatedTotalCost = (costPrice + shippingCost).toFixed(2);
+    setEditVendorForm((prev) => ({
+      ...prev,
+      totalCost: calculatedTotalCost,
+    }));
+  }, [editVendorForm.costPrice, editVendorForm.shippingCost]);
 
   // Fetch initial data
   useEffect(() => {
@@ -455,7 +478,72 @@ const [litigationLoading, setLitigationLoading] = useState(false);
       setActionLoading(false);
     }
   };
+// Open procurement modal and initialize data
+const openProcurementModal = () => {
+  setProcurementFormData({
+    vendorInformedDate: order?.procurementData?.vendorInformedDate ? order.procurementData.vendorInformedDate.split('T')[0] : '',
+    sentPicturesToVendor: order?.procurementData?.sentPicturesToVendor || false,
+    sentDiagnosticReportToVendor: order?.procurementData?.sentDiagnosticReportToVendor || false,
+    yardAgreedReturnShipping: order?.procurementData?.yardAgreedReturnShipping || false,
+    yardAgreedReplacement: order?.procurementData?.yardAgreedReplacement || false,
+    yardAgreedReplacementShippingCost: order?.procurementData?.yardAgreedReplacementShippingCost || false,
+    replacementPartReadyDate: order?.procurementData?.replacementPartReadyDate ? order.procurementData.replacementPartReadyDate.split('T')[0] : '',
+    additionalCostReplacementPart: order?.procurementData?.additionalCostReplacementPart || '',
+    additionalCostReplacementShipping: order?.procurementData?.additionalCostReplacementShipping || '',
+  });
+  setIsProcurementModalOpen(true);
+};
 
+// Handle procurement form input changes
+const handleProcurementFormChange = (e) => {
+  const { name, value, type, checked } = e.target;
+  setProcurementFormData((prev) => ({
+    ...prev,
+    [name]: type === "checkbox" ? checked : value,
+  }));
+};
+
+// Handle procurement form submission
+const handleProcurementFormSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch(`http://localhost:3000/LiteReplace/update-procurement/${orderId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(procurementFormData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to update procurement details");
+    }
+    const updatedOrder = await response.json();
+    setOrder(updatedOrder.order); // Update order with new procurement data
+    toast.success("Procurement details updated successfully");
+    setIsProcurementModalOpen(false);
+  } catch (error) {
+    console.error("Error updating procurement details:", error);
+    toast.error(error.message || "Failed to update procurement details");
+  }
+};
+
+// Close procurement modal
+const closeProcurementModal = () => {
+  setIsProcurementModalOpen(false);
+  setProcurementFormData({
+    vendorInformedDate: order?.procurementData?.vendorInformedDate ? order.procurementData.vendorInformedDate.split('T')[0] : '',
+    sentPicturesToVendor: order?.procurementData?.sentPicturesToVendor || false,
+    sentDiagnosticReportToVendor: order?.procurementData?.sentDiagnosticReportToVendor || false,
+    yardAgreedReturnShipping: order?.procurementData?.yardAgreedReturnShipping || false,
+    yardAgreedReplacement: order?.procurementData?.yardAgreedReplacement || false,
+    yardAgreedReplacementShippingCost: order?.procurementData?.yardAgreedReplacementShippingCost || false,
+    replacementPartReadyDate: order?.procurementData?.replacementPartReadyDate ? order.procurementData.replacementPartReadyDate.split('T')[0] : '',
+    additionalCostReplacementPart: order?.procurementData?.additionalCostReplacementPart || '',
+    additionalCostReplacementShipping: order?.procurementData?.additionalCostReplacementShipping || '',
+  });
+};
   const handleLitigationClick = () => {
     setIsLitigationDropdownOpen((prev) => !prev);
   };
@@ -613,10 +701,11 @@ const [litigationLoading, setLitigationLoading] = useState(false);
     setEditingVendorId(vendor._id);
     setShowEditVendorModal(true);
   };
-
   const handleEditVendorFormChange = (e) => {
     const { name, value } = e.target;
-    setEditVendorForm((prev) => ({ ...prev, [name]: value }));
+    if (name !== "totalCost") {
+      setEditVendorForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleEditVendorFormSubmit = async (e) => {
@@ -1464,36 +1553,37 @@ const [litigationLoading, setLitigationLoading] = useState(false);
           ) : order ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 max-w-4xl mx-auto w-full">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-  <div className="flex items-center gap-4">
-    <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
-      No: {order.order_id || "N/A"}
-    </h2>
-    <span
-      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-        {
-          "Locate Pending": "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
-          "PO Pending": "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-          "PO Sent": "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-          "PO Confirmed": "bg-blue-100 text-blue-500 dark:bg-blue-900/20 dark:text-blue-300",
-          "Vendor Payment Pending": "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-          "Vendor Payment Confirmed": "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-          "Shipping Pending": "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-          "Ship Out": "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
-          Intransit: "bg-teal-100 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400",
-          Delivered: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-500",
-          Replacement: "bg-pink-100 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400",
-          Litigation: "bg-red-200 text-red-700 dark:bg-red-800/30 dark:text-red-300",
-          "Replacement Cancelled": "bg-gray-200 text-gray-700 dark:bg-gray-800/30 dark:text-gray-300",
-          default: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
-        }[order.status] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-      }`}
-    >
-      {order.status || "Unknown"}
-    </span>
-    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-      Profit Margin: {getActiveVendorProfitMargin(order)}
-    </span>
-  </div>
+              <div className="flex items-center gap-4">
+  <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+    No: {order.order_id || "N/A"}
+  </h2>
+  <span
+    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+      {
+        "Locate Pending": "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
+        "PO Pending": "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+        "PO Sent": "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+        "PO Confirmed": "bg-blue-100 text-blue-500 dark:bg-blue-900/20 dark:text-blue-300",
+        "Vendor Payment Pending": "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+        "Vendor Payment Confirmed": "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+        "Shipping Pending": "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+        "Ship Out": "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
+        Intransit: "bg-teal-100 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400",
+        Delivered: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-500",
+        Replacement: "bg-pink-100 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400",
+        Litigation: "bg-red-200 text-red-700 dark:bg-red-800/30 dark:text-red-300",
+        "Replacement Cancelled": "bg-gray-200 text-gray-700 dark:bg-gray-800/30 dark:text-gray-300",
+        default: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
+      }[order.status] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+    }`}
+  >
+    {order.status || "Unknown"}
+  </span>
+  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+    Profit Margin: {getActiveVendorProfitMargin(order)}
+  </span>
+</div>
+<div className="ml-6 flex flex-col space-y-2">
   <div className="relative">
     <button
       onClick={handleLitigationClick}
@@ -1520,7 +1610,7 @@ const [litigationLoading, setLitigationLoading] = useState(false);
       )}
     </button>
     {isLitigationDropdownOpen && (
-      <div className="absolute top-full right-0 mt-2 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-300 dark:border-gray-600 animate-fade-in">
+      <div className="litigation-dropdown absolute top-full left-0 mt-2 w-32 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-300 dark:border-gray-600 animate-fade-in">
         <ul className="py-1 text-gray-800 dark:text-gray-100">
           <li
             className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
@@ -1550,6 +1640,22 @@ const [litigationLoading, setLitigationLoading] = useState(false);
       </div>
     )}
   </div>
+  {order?.order_id?.toLowerCase().includes('r') && (
+    <>
+      <button
+        className="flex items-center px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-700 transition-all duration-200 text-sm font-medium"
+      >
+        View Litigation
+      </button>
+      <button
+        onClick={openProcurementModal}
+        className="flex items-center px-6 py-3 bg-teal-600 dark:bg-teal-500 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-300 dark:focus:ring-teal-700 transition-all duration-200 text-sm font-medium"
+      >
+        Procurement Form
+      </button>
+    </>
+  )}
+</div>
 </div>
               <div className="space-y-6">
                 {/* Customer Information */}
@@ -3158,14 +3264,14 @@ const [litigationLoading, setLitigationLoading] = useState(false);
               Total Cost ($)
             </label>
             <input
-              type="number"
-              name="totalCost"
-              value={editVendorForm.totalCost}
-              onChange={handleEditVendorFormChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              min="0"
-              step="0.01"
-            />
+  type="number"
+  name="totalCost"
+  value={editVendorForm.totalCost}
+  readOnly
+  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 cursor-not-allowed text-sm"
+  min="0"
+  step="0.01"
+/>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -3634,6 +3740,141 @@ const [litigationLoading, setLitigationLoading] = useState(false);
           </div>
         </form>
       </Modal>
+
+      {isProcurementModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">Update Procurement Details</h2>
+        <button
+          onClick={closeProcurementModal}
+          className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+      <form onSubmit={handleProcurementFormSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">When did we inform the vendor</label>
+          <input
+            type="date"
+            name="vendorInformedDate"
+            value={procurementFormData.vendorInformedDate}
+            onChange={handleProcurementFormChange}
+            className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              name="sentPicturesToVendor"
+              checked={procurementFormData.sentPicturesToVendor}
+              onChange={handleProcurementFormChange}
+              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+            />
+            Sent pictures from customer to vendor
+          </label>
+        </div>
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              name="sentDiagnosticReportToVendor"
+              checked={procurementFormData.sentDiagnosticReportToVendor}
+              onChange={handleProcurementFormChange}
+              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+            />
+            Sent diagnostic report to vendor
+          </label>
+        </div>
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              name="yardAgreedReturnShipping"
+              checked={procurementFormData.yardAgreedReturnShipping}
+              onChange={handleProcurementFormChange}
+              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+            />
+            Yard agreed for return shipping
+          </label>
+        </div>
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              name="yardAgreedReplacement"
+              checked={procurementFormData.yardAgreedReplacement}
+              onChange={handleProcurementFormChange}
+              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+            />
+            Yard agreed for replacement
+          </label>
+        </div>
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              name="yardAgreedReplacementShippingCost"
+              checked={procurementFormData.yardAgreedReplacementShippingCost}
+              onChange={handleProcurementFormChange}
+              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+            />
+            Yard agreed for replacement shipping cost
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">When will the replacement part be ready</label>
+          <input
+            type="date"
+            name="replacementPartReadyDate"
+            value={procurementFormData.replacementPartReadyDate}
+            onChange={handleProcurementFormChange}
+            className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Additional cost for replacement part</label>
+          <input
+            type="text"
+            name="additionalCostReplacementPart"
+            value={procurementFormData.additionalCostReplacementPart}
+            onChange={handleProcurementFormChange}
+            className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter cost (e.g., $100)"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Additional cost for replacement shipping</label>
+          <input
+            type="text"
+            name="additionalCostReplacementShipping"
+            value={procurementFormData.additionalCostReplacementShipping}
+            onChange={handleProcurementFormChange}
+            className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter cost (e.g., $50)"
+          />
+        </div>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={closeProcurementModal}
+            className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-700 transition-all duration-200 text-sm font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium"
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {/* Shipment Modal */}
       <Modal

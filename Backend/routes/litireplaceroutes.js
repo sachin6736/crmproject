@@ -1,6 +1,6 @@
 import express from "express";
 import { protect } from "../middleware/authmiddleware.js";
-import { litigation, updateOrderStatus,createLitigation, updateLitigation, getLitigation,sendRMAForm } from "../controllers/litireplace.js";
+import { litigation, updateOrderStatus,createLitigation, updateLitigation, getLitigation,sendRMAForm,addProcurement, updateProcurement } from "../controllers/litireplace.js";
 
 const router = express.Router();
 
@@ -10,4 +10,6 @@ router.post('/litigation', createLitigation);//creating litigation form
 router.patch('/update-litigation/:orderId',protect ,updateLitigation);//updating litigation form
 router.get('/litigation/:orderId', getLitigation);//getting existing litigation form
 router.post('/send-rma/:id', sendRMAForm);//senting rma through mail
+router.post('/add-procurement/:id', addProcurement);
+router.patch('/update-procurement/:id', updateProcurement);
 export default router;

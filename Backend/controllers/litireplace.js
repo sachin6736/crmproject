@@ -2,7 +2,7 @@ import { Order } from "../models/order.js";
 import Litigation from "../models/Litigation.js";
 import sendEmail from "../sendEmail.js";
 
-// Existing getLitigation controller
+// Get litigation orders
 export const litigation = async (req, res, next) => {
   try {
     if (!req.user) {
@@ -20,9 +20,10 @@ export const litigation = async (req, res, next) => {
       status: { $in: ["Litigation", "Replacement", "Replacement Cancelled"] },
     };
     if (searchQuery) {
+      const isNumericSearch = /^\d+$/.test(searchQuery);
       query.$or = [
         { clientName: searchRegex },
-        { order_id: searchQuery },
+        { order_id: isNumericSearch ? searchQuery : { $regex: searchRegex } },
         { phone: searchRegex },
         { email: searchRegex },
         { "leadId.partRequested": searchRegex },
@@ -80,7 +81,7 @@ export const litigation = async (req, res, next) => {
   }
 };
 
-// New controller to update order status
+// Update order status and create replacement order
 export const updateOrderStatus = async (req, res) => {
   try {
     if (!req.user) {
@@ -117,8 +118,62 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // Update the status of the original order
     order.status = status;
     await order.save();
+
+    // If status is "Replacement", create a new order with order_id suffixed with "R" or "R<number>"
+    if (status === "Replacement") {
+      let newOrderId = `${order.order_id}R`;
+      let suffix = 1;
+
+      // Check for existing replacement orders and increment suffix if needed
+      while (await Order.findOne({ order_id: newOrderId })) {
+        newOrderId = `${order.order_id}R${suffix}`;
+        suffix++;
+      }
+
+      const newOrderData = {
+        order_id: newOrderId,
+        leadId: order.leadId,
+        salesPerson: order.salesPerson,
+        customerRelationsPerson: order.customerRelationsPerson,
+        procurementPerson: order.procurementPerson,
+        make: order.make,
+        model: order.model,
+        year: order.year,
+        clientName: order.clientName,
+        phone: order.phone,
+        email: order.email,
+        cardNumber: order.cardNumber,
+        cardMonth: order.cardMonth,
+        cardYear: order.cardYear,
+        cvv: order.cvv,
+        billingAddress: order.billingAddress,
+        city: order.city,
+        state: order.state,
+        zip: order.zip,
+        shippingAddress: order.shippingAddress,
+        shippingCity: order.shippingCity,
+        shippingState: order.shippingState,
+        shippingZip: order.shippingZip,
+        weightAndDimensions: order.weightAndDimensions,
+        carrierName: order.carrierName,
+        trackingNumber: order.trackingNumber,
+        bolNumber: order.bolNumber,
+        trackingLink: order.trackingLink,
+        amount: order.amount,
+        status: "Locate Pending",
+        picturesReceivedFromYard: order.picturesReceivedFromYard,
+        picturesSentToCustomer: order.picturesSentToCustomer,
+        vendors: order.vendors.map(vendor => ({ ...vendor.toObject() })),
+        notes: order.notes.map(note => ({ ...note.toObject() })),
+        procurementnotes: order.procurementnotes.map(note => ({ ...note.toObject() })),
+      };
+
+      const newOrder = new Order(newOrderData);
+      await newOrder.save();
+    }
 
     return res.status(200).json({
       message: "Order status updated successfully",
@@ -131,11 +186,12 @@ export const updateOrderStatus = async (req, res) => {
       error: error.message,
     });
   }
-};//
+};
 
+// Create litigation
 export const createLitigation = async (req, res) => {
   try {
-    const { orderId, deliveryDate, installationDate, problemOccurredDate, problemInformedDate, receivedPictures, receivedDiagnosticReport, problemDescription, resolutionNotes } = req.body;
+    const { orderId, pelota, installationDate, problemOccurredDate, problemInformedDate, receivedPictures, receivedDiagnosticReport, problemJonah, resolutionNotes } = req.body;
 
     // Validate orderId
     if (!orderId) {
@@ -179,7 +235,7 @@ export const createLitigation = async (req, res) => {
 };
 
 // Update an existing litigation record
-export const updateLitigation = async (req, res) => {
+export const updateLitigation = async(req, res) => {
   try {
     const { orderId } = req.params;
     const { deliveryDate, installationDate, problemOccurredDate, problemInformedDate, receivedPictures, receivedDiagnosticReport, problemDescription, resolutionNotes } = req.body;
@@ -334,6 +390,72 @@ export const sendRMAForm = async (req, res) => {
   } catch (error) {
     console.error("Error sending RMA form:", error);
     res.status(500).json({ message: "Failed to send RMA form" });
+  }
+};
+
+export const addProcurement = async (req, res) => {
+  const { id } = req.params;
+  const procurementData = req.body;
+
+  try {
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Initialize procurementData with defaults if not provided
+    const defaultProcurementData = {
+      vendorInformedDate: null,
+      sentPicturesToVendor: false,
+      sentDiagnosticReportToVendor: false,
+      yardAgreedReturnShipping: false,
+      yardAgreedReplacement: false,
+      yardAgreedReplacementShippingCost: false,
+      replacementPartReadyDate: null,
+      additionalCostReplacementPart: '',
+      additionalCostReplacementShipping: '',
+    };
+
+    // Merge provided data with defaults, ensuring all fields are set
+    order.procurementData = {
+      ...defaultProcurementData,
+      ...procurementData,
+      vendorInformedDate: procurementData.vendorInformedDate ? new Date(procurementData.vendorInformedDate) : null,
+      replacementPartReadyDate: procurementData.replacementPartReadyDate ? new Date(procurementData.replacementPartReadyDate) : null,
+    };
+
+    await order.save();
+    res.status(201).json({ order, message: "Procurement data added successfully" });
+  } catch (error) {
+    console.error("Error adding procurement data:", error);
+    res.status(500).json({ message: "Failed to add procurement data" });
+  }
+};
+
+// Update procurement data for an order
+export const updateProcurement = async (req, res) => {
+  const { id } = req.params;
+  const procurementData = req.body;
+
+  try {
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Update procurementData, preserving existing fields not in the request
+    order.procurementData = {
+      ...order.procurementData,
+      ...procurementData,
+      vendorInformedDate: procurementData.vendorInformedDate ? new Date(procurementData.vendorInformedDate) : order.procurementData.vendorInformedDate,
+      replacementPartReadyDate: procurementData.replacementPartReadyDate ? new Date(procurementData.replacementPartReadyDate) : order.procurementData.replacementPartReadyDate,
+    };
+
+    await order.save();
+    res.status(200).json({ order, message: "Procurement data updated successfully" });
+  } catch (error) {
+    console.error("Error updating procurement data:", error);
+    res.status(500).json({ message: "Failed to update procurement data" });
   }
 };
 
