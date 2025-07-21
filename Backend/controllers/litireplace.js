@@ -162,7 +162,7 @@ export const updateOrderStatus = async (req, res) => {
         trackingNumber: "", // Set to empty string
         bolNumber: "", // Set to empty string
         trackingLink: "", // Set to empty string
-        amount: 0.01, // Set to default minimum value
+        amount: order.amount, // Set to default minimum value
         status: "Locate Pending",
         picturesReceivedFromYard: false, // Set to default false
         picturesSentToCustomer: false, // Set to default false
