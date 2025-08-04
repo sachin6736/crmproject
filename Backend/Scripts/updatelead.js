@@ -8,16 +8,16 @@ mongoose
   .then(async () => {
     const result = await Lead.updateMany(
       {
-        warranty: { $exists: false },
+        createdBy: { $exists: false },
       },
       {
         $set: {
-          warranty: 0,
+          createdBy: false,
         },
       }
     );
     console.log(
-      `✅ Updated ${result.modifiedCount} leads with default warranty field.`
+      `✅ Updated ${result.modifiedCount} leads with default createdBy field.`
     );
     await mongoose.disconnect();
   })

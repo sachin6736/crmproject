@@ -183,6 +183,7 @@ export const createLeadBySalesperson = async (req, res, next) => {
       year,
       trim,
       salesPerson: salesPersonId,
+      createdBy: true,
     });
     await newLead.save();
 
@@ -252,6 +253,7 @@ export const createLeadBySalesperson = async (req, res, next) => {
     res.status(500).json({ message: "Error creating lead by salesperson" });
   }
 };
+
 
 //==============================================================getingleads
 export const getleads = async (req, res, next) => {
