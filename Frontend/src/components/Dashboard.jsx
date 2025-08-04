@@ -69,6 +69,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
     PriceTooHigh: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
     PartNotAvailable: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
     Ordered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    TotalLeads: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   };
 
   const lineColors = {
@@ -86,14 +87,20 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
     "PriceTooHigh",
     "PartNotAvailable",
     "Ordered",
+    "TotalLeads",
   ];
 
+  const calculateTotal = (data) => {
+    if (!data) return 0;
+    return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
+  };
+
   const chartData = statuses.map(status => ({
-    status,
-    currentMonth: statusComparison.currentMonth?.[status] || 0,
-    previousMonth: statusComparison.previousMonth?.[status] || 0,
-    ...(selectedMonth && statusComparison.selectedMonth ? { selectedMonth: statusComparison.selectedMonth[status] || 0 } : {}),
-    ...(selectedYear && statusComparison.selectedYear ? { selectedYear: statusComparison.selectedYear[status] || 0 } : {}),
+    status: status === "TotalLeads" ? "Total Leads" : status,
+    currentMonth: status === "TotalLeads" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0,
+    previousMonth: status === "TotalLeads" ? calculateTotal(statusComparison.previousMonth) : statusComparison.previousMonth?.[status] || 0,
+    ...(selectedMonth && statusComparison.selectedMonth ? { selectedMonth: status === "TotalLeads" ? calculateTotal(statusComparison.selectedMonth) : statusComparison.selectedMonth[status] || 0 } : {}),
+    ...(selectedYear && statusComparison.selectedYear ? { selectedYear: status === "TotalLeads" ? calculateTotal(statusComparison.selectedYear) : statusComparison.selectedYear[status] || 0 } : {}),
   }));
 
   const generateMonthOptions = () => {
@@ -198,8 +205,14 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
                   key={status}
                   className={`p-2 rounded-lg text-center ${statusColors[status.replace(" ", "")]}`}
                 >
-                  <span className="text-xs font-medium">{status.replace("PriceTooHigh", "Price Too High").replace("PartNotAvailable", "Part Not Available").replace("NoResponse", "No Response")}</span>
-                  <div className="text-md font-bold">{statusComparison.currentMonth?.[status] || 0}</div>
+                  <span className="text-xs font-medium">
+                    {status === "TotalLeads"
+                      ? "Total Leads"
+                      : status.replace("PriceTooHigh", "Price Too High").replace("PartNotAvailable", "Part Not Available").replace("NoResponse", "No Response")}
+                  </span>
+                  <div className="text-md font-bold">
+                    {status === "TotalLeads" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
+                  </div>
                 </div>
               ))}
             </div>

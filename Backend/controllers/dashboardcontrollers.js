@@ -69,76 +69,71 @@ export const getLeadCreationCounts = async (req, res, next) => {
     }
   };
 
-  export const getLeadStatusComparison = async (req, res, next) => {
-    console.log("getLeadStatusComparison working");
+  export const getLeadStatusComparison = async (req, res) => {
     try {
-      const { selectedMonth, selectedYear } = req.query; // e.g., selectedMonth: "2025-07", selectedYear: "2024"
+      const { selectedMonth, selectedYear } = req.query;
       const now = new Date();
-      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
   
-      const filters = [
-        {
-          label: "currentMonth",
-          dateFilter: {
-            createdAt: { $gte: currentMonthStart, $lte: now }
-          }
-        },
-        {
-          label: "previousMonth",
-          dateFilter: {
-            createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd }
-          }
-        }
-      ];
+      const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+      const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+      const previousMonthStart = new Date(currentYear, currentMonth - 2, 1);
+      const previousMonthEnd = new Date(currentYear, currentMonth - 1, 0);
+  
+      const currentMonthQuery = {
+        createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd },
+      };
+      const previousMonthQuery = {
+        createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd },
+      };
+      let selectedMonthQuery = {};
+      let selectedYearQuery = {};
   
       if (selectedMonth) {
         const [year, month] = selectedMonth.split("-").map(Number);
         const selectedMonthStart = new Date(year, month - 1, 1);
         const selectedMonthEnd = new Date(year, month, 0);
-        filters.push({
-          label: "selectedMonth",
-          dateFilter: {
-            createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd }
-          }
-        });
+        selectedMonthQuery = {
+          createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+        };
       }
   
       if (selectedYear) {
-        const year = Number(selectedYear);
-        const selectedYearStart = new Date(year, 0, 1);
-        const selectedYearEnd = new Date(year, 11, 31, 23, 59, 59);
-        filters.push({
-          label: "selectedYear",
-          dateFilter: {
-            createdAt: { $gte: selectedYearStart, $lte: selectedYearEnd }
-          }
-        });
+        const yearStart = new Date(selectedYear, 0, 1);
+        const yearEnd = new Date(selectedYear, 11, 31);
+        selectedYearQuery = {
+          createdAt: { $gte: yearStart, $lte: yearEnd },
+        };
       }
   
-      const statusCounts = await Promise.all(
-        filters.map(async ({ label, dateFilter }) => {
-          const counts = await Lead.aggregate([
-            { $match: dateFilter },
-            { $group: { _id: "$status", count: { $sum: 1 } } },
-            { $project: { _id: 0, status: "$_id", count: 1 } }
-          ]);
-          return { label, counts };
-        })
-      );
+      const statusCounts = async (query) => {
+        const counts = await Lead.aggregate([
+          { $match: query },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+        const result = {};
+        counts.forEach(({ _id, count }) => {
+          result[_id] = count;
+        });
+        return result;
+      };
   
-      const response = {};
-      statusCounts.forEach(({ label, counts }) => {
-        response[label] = counts.reduce((acc, { status, count }) => {
-          acc[status] = count;
-          return acc;
-        }, {});
+      const [currentMonthCounts, previousMonthCounts, selectedMonthCounts, selectedYearCounts] = await Promise.all([
+        statusCounts(currentMonthQuery),
+        statusCounts(previousMonthQuery),
+        selectedMonth ? statusCounts(selectedMonthQuery) : Promise.resolve({}),
+        selectedYear ? statusCounts(selectedYearQuery) : Promise.resolve({}),
+      ]);
+  
+      res.status(200).json({
+        currentMonth: currentMonthCounts,
+        previousMonth: previousMonthCounts,
+        ...(selectedMonth && { selectedMonth: selectedMonthCounts }),
+        ...(selectedYear && { selectedYear: selectedYearCounts }),
       });
-  
-      res.status(200).json(response);
     } catch (error) {
-      console.log("error in getLeadStatusComparison", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("Error fetching lead status comparison:", error);
+      res.status(500).json({ message: "Server error" });
     }
   };
