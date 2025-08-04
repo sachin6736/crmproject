@@ -163,7 +163,7 @@ export const createLeadBySalesperson = async (req, res, next) => {
       trim,
     } = req.body;
 
-    const salesPersonId = req.user.id;
+    const salesPersonId = req.user.id;  
 
     // Fetch salesperson details
     const salesperson = await User.findById(salesPersonId);

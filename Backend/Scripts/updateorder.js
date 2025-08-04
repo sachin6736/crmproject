@@ -85,7 +85,7 @@ mongoose
 
     try {
       const orders = await Order.find({}, { order_id: 1, procurementData: 1, _id: 1 });
-      if (orders.length === 0) {
+      if (orders.length === 0) {  
         console.log("✅ No orders found in the collection.");
         return;
       }
