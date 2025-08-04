@@ -24,6 +24,7 @@ const leadSchema = new mongoose.Schema({
     default: "Quoted",
   },
   salesPerson: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  createdBy: { type: Boolean, default: false },
   notes: [
     {
       text: String,
@@ -36,7 +37,7 @@ const leadSchema = new mongoose.Schema({
   shippingCost: { type: Number, default: 0 },
   grossProfit: { type: Number, default: 0 },
   totalCost: { type: Number, default: 0 },
-  warranty: { type: String, default: "0 months" }, // Changed to String
+  warranty: { type: String, default: "0 months" },
   createdAt: { type: Date, default: Date.now },
 });
 
