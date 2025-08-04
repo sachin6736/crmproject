@@ -157,21 +157,22 @@ export const updateOrderStatus = async (req, res) => {
         shippingCity: order.shippingCity,
         shippingState: order.shippingState,
         shippingZip: order.shippingZip,
-        weightAndDimensions: order.weightAndDimensions,
-        carrierName: order.carrierName,
-        trackingNumber: order.trackingNumber,
-        bolNumber: order.bolNumber,
-        trackingLink: order.trackingLink,
-        amount: order.amount,
+        weightAndDimensions: { weight: null, height: null, width: null }, // Set to empty
+        carrierName: "", // Set to empty string
+        trackingNumber: "", // Set to empty string
+        bolNumber: "", // Set to empty string
+        trackingLink: "", // Set to empty string
+        amount: order.amount, // Set to default minimum value
         status: "Locate Pending",
-        picturesReceivedFromYard: order.picturesReceivedFromYard,
-        picturesSentToCustomer: order.picturesSentToCustomer,
-        vendors: order.vendors.map(vendor => ({ ...vendor.toObject() })),
-        notes: order.notes.map(note => ({ ...note.toObject() })),
-        procurementnotes: order.procurementnotes.map(note => ({ ...note.toObject() })),
+        picturesReceivedFromYard: false, // Set to default false
+        picturesSentToCustomer: false, // Set to default false
+        vendors: [], // Set to empty array
+        notes: [], // Set to empty array
+        procurementnotes: [], // Set to empty array
       };
 
       const newOrder = new Order(newOrderData);
+      console.log('ananya',newOrder)
       await newOrder.save();
     }
 
