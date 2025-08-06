@@ -232,6 +232,179 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+  if (!isOpen) return null;
+
+  const { theme } = useTheme();
+
+  const statusColors = {
+    LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    POPending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    POSent: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    POConfirmed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    VendorPaymentPending: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    VendorPaymentConfirmed: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+    ShippingPending: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+    ShipOut: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+    Intransit: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+    Delivered: "bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200",
+    Replacement: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    Litigation: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+    ReplacementCancelled: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+    TotalOrders: "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
+  };
+
+  const lineColors = {
+    currentMonth: "#8884d8",
+    previousMonth: "#82ca9d",
+    selectedMonth: "#ff7300",
+    selectedYear: "#d81b60",
+  };
+
+  const statuses = [
+    "LocatePending",
+    "POPending",
+    "POSent",
+    "POConfirmed",
+    "VendorPaymentPending",
+    "VendorPaymentConfirmed",
+    "ShippingPending",
+    "ShipOut",
+    "Intransit",
+    "Delivered",
+    "Replacement",
+    "Litigation",
+    "ReplacementCancelled",
+    "TotalOrders",
+  ];
+
+  const calculateTotal = (data) => {
+    if (!data) return 0;
+    return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
+  };
+
+  const chartData = statuses.map(status => ({
+    status: status === "TotalOrders" ? "Total Orders" : status.replace(/([A-Z])/g, " $1").trim(),
+    currentMonth: status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0,
+    previousMonth: status === "TotalOrders" ? calculateTotal(statusComparison.previousMonth) : statusComparison.previousMonth?.[status] || 0,
+    ...(selectedMonth && statusComparison.selectedMonth ? { selectedMonth: status === "TotalOrders" ? calculateTotal(statusComparison.selectedMonth) : statusComparison.selectedMonth[status] || 0 } : {}),
+    ...(selectedYear && statusComparison.selectedYear ? { selectedYear: status === "TotalOrders" ? calculateTotal(statusComparison.selectedYear) : statusComparison.selectedYear[status] || 0 } : {}),
+  }));
+
+  const generateMonthOptions = () => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+      options.push({ value, label });
+    }
+    return options;
+  };
+
+  const generateYearOptions = () => {
+    const options = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    for (let i = currentYear - 5; i <= currentYear; i++) {
+      options.push({ value: String(i), label: String(i) });
+    }
+    return options;
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+      >
+        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <select
+              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+              value={selectedMonth || ""}
+              onChange={(e) => onMonthChange(e.target.value)}
+            >
+              <option value="">Select Month to Compare</option>
+              {generateMonthOptions().map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+            <select
+              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+              value={selectedYear || ""}
+              onChange={(e) => onYearChange(e.target.value)}
+            >
+              <option value="">Select Year to Compare</option>
+              {generateYearOptions().map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+              <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+              <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                  border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                  color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                  fontSize: '12px',
+                }}
+              />
+              <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+              <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
+              <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+              {selectedMonth && (
+                <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+              )}
+              {selectedYear && (
+                <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {statuses.map(status => (
+              <div
+                key={status}
+                className={`p-2 rounded-lg text-center ${statusColors[status]}`}
+              >
+                <span className="text-xs font-medium">
+                  {status === "TotalOrders"
+                    ? "Total Orders"
+                    : status.replace(/([A-Z])/g, " $1").trim()}
+                </span>
+                <div className="text-md font-bold">
+                  {status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-3">
+          <button
+            className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -259,6 +432,8 @@ const Dashboard = () => {
   const [statusComparison, setStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
 
   const statusColor = {
     Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
@@ -313,6 +488,43 @@ const Dashboard = () => {
     ),
   };
 
+  const lineColors = {
+    currentMonth: "#8884d8",
+    previousMonth: "#82ca9d",
+    selectedMonth: "#ff7300",
+    selectedYear: "#d81b60",
+  };
+
+  const statuses = [
+    "LocatePending",
+    "POPending",
+    "POSent",
+    "POConfirmed",
+    "VendorPaymentPending",
+    "VendorPaymentConfirmed",
+    "ShippingPending",
+    "ShipOut",
+    "Intransit",
+    "Delivered",
+    "Replacement",
+    "Litigation",
+    "ReplacementCancelled",
+    "TotalOrders",
+  ];
+
+  const calculateTotal = (data) => {
+    if (!data) return 0;
+    return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
+  };
+
+  const chartData = statuses.map(status => ({
+    status: status === "TotalOrders" ? "Total Orders" : status.replace(/([A-Z])/g, " $1").trim(),
+    currentMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.currentMonth) : orderStatusComparison.currentMonth?.[status] || 0,
+    previousMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.previousMonth) : orderStatusComparison.previousMonth?.[status] || 0,
+    ...(selectedMonth && orderStatusComparison.selectedMonth ? { selectedMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedMonth) : orderStatusComparison.selectedMonth[status] || 0 } : {}),
+    ...(selectedYear && orderStatusComparison.selectedYear ? { selectedYear: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedYear) : orderStatusComparison.selectedYear[status] || 0 } : {}),
+  }));
+
   useEffect(() => {
     const verifyRole = async () => {
       try {
@@ -347,21 +559,31 @@ const Dashboard = () => {
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
 
-        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, statusComparisonRes] = await Promise.all([
-          fetch("http://localhost:3000/Admin/getleadcount"),
-          fetch("http://localhost:3000/Admin/getcountbystatus"),
-          fetch("http://localhost:3000/Admin/getallorders"),
-          fetch("http://localhost:3000/Admin/getmyteam"),
-          fetch("http://localhost:3000/Admin/getLeadCreationCounts"),
-          fetch(`http://localhost:3000/Admin/getLeadStatusComparison${queryString}`),
+        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadStatusComparisonRes, orderStatusComparisonRes] = await Promise.all([
+          fetch("http://localhost:3000/Admin/getleadcount", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getcountbystatus", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getallorders", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getmyteam", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getLeadCreationCounts", { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getLeadStatusComparison${queryString}`, { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getOrderStatusComparison${queryString}`, { credentials: "include" }),
         ]);
+
+        if (!leadRes.ok) throw new Error("Failed to fetch lead count");
+        if (!statusRes.ok) throw new Error("Failed to fetch status counts");
+        if (!ordersRes.ok) throw new Error("Failed to fetch orders");
+        if (!usersRes.ok) throw new Error("Failed to fetch team users");
+        if (!creationCountsRes.ok) throw new Error("Failed to fetch lead creation counts");
+        if (!leadStatusComparisonRes.ok) throw new Error("Failed to fetch lead status comparison");
+        if (!orderStatusComparisonRes.ok) throw new Error("Failed to fetch order status comparison");
 
         const leadData = await leadRes.json();
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
         const usersData = await usersRes.json();
         const creationCountsData = await creationCountsRes.json();
-        const statusComparisonData = await statusComparisonRes.json();
+        const statusComparisonData = await leadStatusComparisonRes.json();
+        const orderStatusComparisonData = await orderStatusComparisonRes.json();
 
         setTotalClients(leadData.leadcount);
         setCountbystatus(statusData);
@@ -372,8 +594,9 @@ const Dashboard = () => {
           assignedAutomatically: creationCountsData.assignedAutomatically,
         });
         setStatusComparison(statusComparisonData);
+        setOrderStatusComparison(orderStatusComparisonData);
       } catch (error) {
-        toast.error("Error fetching dashboard data");
+        toast.error(`Error fetching dashboard data: ${error.message}`);
         console.error("Fetch data error:", error);
       } finally {
         setLoading(false);
@@ -387,14 +610,6 @@ const Dashboard = () => {
     const statusObj = countbystatus.find((item) => item._id === status);
     return statusObj ? statusObj.count : 0;
   };
-
-  const chartData = [
-    { month: "Jan", daily: 300, monthly: 2400 },
-    { month: "Feb", daily: 500, monthly: 1398 },
-    { month: "Mar", daily: 200, monthly: 9800 },
-    { month: "Apr", daily: 278, monthly: 3908 },
-    { month: "May", daily: 189, monthly: 4800 },
-  ];
 
   const handleAddUser = async () => {
     if (!newMember.name || !newMember.email || !newMember.role) {
@@ -572,7 +787,12 @@ const Dashboard = () => {
         {["Ordered", "Quoted"].map((status) => (
           <div
             key={status}
-            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4"
+            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+            onClick={() => {
+              if (status === "Ordered") {
+                setShowOrderDetailsModal(true);
+              }
+            }}
           >
             <h3 className="text-gray-500 dark:text-gray-300 text-lg">{status}</h3>
             <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
@@ -593,34 +813,73 @@ const Dashboard = () => {
 
       <div className="flex flex-wrap gap-6 p-6 sm:px-20">
         <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Sales Overview</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-              <XAxis dataKey="month" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} />
-              <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                  color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                }}
-              />
-              <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937' }} />
-              <Line
-                type="monotone"
-                dataKey="daily"
-                stroke="#8884d8"
-                name="Daily Sales"
-              />
-              <Line
-                type="monotone"
-                dataKey="monthly"
-                stroke="#82ca9d"
-                name="Monthly Sales"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <select
+                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                value={selectedMonth || ""}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                <option value="">Select Month to Compare</option>
+                {(() => {
+                  const options = [];
+                  const now = new Date();
+                  for (let i = 0; i < 12; i++) {
+                    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+                    const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+                    options.push({ value, label });
+                  }
+                  return options;
+                })().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <select
+                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                value={selectedYear || ""}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                <option value="">Select Year to Compare</option>
+                {(() => {
+                  const options = [];
+                  const now = new Date();
+                  const currentYear = now.getFullYear();
+                  for (let i = currentYear - 5; i <= currentYear; i++) {
+                    options.push({ value: String(i), label: String(i) });
+                  }
+                  return options;
+                })().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
+                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+                {selectedMonth && (
+                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+                )}
+                {selectedYear && (
+                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative">
@@ -1024,6 +1283,19 @@ const Dashboard = () => {
           createdByUser={leadCreationCounts.createdByUser}
           assignedAutomatically={leadCreationCounts.assignedAutomatically}
           statusComparison={statusComparison}
+          onMonthChange={setSelectedMonth}
+          onYearChange={setSelectedYear}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+        />
+        <OrderDetailsModal
+          isOpen={showOrderDetailsModal}
+          onClose={() => {
+            setShowOrderDetailsModal(false);
+            setSelectedMonth("");
+            setSelectedYear("");
+          }}
+          statusComparison={orderStatusComparison}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
           selectedMonth={selectedMonth}

@@ -1,5 +1,6 @@
 import Lead from "../models/lead.js";
 import User from "../models/user.js";
+import { Order } from "../models/order.js";
 
 export const getleadcount= async (req,res,next)=>{
     console.log("getleadcountworking")
@@ -134,6 +135,69 @@ export const getLeadCreationCounts = async (req, res, next) => {
       });
     } catch (error) {
       console.error("Error fetching lead status comparison:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
+
+  export const getOrderStatusComparison = async (req, res) => {
+    try {
+      const { selectedMonth, selectedYear } = req.query;
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+  
+      const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+      const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+      const previousMonthStart = new Date(currentYear, currentMonth - 2, 1);
+      const previousMonthEnd = new Date(currentYear, currentMonth - 1, 0);
+  
+      let selectedMonthQuery = {};
+      let selectedYearQuery = {};
+  
+      if (selectedMonth) {
+        const [year, month] = selectedMonth.split("-").map(Number);
+        const selectedMonthStart = new Date(year, month - 1, 1);
+        const selectedMonthEnd = new Date(year, month, 0);
+        selectedMonthQuery = {
+          createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+        };
+      }
+  
+      if (selectedYear) {
+        const yearStart = new Date(selectedYear, 0, 1);
+        const yearEnd = new Date(selectedYear, 11, 31);
+        selectedYearQuery = {
+          createdAt: { $gte: yearStart, $lte: yearEnd },
+        };
+      }
+  
+      const statusCounts = async (query) => {
+        const counts = await Order.aggregate([
+          { $match: query },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+        const result = {};
+        counts.forEach(({ _id, count }) => {
+          result[_id.replace(" ", "")] = count; // Normalize status keys (e.g., "Locate Pending" to "LocatePending")
+        });
+        return result;
+      };
+  
+      const [currentMonthCounts, previousMonthCounts, selectedMonthCounts, selectedYearCounts] = await Promise.all([
+        statusCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+        statusCounts({ createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } }),
+        selectedMonth ? statusCounts(selectedMonthQuery) : Promise.resolve({}),
+        selectedYear ? statusCounts(selectedYearQuery) : Promise.resolve({}),
+      ]);
+  
+      res.status(200).json({
+        currentMonth: currentMonthCounts,
+        previousMonth: previousMonthCounts,
+        ...(selectedMonth && { selectedMonth: selectedMonthCounts }),
+        ...(selectedYear && { selectedYear: selectedYearCounts }),
+      });
+    } catch (error) {
+      console.error("Error fetching order status comparison:", error);
       res.status(500).json({ message: "Server error" });
     }
   };
