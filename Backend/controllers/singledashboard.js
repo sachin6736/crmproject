@@ -1,24 +1,350 @@
 import Lead from "../models/lead.js";
 import User from "../models/user.js";
 import StatusLog from "../models/statusLog.js";
+import { Order } from "../models/order.js";
+import mongoose from 'mongoose'
 
 
-export const singleleads = async(req,res,next)=>{
-    console.log("singlesales working")
-    const userId = req.user?.id;
-    console.log("user by singlesales",userId)
-    try {
-        if (req.user.role !== 'sales') {
-          return res.status(403).json({ message: 'Access denied' });
-        }
-    
-        const leads = await Lead.find({ salesPerson: req.user.id }).sort({ createdAt: -1 });    
-        res.json(leads);
-      } catch (error) {
-        console.error('Error fetching sales leads:', error);
-        res.status(500).json({ message: 'Server error' });
-      }
-}
+export const singleleads = async (req, res, next) => {
+  console.log("singlesales working");
+  const userId = req.user?.id;
+  console.log("user by singlesales", userId);
+  try {
+    if (req.user.role !== 'sales') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const leads = await Lead.find({ salesPerson: req.user.id }).sort({ createdAt: -1 });
+    res.json(leads);
+    console.log("thsi are leads",leads)
+  } catch (error) {
+    console.error('Error fetching sales leads:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getsingleorders = async (req, res, next) => {
+  console.log("getsingleorders working");
+  const userId = req.user?.id;
+  try {
+    if (req.user.role !== 'sales') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const orders = await Order.find({ salesPerson: userId })
+      .populate('leadId', 'partRequested')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formattedOrders = orders.map(order => ({
+      ...order,
+      partRequested: order.leadId?.partRequested || 'N/A',
+    }));
+
+    res.json(formattedOrders);
+  } catch (error) {
+    console.error('Error fetching sales orders:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getOrderStatusComparison = async (req, res, next) => {
+  console.log("getOrderStatusComparison working");
+  const userId = req.user?.id;
+  console.log("userId:", userId);
+  console.log("req.query:", req.query); // Log query parameters
+
+  // Destructure with defaults to avoid undefined
+  const { selectedMonth = '', selectedYear = '' } = req.query;
+
+  try {
+    if (req.user?.role !== 'sales') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const now = new Date();
+    const currentYear = now.getUTCFullYear(); // 2025
+    const currentMonth = now.getUTCMonth(); // 7 (August, 0-indexed)
+    const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1)); // 2025-08-01
+    const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999)); // 2025-08-31
+    const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1)); // 2025-07-01
+    const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999)); // 2025-07-31
+
+    console.log("currentMonthStart:", currentMonthStart, "currentMonthEnd:", currentMonthEnd);
+    console.log("previousMonthStart:", previousMonthStart, "previousMonthEnd:", previousMonthEnd);
+
+    let selectedMonthStart, selectedMonthEnd, selectedYearStart, selectedYearEnd;
+
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      selectedMonthStart = new Date(Date.UTC(year, month - 1, 1));
+      selectedMonthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+      console.log("selectedMonthStart:", selectedMonthStart, "selectedMonthEnd:", selectedMonthEnd);
+    }
+
+    if (selectedYear) {
+      selectedYearStart = new Date(Date.UTC(Number(selectedYear), 0, 1));
+      selectedYearEnd = new Date(Date.UTC(Number(selectedYear), 11, 31, 23, 59, 59, 999));
+      console.log("selectedYearStart:", selectedYearStart, "selectedYearEnd:", selectedYearEnd);
+    }
+
+    const query = { salesPerson: new mongoose.Types.ObjectId(userId) };
+
+    const currentMonthOrders = await Order.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    console.log("currentMonthOrders:", currentMonthOrders);
+
+    const previousMonthOrders = await Order.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    console.log("previousMonthOrders:", previousMonthOrders);
+
+    let selectedMonthOrders = [];
+    if (selectedMonth) {
+      selectedMonthOrders = await Order.aggregate([
+        {
+          $match: {
+            ...query,
+            createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+          },
+        },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+      console.log("selectedMonthOrders:", selectedMonthOrders);
+    }
+
+    let selectedYearOrders = [];
+    if (selectedYear) {
+      selectedYearOrders = await Order.aggregate([
+        {
+          $match: {
+            ...query,
+            createdAt: { $gte: selectedYearStart, $lte: selectedYearEnd },
+          },
+        },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+      console.log("selectedYearOrders:", selectedYearOrders);
+    }
+
+    const formatData = (orders) =>
+      orders.reduce((acc, { _id, count }) => {
+        const normalizedKey = _id.replace(/\s+/g, '');
+        acc[normalizedKey] = count;
+        return acc;
+      }, {});
+
+    const response = {
+      currentMonth: formatData(currentMonthOrders),
+      previousMonth: formatData(previousMonthOrders),
+      ...(selectedMonth ? { selectedMonth: formatData(selectedMonthOrders) } : {}),
+      ...(selectedYear ? { selectedYear: formatData(selectedYearOrders) } : {}),
+    };
+
+    console.log("Response:", response);
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching order status comparison:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getLeadStatusComparison = async (req, res, next) => {
+  console.log("getLeadStatusComparison working");
+  const userId = req.user?.id;
+  console.log("userId:", userId);
+  console.log("req.query:", req.query); // Log query parameters
+
+  // Destructure with defaults to avoid undefined
+  const { selectedMonth = '', selectedYear = '' } = req.query;
+
+  try {
+    if (req.user?.role !== 'sales') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const now = new Date();
+    const currentYear = now.getUTCFullYear(); // 2025
+    const currentMonth = now.getUTCMonth(); // 7 (August, 0-indexed)
+    const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1)); // 2025-08-01
+    const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999)); // 2025-08-31
+    const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1)); // 2025-07-01
+    const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999)); // 2025-07-31
+
+    console.log("currentMonthStart:", currentMonthStart, "currentMonthEnd:", currentMonthEnd);
+    console.log("previousMonthStart:", previousMonthStart, "previousMonthEnd:", previousMonthEnd);
+
+    let selectedMonthStart, selectedMonthEnd, selectedYearStart, selectedYearEnd;
+
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      selectedMonthStart = new Date(Date.UTC(year, month - 1, 1));
+      selectedMonthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+      console.log("selectedMonthStart:", selectedMonthStart, "selectedMonthEnd:", selectedMonthEnd);
+    }
+
+    if (selectedYear) {
+      selectedYearStart = new Date(Date.UTC(Number(selectedYear), 0, 1));
+      selectedYearEnd = new Date(Date.UTC(Number(selectedYear), 11, 31, 23, 59, 59, 999));
+      console.log("selectedYearStart:", selectedYearStart, "selectedYearEnd:", selectedYearEnd);
+    }
+
+    const query = { salesPerson: new mongoose.Types.ObjectId(userId) };
+
+    const currentMonthLeads = await Lead.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    console.log("currentMonthLeads:", currentMonthLeads);
+
+    const previousMonthLeads = await Lead.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    console.log("previousMonthLeads:", previousMonthLeads);
+
+    let selectedMonthLeads = [];
+    if (selectedMonth) {
+      selectedMonthLeads = await Lead.aggregate([
+        {
+          $match: {
+            ...query,
+            createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+          },
+        },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+      console.log("selectedMonthLeads:", selectedMonthLeads);
+    }
+
+    let selectedYearLeads = [];
+    if (selectedYear) {
+      selectedYearLeads = await Lead.aggregate([
+        {
+          $match: {
+            ...query,
+            createdAt: { $gte: selectedYearStart, $lte: selectedYearEnd },
+          },
+        },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+      console.log("selectedYearLeads:", selectedYearLeads);
+    }
+
+    const formatData = (leads) =>
+      leads.reduce((acc, { _id, count }) => {
+        const normalizedKey = _id.replace(/\s+/g, '');
+        acc[normalizedKey] = count;
+        return acc;
+      }, {});
+
+    const response = {
+      currentMonth: formatData(currentMonthLeads),
+      previousMonth: formatData(previousMonthLeads),
+      ...(selectedMonth ? { selectedMonth: formatData(selectedMonthLeads) } : {}),
+      ...(selectedYear ? { selectedYear: formatData(selectedYearLeads) } : {}),
+    };
+
+    console.log("Response:", response);
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching lead status comparison:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+export const getLeadCreationCounts = async (req, res, next) => {
+  console.log("getLeadCreationCounts working");
+  const userId = req.user?.id;
+
+  try {
+    if (req.user.role !== 'sales') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Count leads where the user is the salesPerson and createdBy is true (manually created)
+    const createdByUser = await Lead.countDocuments({
+      salesPerson: userId,
+      createdBy: true,
+    });
+
+    // Count leads where the user is the salesPerson and createdBy is false (automatically assigned)
+    const assignedAutomatically = await Lead.countDocuments({
+      salesPerson: userId,
+      createdBy: false,
+    });
+
+    res.json({
+      createdByUser,
+      assignedAutomatically,
+    });
+  } catch (error) {
+    console.error('Error fetching lead creation counts:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 
 export const changestatus = async (req, res, next) => {
