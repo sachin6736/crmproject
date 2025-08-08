@@ -232,7 +232,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison, amountTotals, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
@@ -326,79 +326,104 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, o
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
+        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Details</h3>
         <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <select
-              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedMonth || ""}
-              onChange={(e) => onMonthChange(e.target.value)}
-            >
-              <option value="">Select Month to Compare</option>
-              {generateMonthOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-            <select
-              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedYear || ""}
-              onChange={(e) => onYearChange(e.target.value)}
-            >
-              <option value="">Select Year to Compare</option>
-              {generateYearOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-              <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-              <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                  color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                  fontSize: '12px',
-                }}
-              />
-              <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-              <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
-              <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
-              {selectedMonth && (
-                <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
-              )}
-              {selectedYear && (
-                <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {statuses.map(status => (
-              <div
-                key={status}
-                className={`p-2 rounded-lg text-center ${statusColors[status]}`}
-              >
-                <span className="text-xs font-medium">
-                  {status === "TotalOrders"
-                    ? "Total Orders"
-                    : status.replace(/([A-Z])/g, " $1").trim()}
-                </span>
-                <div className="text-md font-bold">
-                  {status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Total Amount</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.today.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Total</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.currentMonth.toFixed(2)}</span>
+            </div>
+            {selectedMonth && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Total</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.selectedMonth.toFixed(2)}</span>
               </div>
-            ))}
+            )}
+            {selectedYear && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Total</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.selectedYear.toFixed(2)}</span>
+              </div>
+            )}
           </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-3">
-          <button
-            className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Order Status Comparison</h4>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <select
+                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                value={selectedMonth || ""}
+                onChange={(e) => onMonthChange(e.target.value)}
+              >
+                <option value="">Select Month to Compare</option>
+                {generateMonthOptions().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <select
+                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                value={selectedYear || ""}
+                onChange={(e) => onYearChange(e.target.value)}
+              >
+                <option value="">Select Year to Compare</option>
+                {generateYearOptions().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
+                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+                {selectedMonth && (
+                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+                )}
+                {selectedYear && (
+                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {statuses.map(status => (
+                <div
+                  key={status}
+                  className={`p-2 rounded-lg text-center ${statusColors[status]}`}
+                >
+                  <span className="text-xs font-medium">
+                    {status === "TotalOrders"
+                      ? "Total Orders"
+                      : status.replace(/([A-Z])/g, " $1").trim()}
+                  </span>
+                  <div className="text-md font-bold">
+                    {status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-3">
+            <button
+              className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -434,11 +459,7 @@ const Dashboard = () => {
   const [selectedYear, setSelectedYear] = useState("");
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
-
-  const statusColor = {
-    Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    Ordered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  };
+  const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0 });
 
   const statusIcons = {
     Available: (
@@ -559,7 +580,7 @@ const Dashboard = () => {
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
 
-        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadStatusComparisonRes, orderStatusComparisonRes] = await Promise.all([
+        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadStatusComparisonRes, orderStatusComparisonRes, orderAmountTotalsRes] = await Promise.all([
           fetch("http://localhost:3000/Admin/getleadcount", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getcountbystatus", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getallorders", { credentials: "include" }),
@@ -567,6 +588,7 @@ const Dashboard = () => {
           fetch("http://localhost:3000/Admin/getLeadCreationCounts", { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getLeadStatusComparison${queryString}`, { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getOrderStatusComparison${queryString}`, { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getOrderAmountTotals${queryString}`, { credentials: "include" }),
         ]);
 
         if (!leadRes.ok) throw new Error("Failed to fetch lead count");
@@ -576,6 +598,7 @@ const Dashboard = () => {
         if (!creationCountsRes.ok) throw new Error("Failed to fetch lead creation counts");
         if (!leadStatusComparisonRes.ok) throw new Error("Failed to fetch lead status comparison");
         if (!orderStatusComparisonRes.ok) throw new Error("Failed to fetch order status comparison");
+        if (!orderAmountTotalsRes.ok) throw new Error("Failed to fetch order amount totals");
 
         const leadData = await leadRes.json();
         const statusData = await statusRes.json();
@@ -584,6 +607,7 @@ const Dashboard = () => {
         const creationCountsData = await creationCountsRes.json();
         const statusComparisonData = await leadStatusComparisonRes.json();
         const orderStatusComparisonData = await orderStatusComparisonRes.json();
+        const orderAmountTotalsData = await orderAmountTotalsRes.json();
 
         setTotalClients(leadData.leadcount);
         setCountbystatus(statusData);
@@ -595,6 +619,7 @@ const Dashboard = () => {
         });
         setStatusComparison(statusComparisonData);
         setOrderStatusComparison(orderStatusComparisonData);
+        setOrderAmountTotals(orderAmountTotalsData);
       } catch (error) {
         toast.error(`Error fetching dashboard data: ${error.message}`);
         console.error("Fetch data error:", error);
@@ -714,7 +739,6 @@ const Dashboard = () => {
       } else if (action === "Grant Access" || action === "Revoke Access") {
         setIsAccessLoading(true);
         const newAccess = action === "Grant Access";
-        console.log(`Sending access: ${newAccess} for userId: ${userId}`);
         const res = await fetch(
           `http://localhost:3000/User/${userId}/access`,
           {
@@ -726,8 +750,6 @@ const Dashboard = () => {
         );
 
         const data = await res.json();
-        console.log(`Response status: ${res.status}, data:`, data);
-
         if (res.status === 403) {
           toast.error("Access denied, admin access required");
           return;
@@ -745,13 +767,11 @@ const Dashboard = () => {
           return;
         }
 
-        setTeamUsers((prevUsers) => {
-          const updatedUsers = prevUsers.map((user) =>
+        setTeamUsers((prevUsers) =>
+          prevUsers.map((user) =>
             user._id === userId ? { ...user, Access: newAccess } : user
-          );
-          console.log("Updated teamUsers:", updatedUsers);
-          return updatedUsers;
-        });
+          )
+        );
         toast.success(`Access ${newAccess ? "granted" : "revoked"} successfully`);
       }
     } catch (error) {
@@ -807,6 +827,14 @@ const Dashboard = () => {
           <h3 className="text-gray-500 dark:text-gray-300 text-lg">Total Clients</h3>
           <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
             {totalClients}
+          </span>
+        </div>
+        <div
+          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4"
+        >
+          <h3 className="text-gray-500 dark:text-gray-300 text-lg">Today's Total Amount</h3>
+          <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+            ${orderAmountTotals.today.toFixed(2)}
           </span>
         </div>
       </div>
@@ -893,7 +921,7 @@ const Dashboard = () => {
             </button>
           </div>
           <ul className="space-y-4 max-h-72 overflow-y-auto pr-2">
-            {teamUsers.map((member, index) => (
+            {teamUsers.map((member) => (
               <li
                 key={member._id}
                 className="relative flex items-center justify-between space-x-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
@@ -1250,8 +1278,8 @@ const Dashboard = () => {
                         setShowRoleModal(false);
                         setSelectedRole("");
                         setCurrentRole("");
-                      } catch (error) {
-                        console.error("Change role error:", error);
+                      } catch (err) {
+                        console.error("Role change error:", err);
                         toast.error("Failed to change role");
                       }
                     }}
@@ -1263,110 +1291,44 @@ const Dashboard = () => {
             </motion.div>
           </motion.div>
         )}
-        <ConfirmationModal
-          isOpen={showConfirmModal}
-          onConfirm={() => {
-            handleUserAction(confirmAction, confirmUserId);
-            setShowConfirmModal(false);
-          }}
-          onCancel={() => setShowConfirmModal(false)}
-          action={confirmAction}
-          userName={confirmUserName}
-        />
-        <LeadDetailsModal
-          isOpen={showLeadDetailsModal}
-          onClose={() => {
-            setShowLeadDetailsModal(false);
-            setSelectedMonth("");
-            setSelectedYear("");
-          }}
-          createdByUser={leadCreationCounts.createdByUser}
-          assignedAutomatically={leadCreationCounts.assignedAutomatically}
-          statusComparison={statusComparison}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
-        <OrderDetailsModal
-          isOpen={showOrderDetailsModal}
-          onClose={() => {
-            setShowOrderDetailsModal(false);
-            setSelectedMonth("");
-            setSelectedYear("");
-          }}
-          statusComparison={orderStatusComparison}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
+        {showConfirmModal && (
+          <ConfirmationModal
+            isOpen={showConfirmModal}
+            onConfirm={() => {
+              handleUserAction(confirmAction, confirmUserId);
+              setShowConfirmModal(false);
+            }}
+            onCancel={() => setShowConfirmModal(false)}
+            action={confirmAction}
+            userName={confirmUserName}
+          />
+        )}
+        {showLeadDetailsModal && (
+          <LeadDetailsModal
+            isOpen={showLeadDetailsModal}
+            onClose={() => setShowLeadDetailsModal(false)}
+            createdByUser={leadCreationCounts.createdByUser}
+            assignedAutomatically={leadCreationCounts.assignedAutomatically}
+            statusComparison={statusComparison}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
+        )}
+        {showOrderDetailsModal && (
+          <OrderDetailsModal
+            isOpen={showOrderDetailsModal}
+            onClose={() => setShowOrderDetailsModal(false)}
+            statusComparison={orderStatusComparison}
+            amountTotals={orderAmountTotals}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
+        )}
       </AnimatePresence>
-
-      <div className="flex flex-wrap gap-6 p-6 sm:px-20">
-        <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow"></div>
-        <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow"></div>
-      </div>
-
-      <div className="w-full px-4 sm:px-20 py-8">
-        <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
-            <div className="space-x-2">
-              <button className="px-4 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                Filter
-              </button>
-              <button className="px-4 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                See all
-              </button>
-            </div>
-          </div>
-
-          <table className="min-w-[700px] w-full table-auto">
-            <thead>
-              <tr className="text-left text-sm text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-                <th className="p-2">Client Name</th>
-                <th className="p-2 pl-14">Email</th>
-                <th className="p-2">Part Requested</th>
-                <th className="p-2">Close Date</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order, index) => (
-                <tr key={index} className="border-b border-gray-200 dark:border-gray-700 text-sm">
-                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.clientName}</td>
-                  <td className="p-2 flex items-center gap-2">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                        order.color || "bg-blue-400 dark:bg-blue-600"
-                      }`}
-                    >
-                      {order.email[0]?.toUpperCase()}
-                    </div>
-                    <div className="text-gray-500 dark:text-gray-400">{order.email}</div>
-                  </td>
-                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.partRequested}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.date}</td>
-                  <td className="p-2">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full font-medium ${
-                        statusColor[order.status]
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="p-2">
-                    <Trash2 className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 cursor-pointer" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 };
