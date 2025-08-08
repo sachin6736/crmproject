@@ -14,7 +14,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useTheme } from '../context/ThemeContext';
+
+const localizer = momentLocalizer(moment);
 
 const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
   if (!isOpen) return null;
@@ -379,6 +384,7 @@ const SalesDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showLeadDetailsModal, setShowLeadDetailsModal] = useState(false);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState([]);
 
   const statusColor = {
     Quoted: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
@@ -475,6 +481,17 @@ const SalesDashboard = () => {
           createdByUser: leadCreationCountsData.createdByUser,
           assignedAutomatically: leadCreationCountsData.assignedAutomatically,
         });
+
+        // Process importantDates for calendar events
+        const events = leadsData.flatMap(lead =>
+          lead.importantDates.map(date => ({
+            title: `${lead.clientName} - ${lead.partRequested}`,
+            start: new Date(date),
+            end: new Date(date),
+            allDay: true,
+          }))
+        );
+        setCalendarEvents(events);
       } catch (error) {
         toast.error(`Error fetching data: ${error.message}`);
         console.error('Error fetching sales data:', error);
@@ -503,6 +520,20 @@ const SalesDashboard = () => {
       toast.error('Network error: Unable to delete order');
       console.error('Error deleting order:', error);
     }
+  };
+
+  // Custom event styling for react-big-calendar
+  const eventStyleGetter = (event, start, end, isSelected) => {
+    return {
+      style: {
+        backgroundColor: '#ef4444', // Red for important dates
+        borderRadius: '5px',
+        opacity: 0.8,
+        color: 'white',
+        border: '0px',
+        display: 'block',
+      },
+    };
   };
 
   if (loading) {
@@ -575,7 +606,7 @@ const SalesDashboard = () => {
                 ))}
               </select>
               <select
-                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                className="w-full sm:w-1/2 border p-1.5 Standardization of code by making consistent use of single or double quotes rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value)}
               >
@@ -622,9 +653,15 @@ const SalesDashboard = () => {
 
         <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Calendar</h3>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Calendar integration coming soon
-          </p>
+          <Calendar
+            localizer={localizer}
+            events={calendarEvents}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 300 }}
+            eventPropGetter={eventStyleGetter}
+            className="rbc-calendar-custom"
+          />
         </div>
       </div>
 
