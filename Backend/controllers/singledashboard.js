@@ -2,8 +2,7 @@ import Lead from "../models/lead.js";
 import User from "../models/user.js";
 import StatusLog from "../models/statusLog.js";
 import { Order } from "../models/order.js";
-import mongoose from 'mongoose'
-
+import mongoose from 'mongoose';
 
 export const singleleads = async (req, res, next) => {
   console.log("singlesales working");
@@ -16,7 +15,7 @@ export const singleleads = async (req, res, next) => {
 
     const leads = await Lead.find({ salesPerson: req.user.id }).sort({ createdAt: -1 });
     res.json(leads);
-    console.log("thsi are leads",leads)
+    console.log("these are leads", leads);
   } catch (error) {
     console.error('Error fetching sales leads:', error);
     res.status(500).json({ message: 'Server error' });
@@ -52,9 +51,8 @@ export const getOrderStatusComparison = async (req, res, next) => {
   console.log("getOrderStatusComparison working");
   const userId = req.user?.id;
   console.log("userId:", userId);
-  console.log("req.query:", req.query); // Log query parameters
+  console.log("req.query:", req.query);
 
-  // Destructure with defaults to avoid undefined
   const { selectedMonth = '', selectedYear = '' } = req.query;
 
   try {
@@ -63,12 +61,12 @@ export const getOrderStatusComparison = async (req, res, next) => {
     }
 
     const now = new Date();
-    const currentYear = now.getUTCFullYear(); // 2025
-    const currentMonth = now.getUTCMonth(); // 7 (August, 0-indexed)
-    const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1)); // 2025-08-01
-    const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999)); // 2025-08-31
-    const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1)); // 2025-07-01
-    const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999)); // 2025-07-31
+    const currentYear = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth();
+    const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999));
+    const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+    const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
 
     console.log("currentMonthStart:", currentMonthStart, "currentMonthEnd:", currentMonthEnd);
     console.log("previousMonthStart:", previousMonthStart, "previousMonthEnd:", previousMonthEnd);
@@ -186,9 +184,8 @@ export const getLeadStatusComparison = async (req, res, next) => {
   console.log("getLeadStatusComparison working");
   const userId = req.user?.id;
   console.log("userId:", userId);
-  console.log("req.query:", req.query); // Log query parameters
+  console.log("req.query:", req.query);
 
-  // Destructure with defaults to avoid undefined
   const { selectedMonth = '', selectedYear = '' } = req.query;
 
   try {
@@ -197,12 +194,12 @@ export const getLeadStatusComparison = async (req, res, next) => {
     }
 
     const now = new Date();
-    const currentYear = now.getUTCFullYear(); // 2025
-    const currentMonth = now.getUTCMonth(); // 7 (August, 0-indexed)
-    const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1)); // 2025-08-01
-    const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999)); // 2025-08-31
-    const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1)); // 2025-07-01
-    const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999)); // 2025-07-31
+    const currentYear = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth();
+    const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999));
+    const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+    const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
 
     console.log("currentMonthStart:", currentMonthStart, "currentMonthEnd:", currentMonthEnd);
     console.log("previousMonthStart:", previousMonthStart, "previousMonthEnd:", previousMonthEnd);
@@ -315,6 +312,7 @@ export const getLeadStatusComparison = async (req, res, next) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 export const getLeadCreationCounts = async (req, res, next) => {
   console.log("getLeadCreationCounts working");
   const userId = req.user?.id;
@@ -324,13 +322,11 @@ export const getLeadCreationCounts = async (req, res, next) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Count leads where the user is the salesPerson and createdBy is true (manually created)
     const createdByUser = await Lead.countDocuments({
       salesPerson: userId,
       createdBy: true,
     });
 
-    // Count leads where the user is the salesPerson and createdBy is false (automatically assigned)
     const assignedAutomatically = await Lead.countDocuments({
       salesPerson: userId,
       createdBy: false,
@@ -345,7 +341,6 @@ export const getLeadCreationCounts = async (req, res, next) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 
 export const changestatus = async (req, res, next) => {
   try {
@@ -363,7 +358,6 @@ export const changestatus = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
-    // Log status change
     const statusLog = new StatusLog({
       userId: id,
       status,
@@ -385,13 +379,11 @@ export const getStatusDurations = async (req, res, next) => {
     const { date } = req.query;
     console.log("date", date);
 
-    // Verify admin access
     if (req.user.role !== "admin") {
       console.log("admin access");
       return res.status(403).json({ message: "Unauthorized. Admin access required." });
     }
 
-    // Validate date
     if (!date) {
       console.log("no date");
       return res.status(400).json({ message: "Date parameter is required." });
@@ -402,11 +394,9 @@ export const getStatusDurations = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid date format." });
     }
 
-    // Set start and end of the day
     const startOfDay = new Date(selectedDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(selectedDate.setHours(23, 59, 59, 999));
 
-    // Determine if the selected date is today
     const now = new Date();
     const isToday =
       selectedDate.getFullYear() === now.getFullYear() &&
@@ -414,7 +404,6 @@ export const getStatusDurations = async (req, res, next) => {
       selectedDate.getDate() === now.getDate();
     const endTime = isToday ? now : endOfDay;
 
-    // Build query
     const query = {
       userId,
       timestamp: {
@@ -423,7 +412,6 @@ export const getStatusDurations = async (req, res, next) => {
       },
     };
 
-    // Fetch logs
     const logs = await StatusLog.find(query)
       .sort({ timestamp: 1 })
       .lean();
@@ -432,7 +420,6 @@ export const getStatusDurations = async (req, res, next) => {
       return res.status(200).json({ message: "No status logs found for the selected date.", durations: {} });
     }
 
-    // Initialize durations
     const durations = {
       Available: 0,
       OnBreak: 0,
@@ -441,30 +428,25 @@ export const getStatusDurations = async (req, res, next) => {
       LoggedOut: 0,
     };
 
-    // Calculate durations for all logs except the last
     for (let i = 0; i < logs.length - 1; i++) {
       const currentLog = logs[i];
       const nextLog = logs[i + 1];
       const durationMs = nextLog.timestamp - currentLog.timestamp;
       if (durationMs > 0) {
-        durations[currentLog.status] += durationMs / (1000 * 60 * 60); // Hours
+        durations[currentLog.status] += durationMs / (1000 * 60 * 60);
       }
     }
 
-    // Handle the last log
     const lastLog = logs[logs.length - 1];
     if (lastLog.status === "LoggedOut") {
-      // Assign 0 duration for "LoggedOut" status
       durations[lastLog.status] = 0;
     } else {
-      // Calculate duration up to endTime (current time for today, endOfDay for past dates)
       const lastDurationMs = endTime - lastLog.timestamp;
       if (lastDurationMs > 0) {
-        durations[lastLog.status] += lastDurationMs / (1000 * 60 * 60); // Hours
+        durations[lastLog.status] += lastDurationMs / (1000 * 60 * 60);
       }
     }
 
-    // Round to 2 decimal places
     Object.keys(durations).forEach((key) => {
       durations[key] = Number(durations[key].toFixed(2));
     });
@@ -477,14 +459,90 @@ export const getStatusDurations = async (req, res, next) => {
   }
 };
 
-export const getAllUsers =  async (req,res,next)=>{
-    console.log("getusers controller working")
-    try {
-        const team = await User.find({}, "name email role isPaused status createdAt")
-        console.log("my team",team)
-        res.status(200).json(team)
-    } catch (error) {
-        console.log("error in getting team",error)
-        res.status(500).json({error:"an error occured"})
+export const getAllUsers = async (req, res, next) => {
+  console.log("getusers controller working");
+  try {
+    const team = await User.find({}, "name email role isPaused status createdAt");
+    console.log("my team", team);
+    res.status(200).json(team);
+  } catch (error) {
+    console.log("error in getting team", error);
+    res.status(500).json({ error: "an error occurred" });
+  }
+};
+
+export const getOrderAmountTotals = async (req, res) => {
+  console.log("getOrderAmountTotals working");
+  const userId = req.user?.id;
+  console.log("userId:", userId);
+  console.log("req.query:", req.query);
+
+  try {
+    if (req.user?.role !== 'sales') {
+      return res.status(403).json({ message: 'Access denied' });
     }
-}
+
+    const { selectedMonth = '', selectedYear = '' } = req.query;
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth() + 1;
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+
+    const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+    const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
+
+    let selectedMonthQuery = { salesPerson: new mongoose.Types.ObjectId(userId) };
+    let selectedYearQuery = { salesPerson: new mongoose.Types.ObjectId(userId) };
+
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const selectedMonthStart = new Date(Date.UTC(year, month - 1, 1));
+      const selectedMonthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+      selectedMonthQuery.createdAt = { $gte: selectedMonthStart, $lte: selectedMonthEnd };
+      console.log("selectedMonthStart:", selectedMonthStart, "selectedMonthEnd:", selectedMonthEnd);
+    }
+
+    if (selectedYear) {
+      const yearStart = new Date(Date.UTC(Number(selectedYear), 0, 1));
+      const yearEnd = new Date(Date.UTC(Number(selectedYear), 11, 31, 23, 59, 59, 999));
+      selectedYearQuery.createdAt = { $gte: yearStart, $lte: yearEnd };
+      console.log("selectedYearStart:", yearStart, "selectedYearEnd:", yearEnd);
+    }
+
+    const amountTotals = async (query) => {
+      const result = await Order.aggregate([
+        { $match: query },
+        { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
+      ]);
+      return result.length > 0 ? result[0].totalAmount : 0;
+    };
+
+    const [todayTotal, currentMonthTotal, selectedMonthTotal, selectedYearTotal] = await Promise.all([
+      amountTotals({ salesPerson: new mongoose.Types.ObjectId(userId), createdAt: { $gte: todayStart, $lte: todayEnd } }),
+      amountTotals({ salesPerson: new mongoose.Types.ObjectId(userId), createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      selectedMonth ? amountTotals(selectedMonthQuery) : Promise.resolve(0),
+      selectedYear ? amountTotals(selectedYearQuery) : Promise.resolve(0),
+    ]);
+
+    console.log("Order Amount Totals:");
+    console.log(`Today's Total: $${todayTotal.toFixed(2)}`);
+    console.log(`Current Month Total: $${currentMonthTotal.toFixed(2)}`);
+    if (selectedMonth) {
+      console.log(`Selected Month (${selectedMonth}) Total: $${selectedMonthTotal.toFixed(2)}`);
+    }
+    if (selectedYear) {
+      console.log(`Selected Year (${selectedYear}) Total: $${selectedYearTotal.toFixed(2)}`);
+    }
+
+    res.status(200).json({
+      today: todayTotal,
+      currentMonth: currentMonthTotal,
+      ...(selectedMonth && { selectedMonth: selectedMonthTotal }),
+      ...(selectedYear && { selectedYear: selectedYearTotal }),
+    });
+  } catch (error) {
+    console.error("Error fetching order amount totals:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

@@ -197,7 +197,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear, orderAmountTotals }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
@@ -293,6 +293,28 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, o
       >
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
         <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Total</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.today.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Total</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.currentMonth.toFixed(2)}</span>
+            </div>
+            {selectedMonth && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Total</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.selectedMonth.toFixed(2)}</span>
+              </div>
+            )}
+            {selectedYear && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Total</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.selectedYear.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <select
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
@@ -379,6 +401,7 @@ const SalesDashboard = () => {
   const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
   const [leadStatusComparison, setLeadStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
   const [leadCreationCounts, setLeadCreationCounts] = useState({ createdByUser: 0, assignedAutomatically: 0 });
+  const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0 });
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [loading, setLoading] = useState(true);
@@ -436,7 +459,7 @@ const SalesDashboard = () => {
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join('&')}` : '';
 
-        const [leadsRes, ordersRes, statusComparisonRes, leadStatusComparisonRes, leadCreationCountsRes] = await Promise.all([
+        const [leadsRes, ordersRes, statusComparisonRes, leadStatusComparisonRes, leadCreationCountsRes, orderAmountTotalsRes] = await Promise.all([
           fetch('http://localhost:3000/Sales/getsingleleads', {
             method: 'GET',
             credentials: 'include',
@@ -457,6 +480,10 @@ const SalesDashboard = () => {
             method: 'GET',
             credentials: 'include',
           }),
+          fetch(`http://localhost:3000/Sales/getOrderAmountTotals${queryString}`, {
+            method: 'GET',
+            credentials: 'include',
+          }),
         ]);
 
         if (!leadsRes.ok) throw new Error('Failed to fetch sales leads');
@@ -464,12 +491,14 @@ const SalesDashboard = () => {
         if (!statusComparisonRes.ok) throw new Error('Failed to fetch order status comparison');
         if (!leadStatusComparisonRes.ok) throw new Error('Failed to fetch lead status comparison');
         if (!leadCreationCountsRes.ok) throw new Error('Failed to fetch lead creation counts');
+        if (!orderAmountTotalsRes.ok) throw new Error('Failed to fetch order amount totals');
 
         const leadsData = await leadsRes.json();
         const ordersData = await ordersRes.json();
         const statusComparisonData = await statusComparisonRes.json();
         const leadStatusComparisonData = await leadStatusComparisonRes.json();
         const leadCreationCountsData = await leadCreationCountsRes.json();
+        const orderAmountTotalsData = await orderAmountTotalsRes.json();
 
         setTotalClients(leadsData.length);
         setOrderedCount(leadsData.filter((lead) => lead.status === 'Ordered').length);
@@ -481,8 +510,8 @@ const SalesDashboard = () => {
           createdByUser: leadCreationCountsData.createdByUser,
           assignedAutomatically: leadCreationCountsData.assignedAutomatically,
         });
+        setOrderAmountTotals(orderAmountTotalsData);
 
-        // Process importantDates for calendar events
         const events = leadsData.flatMap(lead =>
           lead.importantDates.map(date => ({
             title: `${lead.clientName} - ${lead.partRequested}`,
@@ -522,11 +551,10 @@ const SalesDashboard = () => {
     }
   };
 
-  // Custom event styling for react-big-calendar
   const eventStyleGetter = (event, start, end, isSelected) => {
     return {
       style: {
-        backgroundColor: '#ef4444', // Red for important dates
+        backgroundColor: '#ef4444',
         borderRadius: '5px',
         opacity: 0.8,
         color: 'white',
@@ -550,7 +578,6 @@ const SalesDashboard = () => {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {/* Top Stats */}
       <div className="flex flex-wrap gap-6 p-3 px-4 sm:px-20">
         {['Ordered', 'Quoted'].map((status) => (
           <div
@@ -577,9 +604,15 @@ const SalesDashboard = () => {
           <h3 className="text-gray-500 dark:text-gray-400 text-lg">Total Clients</h3>
           <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalClients}</span>
         </div>
+        <div
+          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+          onClick={() => setShowOrderDetailsModal(true)}
+        >
+          <h3 className="text-gray-500 dark:text-gray-400 text-lg">Today's Total</h3>
+          <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.today.toFixed(2)}</span>
+        </div>
       </div>
 
-      {/* Sales Graph + Calendar */}
       <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
         <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
@@ -606,7 +639,7 @@ const SalesDashboard = () => {
                 ))}
               </select>
               <select
-                className="w-full sm:w-1/2 border p-1.5 Standardization of code by making consistent use of single or double quotes rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value)}
               >
@@ -665,7 +698,6 @@ const SalesDashboard = () => {
         </div>
       </div>
 
-      {/* Placeholder Boxes */}
       <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
         <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow">
           <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
@@ -679,7 +711,6 @@ const SalesDashboard = () => {
         </div>
       </div>
 
-      {/* Recent Orders */}
       <div className="w-full px-4 sm:px-20 py-8">
         <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-600 overflow-x-auto">
           <div className="flex justify-between items-center mb-4">
@@ -764,6 +795,7 @@ const SalesDashboard = () => {
             setSelectedYear('');
           }}
           statusComparison={orderStatusComparison}
+          orderAmountTotals={orderAmountTotals}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
           selectedMonth={selectedMonth}
