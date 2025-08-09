@@ -232,10 +232,13 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison, amountTotals, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {} }, amountTotals = { today: 0, currentMonth: 0 }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+
+  console.log("OrderDetailsModal - statusComparison:", statusComparison);
+  console.log("OrderDetailsModal - amountTotals:", amountTotals);
 
   const statusColors = {
     LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -331,22 +334,22 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison, amountTotals, on
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Total Amount</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.today.toFixed(2)}</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.today || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Total</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.currentMonth.toFixed(2)}</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.currentMonth || 0).toFixed(2)}</span>
             </div>
             {selectedMonth && (
               <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Total</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.selectedMonth.toFixed(2)}</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedMonth || 0).toFixed(2)}</span>
               </div>
             )}
             {selectedYear && (
               <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Total</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${amountTotals.selectedYear.toFixed(2)}</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedYear || 0).toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -591,38 +594,56 @@ const Dashboard = () => {
           fetch(`http://localhost:3000/Admin/getOrderAmountTotals${queryString}`, { credentials: "include" }),
         ]);
 
-        if (!leadRes.ok) throw new Error("Failed to fetch lead count");
-        if (!statusRes.ok) throw new Error("Failed to fetch status counts");
-        if (!ordersRes.ok) throw new Error("Failed to fetch orders");
-        if (!usersRes.ok) throw new Error("Failed to fetch team users");
-        if (!creationCountsRes.ok) throw new Error("Failed to fetch lead creation counts");
-        if (!leadStatusComparisonRes.ok) throw new Error("Failed to fetch lead status comparison");
-        if (!orderStatusComparisonRes.ok) throw new Error("Failed to fetch order status comparison");
-        if (!orderAmountTotalsRes.ok) throw new Error("Failed to fetch order amount totals");
+        const errors = [];
+        if (!leadRes.ok) errors.push(`Failed to fetch lead count: ${leadRes.status}`);
+        if (!statusRes.ok) errors.push(`Failed to fetch status counts: ${statusRes.status}`);
+        if (!ordersRes.ok) errors.push(`Failed to fetch orders: ${ordersRes.status}`);
+        if (!usersRes.ok) errors.push(`Failed to fetch team users: ${usersRes.status}`);
+        if (!creationCountsRes.ok) errors.push(`Failed to fetch lead creation counts: ${creationCountsRes.status}`);
+        if (!leadStatusComparisonRes.ok) errors.push(`Failed to fetch lead status comparison: ${leadStatusComparisonRes.status}`);
+        if (!orderStatusComparisonRes.ok) errors.push(`Failed to fetch order status comparison: ${orderStatusComparisonRes.status}`);
+        if (!orderAmountTotalsRes.ok) errors.push(`Failed to fetch order amount totals: ${orderAmountTotalsRes.status}`);
+
+        if (errors.length) {
+          console.error("Fetch errors:", errors);
+          errors.forEach(error => toast.error(error));
+          return;
+        }
 
         const leadData = await leadRes.json();
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
         const usersData = await usersRes.json();
         const creationCountsData = await creationCountsRes.json();
-        const statusComparisonData = await leadStatusComparisonRes.json();
+        const leadStatusComparisonData = await leadStatusComparisonRes.json();
         const orderStatusComparisonData = await orderStatusComparisonRes.json();
         const orderAmountTotalsData = await orderAmountTotalsRes.json();
 
-        setTotalClients(leadData.leadcount);
-        setCountbystatus(statusData);
-        setOrders(ordersData);
-        setTeamUsers(usersData);
-        setLeadCreationCounts({
-          createdByUser: creationCountsData.createdByUser,
-          assignedAutomatically: creationCountsData.assignedAutomatically,
+        console.log("Fetched data:", {
+          leadData,
+          statusData,
+          ordersData,
+          usersData,
+          creationCountsData,
+          leadStatusComparisonData,
+          orderStatusComparisonData,
+          orderAmountTotalsData,
         });
-        setStatusComparison(statusComparisonData);
-        setOrderStatusComparison(orderStatusComparisonData);
-        setOrderAmountTotals(orderAmountTotalsData);
+
+        setTotalClients(leadData.leadcount || 0);
+        setCountbystatus(statusData || []);
+        setOrders(ordersData || []);
+        setTeamUsers(usersData || []);
+        setLeadCreationCounts({
+          createdByUser: creationCountsData.createdByUser || 0,
+          assignedAutomatically: creationCountsData.assignedAutomatically || 0,
+        });
+        setStatusComparison(leadStatusComparisonData || { currentMonth: {}, previousMonth: {} });
+        setOrderStatusComparison(orderStatusComparisonData || { currentMonth: {}, previousMonth: {} });
+        setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0 });
       } catch (error) {
-        toast.error(`Error fetching dashboard data: ${error.message}`);
         console.error("Fetch data error:", error);
+        toast.error(`Error fetching dashboard data: ${error.message}`);
       } finally {
         setLoading(false);
       }
@@ -1316,7 +1337,7 @@ const Dashboard = () => {
             selectedYear={selectedYear}
           />
         )}
-        {showOrderDetailsModal && (
+        {showOrderDetailsModal && orderAmountTotals && orderStatusComparison && (
           <OrderDetailsModal
             isOpen={showOrderDetailsModal}
             onClose={() => setShowOrderDetailsModal(false)}

@@ -197,10 +197,13 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear, orderAmountTotals }) => {
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {} }, orderAmountTotals = { today: 0, currentMonth: 0 }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+
+  console.log("OrderDetailsModal - statusComparison:", statusComparison);
+  console.log("OrderDetailsModal - orderAmountTotals:", orderAmountTotals);
 
   const statusColors = {
     LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -296,22 +299,22 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison, onMonthChange, o
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Total</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.today.toFixed(2)}</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Total</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.currentMonth.toFixed(2)}</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.currentMonth || 0).toFixed(2)}</span>
             </div>
             {selectedMonth && (
               <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Total</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.selectedMonth.toFixed(2)}</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedMonth || 0).toFixed(2)}</span>
               </div>
             )}
             {selectedYear && (
               <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Total</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.selectedYear.toFixed(2)}</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedYear || 0).toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -486,12 +489,19 @@ const SalesDashboard = () => {
           }),
         ]);
 
-        if (!leadsRes.ok) throw new Error('Failed to fetch sales leads');
-        if (!ordersRes.ok) throw new Error('Failed to fetch sales orders');
-        if (!statusComparisonRes.ok) throw new Error('Failed to fetch order status comparison');
-        if (!leadStatusComparisonRes.ok) throw new Error('Failed to fetch lead status comparison');
-        if (!leadCreationCountsRes.ok) throw new Error('Failed to fetch lead creation counts');
-        if (!orderAmountTotalsRes.ok) throw new Error('Failed to fetch order amount totals');
+        const errors = [];
+        if (!leadsRes.ok) errors.push(`Failed to fetch sales leads: ${leadsRes.status}`);
+        if (!ordersRes.ok) errors.push(`Failed to fetch sales orders: ${ordersRes.status}`);
+        if (!statusComparisonRes.ok) errors.push(`Failed to fetch order status comparison: ${statusComparisonRes.status}`);
+        if (!leadStatusComparisonRes.ok) errors.push(`Failed to fetch lead status comparison: ${leadStatusComparisonRes.status}`);
+        if (!leadCreationCountsRes.ok) errors.push(`Failed to fetch lead creation counts: ${leadCreationCountsRes.status}`);
+        if (!orderAmountTotalsRes.ok) errors.push(`Failed to fetch order amount totals: ${orderAmountTotalsRes.status}`);
+
+        if (errors.length) {
+          console.error("Fetch errors:", errors);
+          errors.forEach(error => toast.error(error));
+          return;
+        }
 
         const leadsData = await leadsRes.json();
         const ordersData = await ordersRes.json();
@@ -500,30 +510,39 @@ const SalesDashboard = () => {
         const leadCreationCountsData = await leadCreationCountsRes.json();
         const orderAmountTotalsData = await orderAmountTotalsRes.json();
 
-        setTotalClients(leadsData.length);
-        setOrderedCount(leadsData.filter((lead) => lead.status === 'Ordered').length);
-        setQuotedCount(leadsData.filter((lead) => lead.status === 'Quoted').length);
-        setOrders(ordersData);
-        setOrderStatusComparison(statusComparisonData);
-        setLeadStatusComparison(leadStatusComparisonData);
-        setLeadCreationCounts({
-          createdByUser: leadCreationCountsData.createdByUser,
-          assignedAutomatically: leadCreationCountsData.assignedAutomatically,
+        console.log("Fetched data:", {
+          leadsData,
+          ordersData,
+          statusComparisonData,
+          leadStatusComparisonData,
+          leadCreationCountsData,
+          orderAmountTotalsData,
         });
-        setOrderAmountTotals(orderAmountTotalsData);
+
+        setTotalClients(leadsData.length || 0);
+        setOrderedCount(leadsData.filter((lead) => lead.status === 'Ordered').length || 0);
+        setQuotedCount(leadsData.filter((lead) => lead.status === 'Quoted').length || 0);
+        setOrders(ordersData || []);
+        setOrderStatusComparison(statusComparisonData || { currentMonth: {}, previousMonth: {} });
+        setLeadStatusComparison(leadStatusComparisonData || { currentMonth: {}, previousMonth: {} });
+        setLeadCreationCounts({
+          createdByUser: leadCreationCountsData.createdByUser || 0,
+          assignedAutomatically: leadCreationCountsData.assignedAutomatically || 0,
+        });
+        setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0 });
 
         const events = leadsData.flatMap(lead =>
-          lead.importantDates.map(date => ({
+          lead.importantDates?.map(date => ({
             title: `${lead.clientName} - ${lead.partRequested}`,
             start: new Date(date),
             end: new Date(date),
             allDay: true,
-          }))
+          })) || []
         );
         setCalendarEvents(events);
       } catch (error) {
+        console.error("Fetch sales data error:", error);
         toast.error(`Error fetching data: ${error.message}`);
-        console.error('Error fetching sales data:', error);
       } finally {
         setLoading(false);
       }
@@ -609,7 +628,7 @@ const SalesDashboard = () => {
           onClick={() => setShowOrderDetailsModal(true)}
         >
           <h3 className="text-gray-500 dark:text-gray-400 text-lg">Today's Total</h3>
-          <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">${orderAmountTotals.today.toFixed(2)}</span>
+          <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
         </div>
       </div>
 
@@ -758,7 +777,7 @@ const SalesDashboard = () => {
                       {order.status.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                   </td>
-                  <td className="p-2">
+                  <td className="p--2">
                     <Trash2
                       className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
                       onClick={() => handleDeleteOrder(order.order_id)}
@@ -772,35 +791,39 @@ const SalesDashboard = () => {
       </div>
 
       <AnimatePresence>
-        <LeadDetailsModal
-          isOpen={showLeadDetailsModal}
-          onClose={() => {
-            setShowLeadDetailsModal(false);
-            setSelectedMonth('');
-            setSelectedYear('');
-          }}
-          createdByUser={leadCreationCounts.createdByUser}
-          assignedAutomatically={leadCreationCounts.assignedAutomatically}
-          statusComparison={leadStatusComparison}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
-        <OrderDetailsModal
-          isOpen={showOrderDetailsModal}
-          onClose={() => {
-            setShowOrderDetailsModal(false);
-            setSelectedMonth('');
-            setSelectedYear('');
-          }}
-          statusComparison={orderStatusComparison}
-          orderAmountTotals={orderAmountTotals}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
+        {showLeadDetailsModal && (
+          <LeadDetailsModal
+            isOpen={showLeadDetailsModal}
+            onClose={() => {
+              setShowLeadDetailsModal(false);
+              setSelectedMonth('');
+              setSelectedYear('');
+            }}
+            createdByUser={leadCreationCounts.createdByUser}
+            assignedAutomatically={leadCreationCounts.assignedAutomatically}
+            statusComparison={leadStatusComparison}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
+        )}
+        {showOrderDetailsModal && orderAmountTotals && orderStatusComparison && (
+          <OrderDetailsModal
+            isOpen={showOrderDetailsModal}
+            onClose={() => {
+              setShowOrderDetailsModal(false);
+              setSelectedMonth('');
+              setSelectedYear('');
+            }}
+            statusComparison={orderStatusComparison}
+            orderAmountTotals={orderAmountTotals}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
