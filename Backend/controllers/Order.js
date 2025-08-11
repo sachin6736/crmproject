@@ -1207,6 +1207,7 @@ export const sendPurchaseorder = async (req, res) => {
     // Update order status to PO Sent if not already set
     if (order.status !== "PO Confirmed") {
       order.status = "PO Sent";
+      order.poSent = true; // Set poSent to true
     }
 
     // Add procurement note for sending purchase order
