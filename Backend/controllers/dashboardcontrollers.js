@@ -261,3 +261,81 @@ export const getOrderAmountTotals = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+export const getPoSentCountsAndTotals = async (req, res) => {
+    try {
+        const { selectedMonth, selectedYear } = req.query;
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+        const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+        const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+
+        let selectedMonthQuery = {};
+        let selectedYearQuery = {};
+
+        if (selectedMonth) {
+            const [year, month] = selectedMonth.split("-").map(Number);
+            const selectedMonthStart = new Date(year, month - 1, 1);
+            const selectedMonthEnd = new Date(year, month, 0);
+            selectedMonthQuery = {
+                createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+            };
+        }
+
+        if (selectedYear) {
+            const yearStart = new Date(selectedYear, 0, 1);
+            const yearEnd = new Date(selectedYear, 11, 31);
+            selectedYearQuery = {
+                createdAt: { $gte: yearStart, $lte: yearEnd },
+            };
+        }
+
+        const poSentMetrics = async (query) => {
+            const result = await Order.aggregate([
+                {
+                    $match: {
+                        ...query,
+                        status: "PO Sent",
+                    },
+                },
+                {
+                    $unwind: "$vendors",
+                },
+                {
+                    $match: {
+                        "vendors.poStatus": "PO Sent",
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        count: { $sum: 1 },
+                        totalAmount: { $sum: "$vendors.totalCost" },
+                    },
+                },
+            ]);
+            return result.length > 0 ? { count: result[0].count, totalAmount: result[0].totalAmount } : { count: 0, totalAmount: 0 };
+        };
+
+        const [todayMetrics, currentMonthMetrics, selectedMonthMetrics, selectedYearMetrics] = await Promise.all([
+            poSentMetrics({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+            poSentMetrics({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+            selectedMonth ? poSentMetrics(selectedMonthQuery) : Promise.resolve({ count: 0, totalAmount: 0 }),
+            selectedYear ? poSentMetrics(selectedYearQuery) : Promise.resolve({ count: 0, totalAmount: 0 }),
+        ]);
+
+        res.status(200).json({
+            today: todayMetrics,
+            currentMonth: currentMonthMetrics,
+            ...(selectedMonth && { selectedMonth: selectedMonthMetrics }),
+            ...(selectedYear && { selectedYear: selectedYearMetrics }),
+        });
+    } catch (error) {
+        console.error("Error fetching PO Sent counts and totals:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};

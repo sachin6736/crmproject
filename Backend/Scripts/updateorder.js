@@ -1,77 +1,3 @@
-// import mongoose from "mongoose";
-// import { Order, Counter } from "../models/order.js";
-// import dotenv from "dotenv";
-
-// dotenv.config();
-
-// // Connect to MongoDB
-// mongoose
-//   .connect("mongodb+srv://sachinpradeepan27:crmtest12345@crmtest.tdj6iar.mongodb.net/?retryWrites=true&w=majority&appName=crmtest")
-//   .then(async () => {
-//     console.log("✅ Connected to MongoDB");
-
-//     try {
-//       // Find all orders
-//       const allOrders = await Order.find({});
-
-//       if (allOrders.length === 0) {
-//         console.log("✅ No orders found in the collection.");
-//         await mongoose.disconnect();
-//         return;
-//       }
-
-//       console.log(`🔄 Found ${allOrders.length} orders in the collection.`);
-
-//       let updatedOrders = 0;
-
-//       for (const order of allOrders) {
-//         try {
-//           if (!order.procurementData) {
-//             console.log(`⚠️ Order _id: ${order._id} is missing procurementData, adding default values`);
-//             order.procurementData = {
-//               vendorInformedDate: null,
-//               sentPicturesToVendor: false,
-//               sentDiagnosticReportToVendor: false,
-//               yardAgreedReturnShipping: false,
-//               yardAgreedReplacement: false,
-//               yardAgreedReplacementShippingCost: false,
-//               replacementPartReadyDate: null,
-//               additionalCostReplacementPart: '',
-//               additionalCostReplacementShipping: '',
-//             };
-//             await order.save();
-//             console.log(`✅ Added procurementData to order _id: ${order._id}`);
-//             updatedOrders++;
-//           } else {
-//             console.log(`✅ Order _id: ${order._id} already has procurementData`);
-//           }
-//         } catch (err) {
-//           console.error(`❌ Error processing order _id: ${order._id}`, err);
-//         }
-//       }
-
-//       if (updatedOrders === 0) {
-//         console.log("✅ All orders already have procurementData field.");
-//       } else {
-//         console.log(`✅ Updated ${updatedOrders} orders with procurementData field.`);
-//       }
-
-//       console.log("✅ Migration for procurementData completed.");
-//     } catch (err) {
-//       console.error("❌ Error during migration", err);
-//     } finally {
-//       try {
-//         await mongoose.disconnect();
-//         console.log("✅ Disconnected from MongoDB");
-//       } catch (err) {
-//         console.error("❌ Error disconnecting from MongoDB", err);
-//       }
-//     }
-//   })
-//   .catch((err) => {
-//     console.error("❌ Error connecting to MongoDB", err);
-//   });
-
 import mongoose from "mongoose";
 import { Order } from "../models/order.js";
 import dotenv from "dotenv";
@@ -84,22 +10,48 @@ mongoose
     console.log("✅ Connected to MongoDB");
 
     try {
-      const orders = await Order.find({}, { order_id: 1, procurementData: 1, _id: 1 });
-      if (orders.length === 0) {  
-        console.log("✅ No orders found in the collection.");
-        return;
-      }
+      // Define statuses that should have poSent set to true
+      const poSentTrueStatuses = [
+        "PO Sent",
+        "PO Confirmed",
+        "Vendor Payment Pending",
+        "Vendor Payment Confirmed",
+        "Shipping Pending",
+        "Ship Out",
+        "Intransit",
+        "Delivered"
+      ];
 
-      console.log(`🔄 Found ${orders.length} orders. Inspecting procurementData:`);
-      orders.forEach(order => {
-        console.log(`Order _id: ${order._id}, order_id: ${order.order_id}`);
-        console.log("procurementData:", JSON.stringify(order.procurementData, null, 2));
-      });
+      // Update orders with specified statuses to set poSent to true
+      const updateTrueResult = await Order.updateMany(
+        { status: { $in: poSentTrueStatuses } },
+        { $set: { poSent: true } }
+      );
+
+      // Update orders with other statuses to set poSent to false
+      const updateFalseResult = await Order.updateMany(
+        { status: { $nin: poSentTrueStatuses } },
+        { $set: { poSent: false } }
+      );
+
+      console.log(`🔄 Updated ${updateTrueResult.modifiedCount} orders with poSent set to true.`);
+      console.log(`🔄 Updated ${updateFalseResult.modifiedCount} orders with poSent set to false.`);
+
+      // Verify the update by fetching and logging a sample of updated documents
+      const updatedOrders = await Order.find({}, { order_id: 1, status: 1, poSent: 1, _id: 1 }).limit(10);
+      if (updatedOrders.length === 0) {
+        console.log("✅ No orders found in the collection.");
+      } else {
+        console.log(`✅ Sample of updated orders (${updatedOrders.length}):`);
+        updatedOrders.forEach(order => {
+          console.log(`Order _id: ${order._id}, order_id: ${order.order_id}, status: ${order.status}, poSent: ${order.poSent}`);
+        });
+      }
     } catch (err) {
-      console.error("❌ Error inspecting orders", err);
+      console.error("❌ Error updating orders:", err);
     } finally {
       await mongoose.disconnect();
       console.log("✅ Disconnected from MongoDB");
     }
   })
-  .catch(err => console.error("❌ Error connecting to MongoDB", err));
+  .catch(err => console.error("❌ Error connecting to MongoDB:", err));

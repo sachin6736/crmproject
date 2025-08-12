@@ -160,6 +160,10 @@ const orderSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  poSent: {
+    type: Boolean,
+    default: false,
+  },
   vendors: [{
     businessName: {
       type: String,
