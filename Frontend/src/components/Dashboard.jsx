@@ -726,22 +726,26 @@ const Dashboard = () => {
           method: "GET",
           credentials: "include",
         });
-
+  
         if (!res.ok) {
           throw new Error("Not authorized");
         }
         const data = await res.json();
-        if (data.user.role !== "admin") {
+        if (data.user.role === "sales") {
           navigate("/home/salesdashboard");
+        } else if (data.user.role === "procurement") {
+          navigate("/home/procurementdashboard");
+        } else if (data.user.role !== "admin") {
+          navigate("/home"); // Redirect other roles (e.g., customer_relations) to home
         } else {
-          setLoading(false);
+          setLoading(false); // Admin stays on this dashboard
         }
       } catch (error) {
         console.error("Role verification failed:", error);
         navigate("/");
       }
     };
-
+  
     verifyRole();
   }, [navigate]);
 

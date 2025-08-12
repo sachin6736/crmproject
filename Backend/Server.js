@@ -14,6 +14,7 @@ import sindashroutes from './routes/sindashroutes.js';
 import userroutes from './routes/userroutes.js';
 import litireplaceroutes from './routes/litireplaceroutes.js'
 import orderroutes from './routes/orderroutes.js';
+import procurementRoutes from './routes/procurementRoutes.js'
 
 import notificationRoutes from './routes/notificationRoutes.js';
 
@@ -40,6 +41,7 @@ app.use('/User', userroutes);
 app.use('/Order', orderroutes);
 app.use('/Notification', notificationRoutes);
 app.use('/LiteReplace',litireplaceroutes)
+app.use('/Procurement',procurementRoutes)
 
 // Socket.IO connection
 io.on('connection', (socket) => {

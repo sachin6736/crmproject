@@ -249,6 +249,8 @@ function Home() {
         if (loading) return;
         if (user?.role === 'admin') {
           navigate('/home/dashboard');
+        } else if (user?.role === 'procurement') {
+          navigate('/home/procurementdashboard');
         } else {
           navigate('/home/salesdashboard');
         }
