@@ -321,7 +321,7 @@ export const checkOrderByLeadId = async (req, res) => {
 };///getting ordersbyleadid
 
 
-  export const getAllOrders = async (req, res) => {
+export const getAllOrders = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', status = '' } = req.query;
     const query = {};
@@ -329,7 +329,7 @@ export const checkOrderByLeadId = async (req, res) => {
     if (search) {
       const isNumericSearch = !isNaN(search) && search.trim() !== '';
       query.$or = [
-        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []),
         { clientName: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
@@ -347,6 +347,7 @@ export const checkOrderByLeadId = async (req, res) => {
       .populate('customerRelationsPerson', 'name email')
       .skip((page - 1) * limit)
       .limit(Number(limit))
+      .sort({ createdAt: -1 }) // Sort by creation date, newest first
       .lean();
 
     const totalOrders = await Order.countDocuments(query);
@@ -361,7 +362,7 @@ export const checkOrderByLeadId = async (req, res) => {
     console.error('Error fetching orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};//Controller for All orders
+};
 
 export const getMyOrders = async (req, res) => {
   try {
@@ -372,7 +373,7 @@ export const getMyOrders = async (req, res) => {
     if (search) {
       const isNumericSearch = !isNaN(search) && search.trim() !== '';
       query.$or = [
-        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []),
         { clientName: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
@@ -389,6 +390,7 @@ export const getMyOrders = async (req, res) => {
       .populate('salesPerson', 'name email')
       .skip((page - 1) * limit)
       .limit(Number(limit))
+      .sort({ createdAt: -1 }) // Sort by creation date, newest first
       .lean();
 
     const totalOrders = await Order.countDocuments(query);
@@ -403,7 +405,7 @@ export const getMyOrders = async (req, res) => {
     console.error('Error fetching my orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};//controller for getmyorders
+};
 
 export const getCustomerOrders = async (req, res) => {
   console.log("getCustomerOrders working");
@@ -416,7 +418,7 @@ export const getCustomerOrders = async (req, res) => {
     if (search) {
       const isNumericSearch = !isNaN(search) && search.trim() !== '';
       query.$or = [
-        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []),
         { clientName: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
@@ -434,7 +436,7 @@ export const getCustomerOrders = async (req, res) => {
       .populate('salesPerson', 'name email')
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .sort({ customerRelationsPerson: userId ? -1 : 1 }) // Prioritize user's orders
+      .sort({ createdAt: -1 }) // Sort by creation date, newest first
       .lean();
 
     // Add isOwnOrder flag to each order
@@ -455,7 +457,7 @@ export const getCustomerOrders = async (req, res) => {
     console.error('Error fetching customer orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};//controller for customerrelation
+};
 
 export const getProcurementOrders = async (req, res) => {
   console.log("getProcurementOrders working");
@@ -463,12 +465,12 @@ export const getProcurementOrders = async (req, res) => {
     const userId = req.user.id;
     console.log("id", userId);
     const { page = 1, limit = 10, search = '', status = '' } = req.query;
-    const query = { procurementPerson: userId }; // Filter by procurementPerson
+    const query = { procurementPerson: userId };
 
     if (search) {
       const isNumericSearch = !isNaN(search) && search.trim() !== '';
       query.$or = [
-        ...(isNumericSearch ? [{ order_id: Number(search) }] : []), // Exact match for order_id if numeric
+        ...(isNumericSearch ? [{ order_id: Number(search) }] : []),
         { clientName: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
@@ -508,7 +510,7 @@ export const getProcurementOrders = async (req, res) => {
     console.error('Error fetching procurement orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};// procurement team
+};
 
 
   export const orderbyid = async (req, res) => {
