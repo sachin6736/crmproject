@@ -1,5 +1,5 @@
 import express from 'express';
-import { getcountbystatus, getleadcount, getmyteam, getorders, getLeadCreationCounts, getLeadStatusComparison, getOrderStatusComparison, getOrderAmountTotals,getPoSentCountsAndTotals } from '../controllers/dashboardcontrollers.js';
+import { getcountbystatus, getleadcount, getmyteam, getorders, getLeadCreationCounts, getLeadStatusComparison, getOrderStatusComparison, getOrderAmountTotals,getPoSentCountsAndTotals ,getDeliveredMetrics } from '../controllers/dashboardcontrollers.js';
 
 const router = express.Router();
 
@@ -12,5 +12,6 @@ router.get("/getLeadStatusComparison", getLeadStatusComparison);
 router.get("/getOrderStatusComparison", getOrderStatusComparison);
 router.get("/getOrderAmountTotals", getOrderAmountTotals);
 router.get("/getPoSentCountsAndTotals", getPoSentCountsAndTotals);
+router.get('/getDeliveredMetrics',  getDeliveredMetrics);
 
 export default router;

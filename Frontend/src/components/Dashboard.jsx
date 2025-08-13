@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trash2, Plus, MoreVertical, CheckCircle, Coffee, Utensils, Calendar, LogOut } from "lucide-react";
+import { Trash2, Plus, MoreVertical, CheckCircle, Coffee, Utensils, Calendar, LogOut, DollarSign, TrendingUp,Users,Send,Truck,BarChart2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
@@ -13,6 +13,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Sector,
 } from "recharts";
 import FullPageLoader from "./utilities/FullPageLoader";
 import { useTheme } from "../context/ThemeContext";
@@ -596,6 +600,203 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals = { today: 
   );
 };
 
+const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics = { today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+  if (!isOpen) return null;
+
+  const { theme } = useTheme();
+
+  console.log("DeliveredDetailsModal - deliveredMetrics:", deliveredMetrics);
+
+  const generateMonthOptions = () => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+      options.push({ value, label });
+    }
+    return options;
+  };
+
+  const generateYearOptions = () => {
+    const options = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    for (let i = currentYear - 5; i <= currentYear; i++) {
+      options.push({ value: String(i), label: String(i) });
+    }
+    return options;
+  };
+
+  // Prepare data for pie chart - revenue vs profit for each period
+  const periods = [
+    { name: 'Today', data: deliveredMetrics.today },
+    { name: 'Current Month', data: deliveredMetrics.currentMonth },
+    ...(selectedMonth ? [{ name: 'Selected Month', data: deliveredMetrics.selectedMonth }] : []),
+    ...(selectedYear ? [{ name: 'Selected Year', data: deliveredMetrics.selectedYear }] : []),
+  ];
+
+  const COLORS = ['#00C49F', '#FF8042']; // Green for profit, Orange for revenue
+
+  const renderActiveShape = (props) => {
+    const RADIAN = Math.PI / 180;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + (outerRadius + 10) * cos;
+    const sy = cy + (outerRadius + 10) * sin;
+    const mx = cx + (outerRadius + 30) * cos;
+    const my = cy + (outerRadius + 30) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+    const ey = my;
+    const textAnchor = cos >= 0 ? 'start' : 'end';
+
+    return (
+      <g>
+        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} fontSize={16}>
+          {payload.name}
+        </text>
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+        />
+        <Sector
+          cx={cx}
+          cy={cy}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          innerRadius={outerRadius + 6}
+          outerRadius={outerRadius + 10}
+          fill={fill}
+        />
+        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333">{`$${value.toFixed(2)}`}</text>
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999">
+          {`(Rate ${(percent * 100).toFixed(2)}%)`}
+        </text>
+      </g>
+    );
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 px-4 py-6 sm:px-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-500" />
+            Delivered Details
+          </h3>
+          <button
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            onClick={onClose}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <select
+              className="w-full sm:w-1/2 border p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+              value={selectedMonth || ""}
+              onChange={(e) => onMonthChange(e.target.value)}
+            >
+              <option value="">Select Month to Compare</option>
+              {generateMonthOptions().map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+            <select
+              className="w-full sm:w-1/2 border p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+              value={selectedYear || ""}
+              onChange={(e) => onYearChange(e.target.value)}
+            >
+              <option value="">Select Year to Compare</option>
+              {generateYearOptions().map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {periods.map((period, index) => (
+              <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-green-500" />
+                  {period.name}
+                </h4>
+                <div className="text-xs text-gray-600 dark:text-gray-300">
+                  Count: <span className="font-bold text-blue-600 dark:text-blue-400">{period.data?.count || 0}</span>
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">
+                  Revenue: <span className="font-bold text-green-600 dark:text-green-400">${(period.data?.revenue || 0).toFixed(2)}</span>
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">
+                  Profit: <span className="font-bold text-purple-600 dark:text-purple-400">${(period.data?.profit || 0).toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Revenue vs Profit Comparison</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {periods.map((period, index) => {
+                const pieData = [
+                  { name: 'Revenue', value: period.data?.revenue || 0 },
+                  { name: 'Profit', value: period.data?.profit || 0 },
+                ];
+
+                return (
+                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">{period.name}</h5>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          activeIndex={0}
+                          activeShape={renderActiveShape}
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, i) => (
+                            <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -628,6 +829,8 @@ const Dashboard = () => {
   const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0 });
   const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState({ today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
   const [showPoSentDetailsModal, setShowPoSentDetailsModal] = useState(false);
+  const [deliveredMetrics, setDeliveredMetrics] = useState({ today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
+  const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] = useState(false);
 
   const statusIcons = {
     Available: (
@@ -757,7 +960,7 @@ const Dashboard = () => {
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
 
-        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadStatusComparisonRes, orderStatusComparisonRes, orderAmountTotalsRes, poSentCountsAndTotalsRes] = await Promise.all([
+        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadStatusComparisonRes, orderStatusComparisonRes, orderAmountTotalsRes, poSentCountsAndTotalsRes, deliveredMetricsRes] = await Promise.all([
           fetch("http://localhost:3000/Admin/getleadcount", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getcountbystatus", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getallorders", { credentials: "include" }),
@@ -767,6 +970,7 @@ const Dashboard = () => {
           fetch(`http://localhost:3000/Admin/getOrderStatusComparison${queryString}`, { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getOrderAmountTotals${queryString}`, { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getPoSentCountsAndTotals${queryString}`, { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getDeliveredMetrics${queryString}`, { credentials: "include" }),
         ]);
 
         const errors = [];
@@ -779,6 +983,7 @@ const Dashboard = () => {
         if (!orderStatusComparisonRes.ok) errors.push(`Failed to fetch order status comparison: ${orderStatusComparisonRes.status}`);
         if (!orderAmountTotalsRes.ok) errors.push(`Failed to fetch order amount totals: ${orderAmountTotalsRes.status}`);
         if (!poSentCountsAndTotalsRes.ok) errors.push(`Failed to fetch PO sent counts and totals: ${poSentCountsAndTotalsRes.status}`);
+        if (!deliveredMetricsRes.ok) errors.push(`Failed to fetch delivered metrics: ${deliveredMetricsRes.status}`);
 
         if (errors.length) {
           console.error("Fetch errors:", errors);
@@ -795,6 +1000,7 @@ const Dashboard = () => {
         const orderStatusComparisonData = await orderStatusComparisonRes.json();
         const orderAmountTotalsData = await orderAmountTotalsRes.json();
         const poSentCountsAndTotalsData = await poSentCountsAndTotalsRes.json();
+        const deliveredMetricsData = await deliveredMetricsRes.json();
 
         console.log("Fetched data:", {
           leadData,
@@ -806,6 +1012,7 @@ const Dashboard = () => {
           orderStatusComparisonData,
           orderAmountTotalsData,
           poSentCountsAndTotalsData,
+          deliveredMetricsData,
         });
 
         setTotalClients(leadData.leadcount || 0);
@@ -820,6 +1027,7 @@ const Dashboard = () => {
         setOrderStatusComparison(orderStatusComparisonData || { currentMonth: {}, previousMonth: {} });
         setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0 });
         setPoSentCountsAndTotals(poSentCountsAndTotalsData || { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
+        setDeliveredMetrics(deliveredMetricsData || { today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
       } catch (error) {
         console.error("Fetch data error:", error);
         toast.error(`Error fetching dashboard data: ${error.message}`);
@@ -997,174 +1205,193 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="flex gap-6 p-3 px-6 sm:px-20 overflow-x-auto">
-        {[
-          { title: "Ordered", value: getStatusCount("Ordered"), onClick: () => setShowOrderDetailsModal(true) },
-          { title: "Quoted", value: getStatusCount("Quoted"), onClick: null },
-          { title: "Total Clients", value: totalClients, onClick: () => setShowLeadDetailsModal(true) },
-          { title: "Today's Total Amount", value: `$${orderAmountTotals.today.toFixed(2)}`, onClick: null },
-          { title: "Today's PO Sent", value: poSentCountsAndTotals.today?.count || 0, onClick: () => setShowPoSentDetailsModal(true) },
-          { title: "Today's PO Sent Total", value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`, onClick: () => setShowPoSentDetailsModal(true) },
-        ].map(({ title, value, onClick }, index) => (
-          <div
-            key={index}
-            className="flex-none w-48 h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
-            onClick={onClick}
-          >
-            <h3 className="text-gray-500 dark:text-gray-300 text-base font-medium text-center">{title}</h3>
-            <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-              {value}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-6 p-6 sm:px-20">
-        <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <select
-                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedMonth || ""}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              >
-                <option value="">Select Month to Compare</option>
-                {[
-                  ...Array(12).keys(),
-                ].map((i) => {
-                  const date = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
-                  const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-                  const label = date.toLocaleString("default", { month: "long", year: "numeric" });
-                  return (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  );
-                })}
-              </select>
-              <select
-                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedYear || ""}
-                onChange={(e) => setSelectedYear(e.target.value)}
-              >
-                <option value="">Select Year to Compare</option>
-                {[
-                  ...Array(6).keys(),
-                ].map((i) => {
-                  const year = new Date().getFullYear() - i;
-                  return (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  );
-                })}
-              </select>
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8 text-center flex items-center justify-center gap-2">
+          <TrendingUp className="w-8 h-8 text-blue-500" />
+          Admin Dashboard
+        </h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
+          {[
+            { title: "Ordered", value: getStatusCount("Ordered"), onClick: () => setShowOrderDetailsModal(true), icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
+            { title: "Quoted", value: getStatusCount("Quoted"), onClick: null, icon: <DollarSign className="w-5 h-5 text-yellow-500" /> },
+            { title: "Total Clients", value: totalClients, onClick: () => setShowLeadDetailsModal(true), icon: <Users className="w-5 h-5 text-blue-500" /> },
+            { title: "Today's Total Amount", value: `$${orderAmountTotals.today.toFixed(2)}`, onClick: null, icon: <DollarSign className="w-5 h-5 text-green-500" /> },
+            { title: "Today's PO Sent", value: poSentCountsAndTotals.today?.count || 0, onClick: () => setShowPoSentDetailsModal(true), icon: <Send className="w-5 h-5 text-orange-500" /> },
+            { title: "Today's PO Sent Total", value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`, onClick: () => setShowPoSentDetailsModal(true), icon: <DollarSign className="w-5 h-5 text-purple-500" /> },
+            { title: "Today's Delivered", value: deliveredMetrics.today?.count || 0, onClick: () => setShowDeliveredDetailsModal(true), icon: <Truck className="w-5 h-5 text-lime-500" /> },
+          ].map(({ title, value, onClick, icon }, index) => (
+            <div
+              key={index}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center"
+              onClick={onClick}
+            >
+              <div className="mb-2">{icon}</div>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">{title}</h3>
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                {value}
+              </span>
             </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                    fontSize: '12px',
-                  }}
-                />
-                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
-                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
-                {selectedMonth && (
-                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
-                )}
-                {selectedYear && (
-                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          ))}
         </div>
 
-        <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Team Management</h3>
-            <button
-              className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-              onClick={() => setShowModal(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Add New Member
-            </button>
-          </div>
-          <div className="space-y-2">
-            {teamUsers.map((user) => (
-              <div
-                key={user._id}
-                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="text-sm">
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
-                    <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
-                    <p className="text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {statusIcons[user.status] || (
-                    <span className="text-gray-500 dark:text-gray-400 text-xs">Unknown</span>
-                  )}
-                  <div className="relative">
-                    <button
-                      className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
-                      onClick={() =>
-                        setDropdownOpen(dropdownOpen === user._id ? null : user._id)
-                      }
-                    >
-                      <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                    </button>
-                    {dropdownOpen === user._id && (
-                      <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10">
-                        <button
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => showConfirmation(user.isPaused ? "Resume" : "Pause", user._id, user.name)}
-                        >
-                          {user.isPaused ? "Resume" : "Pause"}
-                        </button>
-                        <button
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => handleUserAction("Reassign Leads", user._id)}
-                        >
-                          Reassign Leads
-                        </button>
-                        <button
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => handleUserAction("Change Role", user._id)}
-                        >
-                          Change Role
-                        </button>
-                        <button
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => handleUserAction("Password", user._id)}
-                        >
-                          Reset Password
-                        </button>
-                        <button
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => showConfirmation(user.Access ? "Revoke Access" : "Grant Access", user._id, user.name)}
-                          disabled={isAccessLoading}
-                        >
-                          {user.Access ? "Revoke Access" : "Grant Access"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <BarChart2 className="w-5 h-5 text-blue-500" />
+              Order Status Comparison
+            </h3>
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <select
+                  className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500"
+                  value={selectedMonth || ""}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                >
+                  <option value="">Select Month to Compare</option>
+                  {[
+                    ...Array(12).keys(),
+                  ].map((i) => {
+                    const date = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
+                    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+                    const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+                    return (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+                <select
+                  className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500"
+                  value={selectedYear || ""}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  <option value="">Select Year to Compare</option>
+                  {[
+                    ...Array(6).keys(),
+                  ].map((i) => {
+                    const year = new Date().getFullYear() - i;
+                    return (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
-            ))}
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+                  <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                  <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                      border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                      color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                      fontSize: '12px',
+                      borderRadius: '8px',
+                      padding: '10px',
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+                  <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" strokeWidth={2} dot={{ r: 4 }} />
+                  {selectedMonth && (
+                    <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" strokeWidth={2} dot={{ r: 4 }} />
+                  )}
+                  {selectedYear && (
+                    <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" strokeWidth={2} dot={{ r: 4 }} />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Users className="w-5 h-5 text-purple-500" />
+              Team Management
+            </h3>
+            <div className="flex justify-end mb-4">
+              <button
+                className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                onClick={() => setShowModal(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Add New Member
+              </button>
+            </div>
+            <div className="space-y-3 overflow-y-auto max-h-96">
+              {teamUsers.map((user) => (
+                <div
+                  key={user._id}
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+                      <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
+                      <p className="text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {statusIcons[user.status] || (
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">Unknown</span>
+                    )}
+                    <div className="relative">
+                      <button
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                        onClick={() =>
+                          setDropdownOpen(dropdownOpen === user._id ? null : user._id)
+                        }
+                      >
+                        <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                      </button>
+                      {dropdownOpen === user._id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10 overflow-hidden">
+                          <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => showConfirmation(user.isPaused ? "Resume" : "Pause", user._id, user.name)}
+                          >
+                            {user.isPaused ? "Resume" : "Pause"}
+                          </button>
+                          <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => handleUserAction("Reassign Leads", user._id)}
+                          >
+                            Reassign Leads
+                          </button>
+                          <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => handleUserAction("Change Role", user._id)}
+                          >
+                            Change Role
+                          </button>
+                          <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => handleUserAction("Password", user._id)}
+                          >
+                            Reset Password
+                          </button>
+                          <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => showConfirmation(user.Access ? "Revoke Access" : "Grant Access", user._id, user.name)}
+                            disabled={isAccessLoading}
+                          >
+                            {user.Access ? "Revoke Access" : "Grant Access"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1401,6 +1628,15 @@ const Dashboard = () => {
           isOpen={showPoSentDetailsModal}
           onClose={() => setShowPoSentDetailsModal(false)}
           poSentCountsAndTotals={poSentCountsAndTotals}
+          onMonthChange={setSelectedMonth}
+          onYearChange={setSelectedYear}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+        />
+        <DeliveredDetailsModal
+          isOpen={showDeliveredDetailsModal}
+          onClose={() => setShowDeliveredDetailsModal(false)}
+          deliveredMetrics={deliveredMetrics}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
           selectedMonth={selectedMonth}
