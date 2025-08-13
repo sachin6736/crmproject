@@ -66,6 +66,66 @@ export const getLeadCreationCounts = async (req, res, next) => {
     }
 };
 
+export const getOrderCounts = async (req, res) => {
+  try {
+    const { selectedMonth, selectedYear } = req.query;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+    const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+    const currentYearStart = new Date(currentYear, 0, 1);
+    const currentYearEnd = new Date(currentYear, 11, 31);
+
+    let selectedMonthQuery = {};
+    let selectedYearQuery = {};
+
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const selectedMonthStart = new Date(year, month - 1, 1);
+      const selectedMonthEnd = new Date(year, month, 0);
+      selectedMonthQuery = {
+        createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+      };
+    }
+
+    if (selectedYear) {
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31);
+      selectedYearQuery = {
+        createdAt: { $gte: yearStart, $lte: yearEnd },
+      };
+    }
+
+    const orderCounts = async (query) => {
+      const count = await Order.countDocuments(query);
+      return count;
+    };
+
+    const [todayCount, currentMonthCount, currentYearCount, selectedMonthCount, selectedYearCount] = await Promise.all([
+      orderCounts({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+      orderCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      orderCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
+      selectedMonth ? orderCounts(selectedMonthQuery) : Promise.resolve(0),
+      selectedYear ? orderCounts(selectedYearQuery) : Promise.resolve(0),
+    ]);
+
+    res.status(200).json({
+      today: todayCount,
+      currentMonth: currentMonthCount,
+      currentYear: currentYearCount,
+      ...(selectedMonth && { selectedMonth: selectedMonthCount }),
+      ...(selectedYear && { selectedYear: selectedYearCount }),
+    });
+  } catch (error) {
+    console.error("Error fetching order counts:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const getLeadStatusComparison = async (req, res) => {
     try {
       const { selectedMonth, selectedYear } = req.query;
@@ -136,130 +196,283 @@ export const getLeadStatusComparison = async (req, res) => {
 };
 
 export const getOrderStatusComparison = async (req, res) => {
-    try {
-      const { selectedMonth, selectedYear } = req.query;
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
-  
-      const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
-      const currentMonthEnd = new Date(currentYear, currentMonth, 0);
-      const previousMonthStart = new Date(currentYear, currentMonth - 2, 1);
-      const previousMonthEnd = new Date(currentYear, currentMonth - 1, 0);
-  
-      let selectedMonthQuery = {};
-      let selectedYearQuery = {};
-  
-      if (selectedMonth) {
-        const [year, month] = selectedMonth.split("-").map(Number);
-        const selectedMonthStart = new Date(year, month - 1, 1);
-        const selectedMonthEnd = new Date(year, month, 0);
-        selectedMonthQuery = {
-          createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
-        };
-      }
-  
-      if (selectedYear) {
-        const yearStart = new Date(selectedYear, 0, 1);
-        const yearEnd = new Date(selectedYear, 11, 31);
-        selectedYearQuery = {
-          createdAt: { $gte: yearStart, $lte: yearEnd },
-        };
-      }
-  
-      const statusCounts = async (query) => {
-        const counts = await Order.aggregate([
-          { $match: query },
-          { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]);
-        const result = {};
-        counts.forEach(({ _id, count }) => {
-          result[_id.replace(" ", "")] = count;
-        });
-        return result;
+  try {
+    const { selectedMonth, selectedYear } = req.query;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+    const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+    const previousMonthStart = new Date(currentYear, currentMonth - 2, 1);
+    const previousMonthEnd = new Date(currentYear, currentMonth - 1, 0);
+    const currentYearStart = new Date(currentYear, 0, 1);
+    const currentYearEnd = new Date(currentYear, 11, 31);
+
+    let selectedMonthQuery = {};
+    let selectedYearQuery = {};
+
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const selectedMonthStart = new Date(year, month - 1, 1);
+      const selectedMonthEnd = new Date(year, month, 0);
+      selectedMonthQuery = {
+        createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
       };
-  
-      const [currentMonthCounts, previousMonthCounts, selectedMonthCounts, selectedYearCounts] = await Promise.all([
-        statusCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
-        statusCounts({ createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } }),
-        selectedMonth ? statusCounts(selectedMonthQuery) : Promise.resolve({}),
-        selectedYear ? statusCounts(selectedYearQuery) : Promise.resolve({}),
-      ]);
-  
-      res.status(200).json({
-        currentMonth: currentMonthCounts,
-        previousMonth: previousMonthCounts,
-        ...(selectedMonth && { selectedMonth: selectedMonthCounts }),
-        ...(selectedYear && { selectedYear: selectedYearCounts }),
-      });
-    } catch (error) {
-      console.error("Error fetching order status comparison:", error);
-      res.status(500).json({ message: "Server error" });
     }
+
+    if (selectedYear) {
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31);
+      selectedYearQuery = {
+        createdAt: { $gte: yearStart, $lte: yearEnd },
+      };
+    }
+
+    const statusCounts = async (query) => {
+      const result = await Order.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            status: "$_id",
+            count: 1,
+          },
+        },
+      ]);
+      const counts = {};
+      result.forEach(({ status, count }) => {
+        counts[status] = count;
+      });
+      counts.TotalOrders = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      return counts;
+    };
+
+    const [currentMonthCounts, previousMonthCounts, currentYearCounts, selectedMonthCounts, selectedYearCounts] = await Promise.all([
+      statusCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      statusCounts({ createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } }),
+      statusCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
+      selectedMonth ? statusCounts(selectedMonthQuery) : Promise.resolve({}),
+      selectedYear ? statusCounts(selectedYearQuery) : Promise.resolve({}),
+    ]);
+
+    console.log("currentYearCounts:", currentYearCounts); // Debug log
+    console.log("selectedYearCounts:", selectedYearCounts); // Debug log
+
+    res.status(200).json({
+      currentMonth: currentMonthCounts,
+      previousMonth: previousMonthCounts,
+      currentYear: currentYearCounts,
+      ...(selectedMonth && { selectedMonth: selectedMonthCounts }),
+      ...(selectedYear && { selectedYear: selectedYearCounts }),
+    });
+  } catch (error) {
+    console.error("Error fetching order status comparison:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const getOrderAmountTotals = async (req, res) => {
-    try {
-        const { selectedMonth, selectedYear } = req.query;
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  try {
+    const { selectedMonth, selectedYear } = req.query;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-        const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
-        const currentMonthEnd = new Date(currentYear, currentMonth, 0);
-        
-        let selectedMonthQuery = {};
-        let selectedYearQuery = {};
+    const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+    const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+    const currentYearStart = new Date(currentYear, 0, 1);
+    const currentYearEnd = new Date(currentYear, 11, 31);
 
-        if (selectedMonth) {
-            const [year, month] = selectedMonth.split("-").map(Number);
-            const selectedMonthStart = new Date(year, month - 1, 1);
-            const selectedMonthEnd = new Date(year, month, 0);
-            selectedMonthQuery = {
-                createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
-            };
-        }
+    let selectedMonthQuery = {};
+    let selectedYearQuery = {};
 
-        if (selectedYear) {
-            const yearStart = new Date(selectedYear, 0, 1);
-            const yearEnd = new Date(selectedYear, 11, 31);
-            selectedYearQuery = {
-                createdAt: { $gte: yearStart, $lte: yearEnd },
-            };
-        }
-
-        const amountTotals = async (query) => {
-            const result = await Order.aggregate([
-                { $match: query },
-                { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
-            ]);
-            return result.length > 0 ? result[0].totalAmount : 0;
-        };
-
-        const [todayTotal, currentMonthTotal, selectedMonthTotal, selectedYearTotal] = await Promise.all([
-            amountTotals({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
-            amountTotals({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
-            selectedMonth ? amountTotals(selectedMonthQuery) : Promise.resolve(0),
-            selectedYear ? amountTotals(selectedYearQuery) : Promise.resolve(0),
-        ]);
-        console.log("todayTotal",todayTotal);
-        console.log("currentMonthTotal",currentMonthTotal);
-        console.log("selectedMonthTotal",selectedMonthTotal);
-        console.log("selectedYearTotal",selectedYearTotal);
-        
-
-        res.status(200).json({
-            today: todayTotal,
-            currentMonth: currentMonthTotal,
-            ...(selectedMonth && { selectedMonth: selectedMonthTotal }),
-            ...(selectedYear && { selectedYear: selectedYearTotal }),
-        });
-    } catch (error) {
-        console.error("Error fetching order amount totals:", error);
-        res.status(500).json({ message: "Server error" });
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const selectedMonthStart = new Date(year, month - 1, 1);
+      const selectedMonthEnd = new Date(year, month, 0);
+      selectedMonthQuery = {
+        createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+      };
     }
+
+    if (selectedYear) {
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31);
+      selectedYearQuery = {
+        createdAt: { $gte: yearStart, $lte: yearEnd },
+      };
+    }
+
+    const amountTotals = async (query) => {
+      const result = await Order.aggregate([
+        { $match: query },
+        { $group: { _id: null, totalAmount: { $sum: "$amount" } } },
+      ]);
+      return result.length > 0 ? result[0].totalAmount : 0;
+    };
+
+    const [todayTotal, currentMonthTotal, currentYearTotal, selectedMonthTotal, selectedYearTotal] = await Promise.all([
+      amountTotals({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+      amountTotals({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      amountTotals({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
+      selectedMonth ? amountTotals(selectedMonthQuery) : Promise.resolve(0),
+      selectedYear ? amountTotals(selectedYearQuery) : Promise.resolve(0),
+    ]);
+
+    console.log("todayTotal", todayTotal);
+    console.log("currentMonthTotal", currentMonthTotal);
+    console.log("currentYearTotal", currentYearTotal);
+    console.log("selectedMonthTotal", selectedMonthTotal);
+    console.log("selectedYearTotal", selectedYearTotal);
+
+    res.status(200).json({
+      today: todayTotal,
+      currentMonth: currentMonthTotal,
+      currentYear: currentYearTotal,
+      ...(selectedMonth && { selectedMonth: selectedMonthTotal }),
+      ...(selectedYear && { selectedYear: selectedYearTotal }),
+    });
+  } catch (error) {
+    console.error("Error fetching order amount totals:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getLeadCountsAndConversions = async (req, res) => {
+  try {
+    const { selectedMonth, selectedYear } = req.query;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+    const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+    const currentYearStart = new Date(currentYear, 0, 1);
+    const currentYearEnd = new Date(currentYear, 11, 31);
+    const previousMonthStart = new Date(currentYear, currentMonth - 2, 1);
+    const previousMonthEnd = new Date(currentYear, currentMonth - 1, 0);
+
+    let selectedMonthQuery = {};
+    let selectedYearQuery = {};
+
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const selectedMonthStart = new Date(year, month - 1, 1);
+      const selectedMonthEnd = new Date(year, month, 0);
+      selectedMonthQuery = {
+        createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+      };
+    }
+
+    if (selectedYear) {
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31);
+      selectedYearQuery = {
+        createdAt: { $gte: yearStart, $lte: yearEnd },
+      };
+    }
+
+    const leadCounts = async (query) => {
+      return await Lead.countDocuments(query);
+    };
+
+    const conversionRates = async (query) => {
+      const [total, converted] = await Promise.all([
+        Lead.countDocuments(query),
+        Lead.countDocuments({ ...query, status: "Ordered" }),
+      ]);
+      const rate = total > 0 ? (converted / total) * 100 : 0;
+      return { converted, total, rate };
+    };
+
+    const statusCounts = async (query) => {
+      const counts = await Lead.aggregate([
+        { $match: query },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]);
+      const result = {};
+      counts.forEach(({ _id, count }) => {
+        result[_id] = count;
+      });
+      return result;
+    };
+
+    const [todayCount, currentMonthCount, currentYearCount, selectedMonthCount, selectedYearCount, currentMonthConversion, currentYearConversion, selectedMonthConversion, selectedYearConversion, currentMonthStatus, previousMonthStatus, currentYearStatus, selectedMonthStatus, selectedYearStatus] = await Promise.all([
+      leadCounts({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+      leadCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      leadCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
+      selectedMonth ? leadCounts(selectedMonthQuery) : Promise.resolve(0),
+      selectedYear ? leadCounts(selectedYearQuery) : Promise.resolve(0),
+      conversionRates({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      conversionRates({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }), // Ensure currentYearConversion
+      selectedMonth ? conversionRates(selectedMonthQuery) : Promise.resolve({ converted: 0, total: 0, rate: 0 }),
+      selectedYear ? conversionRates(selectedYearQuery) : Promise.resolve({ converted: 0, total: 0, rate: 0 }),
+      statusCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      statusCounts({ createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } }),
+      statusCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }), // Ensure currentYearStatus
+      selectedMonth ? statusCounts(selectedMonthQuery) : Promise.resolve({}),
+      selectedYear ? statusCounts(selectedYearQuery) : Promise.resolve({}),
+    ]);
+
+    res.status(200).json({
+      leadCounts: {
+        today: todayCount,
+        currentMonth: currentMonthCount,
+        currentYear: currentYearCount,
+        ...(selectedMonth && { selectedMonth: selectedMonthCount }),
+        ...(selectedYear && { selectedYear: selectedYearCount }),
+      },
+      conversionRates: {
+        currentMonth: currentMonthConversion,
+        currentYear: currentYearConversion, // Include currentYear
+        ...(selectedMonth && { selectedMonth: selectedMonthConversion }),
+        ...(selectedYear && { selectedYear: selectedYearConversion }),
+      },
+      statusComparison: {
+        currentMonth: currentMonthStatus,
+        previousMonth: previousMonthStatus,
+        currentYear: currentYearStatus, // Include currentYear
+        ...(selectedMonth && { selectedMonth: selectedMonthStatus }),
+        ...(selectedYear && { selectedYear: selectedYearStatus }),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching lead counts and conversions:", error);
+    res.status(500).json({
+      message: "Server error",
+      conversionRates: {
+        currentMonth: { converted: 0, total: 0, rate: 0 },
+        currentYear: { converted: 0, total: 0, rate: 0 }, // Include currentYear
+        ...(selectedMonth && { selectedMonth: { converted: 0, total: 0, rate: 0 } }),
+        ...(selectedYear && { selectedYear: { converted: 0, total: 0, rate: 0 } }),
+      },
+      leadCounts: {
+        today: 0,
+        currentMonth: 0,
+        currentYear: 0,
+        ...(selectedMonth && { selectedMonth: 0 }),
+        ...(selectedYear && { selectedYear: 0 }),
+      },
+      statusComparison: {
+        currentMonth: {},
+        previousMonth: {},
+        currentYear: {}, // Include currentYear
+        ...(selectedMonth && { selectedMonth: {} }),
+        ...(selectedYear && { selectedYear: {} }),
+      },
+    });
+  }
 };
 
 export const getPoSentCountsAndTotals = async (req, res) => {
