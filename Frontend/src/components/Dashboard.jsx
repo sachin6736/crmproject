@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import FullPageLoader from "./utilities/FullPageLoader";
 import { useTheme } from "../context/ThemeContext";
+import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/solid";
 
 const ConfirmationModal = ({ isOpen, onConfirm, onCancel, action, userName }) => {
   if (!isOpen) return null;
@@ -60,10 +61,21 @@ const ConfirmationModal = ({ isOpen, onConfirm, onCancel, action, userName }) =>
   );
 };
 
-const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, statusComparison: initialStatusComparison }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [statusComparison, setStatusComparison] = useState(initialStatusComparison || { currentMonth: {}, previousMonth: {}, currentYear: {} });
+  const [leadCounts, setLeadCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
+  const [conversionRates, setConversionRates] = useState({
+    currentMonth: { converted: 0, total: 0, rate: 0 },
+    currentYear: { converted: 0, total: 0, rate: 0 },
+    selectedMonth: { converted: 0, total: 0, rate: 0 },
+    selectedYear: { converted: 0, total: 0, rate: 0 },
+  });
+  const [comparisonText, setComparisonText] = useState({ totalLeads: "", conversionRate: "", totalLeadsMeta: { direction: "", percentage: 0, difference: 0 }, conversionRateMeta: { direction: "", percentage: 0 } });
 
   const statusColors = {
     Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
@@ -79,6 +91,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   const lineColors = {
     currentMonth: "#8884d8",
     previousMonth: "#82ca9d",
+    currentYear: "#00bcd4",
     selectedMonth: "#ff7300",
     selectedYear: "#d81b60",
   };
@@ -98,6 +111,89 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
     if (!data) return 0;
     return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
   };
+
+  const calculateTotalLeadsComparison = (current, selected, period, isYear = false) => {
+    const currentValue = calculateTotal(current);
+    const selectedValue = calculateTotal(selected);
+    if (selectedValue === 0) return { direction: "", percentage: 0, difference: 0, text: "" };
+    const difference = currentValue - selectedValue;
+    const percentage = ((difference / selectedValue) * 100).toFixed(2);
+    const direction = difference >= 0 ? "increased" : "decreased";
+    const absDifference = Math.abs(difference);
+    const comparePeriod = isYear ? "current year" : "current month";
+    return {
+      direction,
+      percentage: Math.abs(percentage),
+      difference: absDifference,
+      text: `Total leads ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} total leads = ${selectedValue}, ${comparePeriod} total leads = ${currentValue}`,
+    };
+  };
+
+  const calculateConversionComparison = (current, selected, period, isYear = false) => {
+    if (selected.total === 0 || current.total === 0) return { direction: "", percentage: 0, text: "" };
+    const currentRate = current.rate;
+    const selectedRate = selected.rate;
+    const difference = currentRate - selectedRate;
+    const percentage = selectedRate !== 0 ? ((difference / selectedRate) * 100).toFixed(2) : 0;
+    const direction = difference >= 0 ? "increased" : "decreased";
+    const comparePeriod = isYear ? "current year" : "current month";
+    return {
+      direction,
+      percentage: Math.abs(percentage),
+      text: `Conversion rate ${direction} by ${Math.abs(percentage)}%. Selected ${period} = ${selected.converted} out of ${selected.total} leads converted to sales (${selectedRate.toFixed(2)}% conversion rate). ${comparePeriod.charAt(0).toUpperCase() + comparePeriod.slice(1)} = ${current.converted} out of ${current.total} leads converted to sales (${currentRate.toFixed(2)}% conversion rate)`,
+    };
+  };
+
+  useEffect(() => {
+    const fetchComparisonData = async () => {
+      try {
+        const query = [];
+        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
+        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
+        const queryString = query.length ? `?${query.join("&")}` : "";
+        const res = await fetch(`http://localhost:3000/Admin/getLeadCountsAndConversions${queryString}`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch lead counts and conversions");
+        const data = await res.json();
+        setStatusComparison(data.statusComparison || { currentMonth: {}, previousMonth: {}, currentYear: {} });
+        setLeadCounts({
+          today: data.leadCounts.today || 0,
+          currentMonth: data.leadCounts.currentMonth || 0,
+          currentYear: data.leadCounts.currentYear || 0,
+          ...(selectedMonth && { selectedMonth: data.leadCounts.selectedMonth || 0 }),
+          ...(selectedYear && { selectedYear: data.leadCounts.selectedYear || 0 }),
+        });
+        setConversionRates({
+          currentMonth: data.conversionRates?.currentMonth || { converted: 0, total: 0, rate: 0 },
+          currentYear: data.conversionRates?.currentYear || { converted: 0, total: 0, rate: 0 },
+          ...(selectedMonth && { selectedMonth: data.conversionRates?.selectedMonth || { converted: 0, total: 0, rate: 0 } }),
+          ...(selectedYear && { selectedYear: data.conversionRates?.selectedYear || { converted: 0, total: 0, rate: 0 } }),
+        });
+
+        // Calculate comparison text
+        let totalLeadsText = { direction: "", percentage: 0, difference: 0, text: "" };
+        let conversionText = { direction: "", percentage: 0, text: "" };
+        if (selectedMonth) {
+          totalLeadsText = calculateTotalLeadsComparison(data.statusComparison.currentMonth, data.statusComparison.selectedMonth, "month");
+          conversionText = calculateConversionComparison(data.conversionRates.currentMonth, data.conversionRates.selectedMonth, "month");
+        } else if (selectedYear) {
+          totalLeadsText = calculateTotalLeadsComparison(data.statusComparison.currentYear, data.statusComparison.selectedYear, "year", true);
+          conversionText = calculateConversionComparison(data.conversionRates.currentYear, data.conversionRates.selectedYear, "year", true);
+        }
+        setComparisonText({
+          totalLeads: totalLeadsText.text,
+          conversionRate: conversionText.text,
+          totalLeadsMeta: { direction: totalLeadsText.direction, percentage: totalLeadsText.percentage, difference: totalLeadsText.difference },
+          conversionRateMeta: { direction: conversionText.direction, percentage: conversionText.percentage },
+        });
+      } catch (error) {
+        console.error("Error fetching lead counts and conversions:", error);
+      }
+    };
+
+    fetchComparisonData();
+  }, [selectedMonth, selectedYear]);
 
   const chartData = statuses.map(status => ({
     status: status === "TotalLeads" ? "Total Leads" : status,
@@ -153,6 +249,30 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Automatically Assigned</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{assignedAutomatically}</span>
             </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Lead Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.today}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Lead Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.currentMonth}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year Lead Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.currentYear}</span>
+            </div>
+            {selectedMonth && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Lead Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.selectedMonth || 0}</span>
+              </div>
+            )}
+            {selectedYear && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Lead Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.selectedYear || 0}</span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -160,8 +280,11 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedMonth || ""}
-                onChange={(e) => onMonthChange(e.target.value)}
+                value={selectedMonth}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  setSelectedYear(""); // Reset year when month is selected
+                }}
               >
                 <option value="">Select Month to Compare</option>
                 {generateMonthOptions().map(({ value, label }) => (
@@ -170,8 +293,11 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               </select>
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedYear || ""}
-                onChange={(e) => onYearChange(e.target.value)}
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setSelectedMonth(""); // Reset month when year is selected
+                }}
               >
                 <option value="">Select Year to Compare</option>
                 {generateYearOptions().map(({ value, label }) => (
@@ -179,6 +305,69 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
                 ))}
               </select>
             </div>
+            {(comparisonText.totalLeads || comparisonText.conversionRate) && (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+                {comparisonText.totalLeads && (
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0">
+                      {comparisonText.totalLeadsMeta.direction === "increased" ? (
+                        <ArrowUpIcon className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <ArrowDownIcon className="w-5 h-5 text-red-500" />
+                      )}
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Total Leads Comparison</h5>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
+                        {comparisonText.totalLeadsMeta.direction === "increased" ? (
+                          <span>
+                            Total leads <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
+                            <span className="font-bold">{comparisonText.totalLeadsMeta.percentage}%</span> (
+                            {comparisonText.totalLeadsMeta.difference} leads).
+                          </span>
+                        ) : (
+                          <span>
+                            Total leads <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
+                            <span className="font-bold">{comparisonText.totalLeadsMeta.percentage}%</span> (
+                            {comparisonText.totalLeadsMeta.difference} leads).
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText.totalLeads.split(". ")[1]}</p>
+                    </div>
+                  </div>
+                )}
+                {comparisonText.conversionRate && (
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0">
+                      {comparisonText.conversionRateMeta.direction === "increased" ? (
+                        <ArrowUpIcon className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <ArrowDownIcon className="w-5 h-5 text-red-500" />
+                      )}
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Conversion Rate Comparison</h5>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
+                        {comparisonText.conversionRateMeta.direction === "increased" ? (
+                          <span>
+                            Conversion rate <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
+                            <span className="font-bold">{comparisonText.conversionRateMeta.percentage}%</span>.
+                          </span>
+                        ) : (
+                          <span>
+                            Conversion rate <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
+                            <span className="font-bold">{comparisonText.conversionRateMeta.percentage}%</span>.
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText.conversionRate.split(". ")[1]}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">{comparisonText.conversionRate.split(". ")[2]}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
@@ -236,14 +425,16 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {} }, amountTotals = { today: 0, currentMonth: 0 }, poSentCountsAndTotals = { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusComparison, amountTotals: initialAmountTotals }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
-
-  console.log("OrderDetailsModal - statusComparison:", statusComparison);
-  console.log("OrderDetailsModal - amountTotals:", amountTotals);
-  console.log("OrderDetailsModal - poSentCountsAndTotals:", poSentCountsAndTotals);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [statusComparison, setStatusComparison] = useState(initialStatusComparison || { currentMonth: {}, previousMonth: {}, currentYear: {} });
+  const [amountTotals, setAmountTotals] = useState(initialAmountTotals || { today: 0, currentMonth: 0, currentYear: 0 });
+  const [orderCounts, setOrderCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
+  const [comparisonText, setComparisonText] = useState("");
 
   const statusColors = {
     LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -267,6 +458,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
     previousMonth: "#82ca9d",
     selectedMonth: "#ff7300",
     selectedYear: "#d81b60",
+    currentYear: "#00b7eb", // Added for current year line in chart
   };
 
   const statuses = [
@@ -291,12 +483,74 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
     return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
   };
 
+  const calculateComparison = (current, selected, period) => {
+    const selectedValue = calculateTotal(selected);
+    if (selectedValue === 0) {
+      return `No data available for the selected ${period}.`;
+    }
+    const currentValue = calculateTotal(current);
+    const difference = currentValue - selectedValue;
+    const percentage = selectedValue !== 0 ? ((difference / selectedValue) * 100).toFixed(2) : 0;
+    const direction = difference >= 0 ? "increased" : "decreased";
+    const absDifference = Math.abs(difference);
+    const colorClass = direction === "increased" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+    return (
+      <span>
+        Total orders <span className={`font-bold ${colorClass}`}>{direction}</span> by{" "}
+        <span className="font-bold text-blue-600 dark:text-blue-400">{Math.abs(percentage)}%</span> (
+        <span className="font-bold">{absDifference}</span>) compared to selected {period}. Selected {period} total orders=
+        <span className="font-bold">{selectedValue}</span>, current {period} total orders=
+        <span className="font-bold">{currentValue}</span>
+      </span>
+    );
+  };
+
+  useEffect(() => {
+    const fetchComparisonData = async () => {
+      try {
+        const query = [];
+        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
+        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
+        const queryString = query.length ? `?${query.join("&")}` : "";
+        const [statusRes, amountRes, countsRes] = await Promise.all([
+          fetch(`http://localhost:3000/Admin/getOrderStatusComparison${queryString}`, { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getOrderAmountTotals${queryString}`, { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getOrderCounts${queryString}`, { credentials: "include" }),
+        ]);
+        if (!statusRes.ok || !amountRes.ok || !countsRes.ok) {
+          throw new Error("Failed to fetch order data");
+        }
+        const [statusData, amountData, countsData] = await Promise.all([
+          statusRes.json(),
+          amountRes.json(),
+          countsRes.json(),
+        ]);
+        setStatusComparison(statusData);
+        setAmountTotals(amountData);
+        setOrderCounts(countsData);
+        
+        // Calculate comparison text
+        const text = selectedMonth
+          ? calculateComparison(statusData.currentMonth, statusData.selectedMonth, "month")
+          : selectedYear
+          ? calculateComparison(statusData.currentYear, statusData.selectedYear, "year")
+          : "";
+        setComparisonText(text);
+      } catch (error) {
+        console.error("Error fetching order data:", error);
+      }
+    };
+
+    fetchComparisonData();
+  }, [selectedMonth, selectedYear]);
+
   const chartData = statuses.map(status => ({
     status: status === "TotalOrders" ? "Total Orders" : status.replace(/([A-Z])/g, " $1").trim(),
     currentMonth: status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0,
     previousMonth: status === "TotalOrders" ? calculateTotal(statusComparison.previousMonth) : statusComparison.previousMonth?.[status] || 0,
     ...(selectedMonth && statusComparison.selectedMonth ? { selectedMonth: status === "TotalOrders" ? calculateTotal(statusComparison.selectedMonth) : statusComparison.selectedMonth[status] || 0 } : {}),
     ...(selectedYear && statusComparison.selectedYear ? { selectedYear: status === "TotalOrders" ? calculateTotal(statusComparison.selectedYear) : statusComparison.selectedYear[status] || 0 } : {}),
+    ...(selectedYear && statusComparison.currentYear ? { currentYear: status === "TotalOrders" ? calculateTotal(statusComparison.currentYear) : statusComparison.currentYear[status] || 0 } : {}),
   }));
 
   const generateMonthOptions = () => {
@@ -336,75 +590,71 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
       >
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Details</h3>
         <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-2">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Total Amount</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.today || 0}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Amount</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.today || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Total</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Order Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.currentMonth || 0}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Order Amount</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.currentMonth || 0).toFixed(2)}</span>
             </div>
-            {selectedMonth && (
-              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Total</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedMonth || 0).toFixed(2)}</span>
-              </div>
-            )}
-            {selectedYear && (
-              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Total</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedYear || 0).toFixed(2)}</span>
-              </div>
-            )}
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's PO Sent Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.today?.count || 0}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year Order Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.currentYear || 0}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's PO Sent Total</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month PO Sent Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.currentMonth?.count || 0}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month PO Sent Total</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.currentMonth?.totalAmount || 0).toFixed(2)}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year Order Amount</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.currentYear || 0).toFixed(2)}</span>
             </div>
             {selectedMonth && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month PO Sent Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.selectedMonth?.count || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Order Count</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.selectedMonth || 0}</span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month PO Sent Total</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.selectedMonth?.totalAmount || 0).toFixed(2)}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Order Amount</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedMonth || 0).toFixed(2)}</span>
                 </div>
               </>
             )}
             {selectedYear && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year PO Sent Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.selectedYear?.count || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Order Count</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.selectedYear || 0}</span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year PO Sent Total</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.selectedYear?.totalAmount || 0).toFixed(2)}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Order Amount</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedYear || 0).toFixed(2)}</span>
                 </div>
               </>
             )}
           </div>
+          {comparisonText && (
+            <div className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-2 rounded-lg">
+              <p>{comparisonText}</p>
+            </div>
+          )}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Order Status Comparison</h4>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedMonth || ""}
-                onChange={(e) => onMonthChange(e.target.value)}
+                value={selectedMonth}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  setSelectedYear(""); // Reset year when month is selected
+                }}
               >
                 <option value="">Select Month to Compare</option>
                 {generateMonthOptions().map(({ value, label }) => (
@@ -413,8 +663,11 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
               </select>
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedYear || ""}
-                onChange={(e) => onYearChange(e.target.value)}
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setSelectedMonth(""); // Reset month when year is selected
+                }}
               >
                 <option value="">Select Year to Compare</option>
                 {generateYearOptions().map(({ value, label }) => (
@@ -442,7 +695,10 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
                   <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
                 )}
                 {selectedYear && (
-                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                  <>
+                    <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                    <Line type="monotone" dataKey="currentYear" stroke={lineColors.currentYear} name="Current Year" />
+                  </>
                 )}
               </LineChart>
             </ResponsiveContainer>
@@ -478,12 +734,56 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
   );
 };
 
-const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals = { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+
+
+const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals: initialPoSentCountsAndTotals }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState(initialPoSentCountsAndTotals || { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
+  const [comparisonText, setComparisonText] = useState("");
 
   console.log("PoSentDetailsModal - poSentCountsAndTotals:", poSentCountsAndTotals);
+
+  const calculateComparison = (current, selected, period) => {
+    const currentValue = current?.count || 0;
+    const selectedValue = selected?.count || 0;
+    if (selectedValue === 0) return "";
+    const difference = currentValue - selectedValue;
+    const percentage = ((difference / selectedValue) * 100).toFixed(2);
+    const direction = difference >= 0 ? "increased" : "decreased";
+    const absDifference = Math.abs(difference);
+    return `PO sent count ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} PO sent count=${selectedValue}, current month PO sent count=${currentValue}`;
+  };
+
+  useEffect(() => {
+    const fetchComparisonData = async () => {
+      try {
+        const query = [];
+        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
+        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
+        const queryString = query.length ? `?${query.join("&")}` : "";
+        const res = await fetch(`http://localhost:3000/Admin/getPoSentCountsAndTotals${queryString}`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch PO sent data");
+        const data = await res.json();
+        setPoSentCountsAndTotals(data);
+
+        // Calculate comparison text
+        const text = selectedMonth
+          ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
+          : selectedYear
+          ? calculateComparison(data.currentMonth, data.selectedYear, "year")
+          : "";
+        setComparisonText(text);
+      } catch (error) {
+        console.error("Error fetching PO sent data:", error);
+      }
+    };
+
+    fetchComparisonData();
+  }, [selectedMonth, selectedYear]);
 
   const generateMonthOptions = () => {
     const options = [];
@@ -564,11 +864,19 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals = { today: 
               </>
             )}
           </div>
+          {comparisonText && (
+            <div className="text-xs text-gray-600 dark:text-gray-300">
+              <p>{comparisonText}</p>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <select
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedMonth || ""}
-              onChange={(e) => onMonthChange(e.target.value)}
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setSelectedYear(""); // Reset year when month is selected
+              }}
             >
               <option value="">Select Month to Compare</option>
               {generateMonthOptions().map(({ value, label }) => (
@@ -577,8 +885,11 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals = { today: 
             </select>
             <select
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedYear || ""}
-              onChange={(e) => onYearChange(e.target.value)}
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setSelectedMonth(""); // Reset month when year is selected
+              }}
             >
               <option value="">Select Year to Compare</option>
               {generateYearOptions().map(({ value, label }) => (
@@ -600,12 +911,54 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals = { today: 
   );
 };
 
-const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics = { today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics: initialDeliveredMetrics }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [deliveredMetrics, setDeliveredMetrics] = useState(initialDeliveredMetrics || { today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
+  const [comparisonText, setComparisonText] = useState("");
 
   console.log("DeliveredDetailsModal - deliveredMetrics:", deliveredMetrics);
+
+  const calculateComparison = (current, selected, period) => {
+    const currentValue = current?.profit || 0;
+    const selectedValue = selected?.profit || 0;
+    if (selectedValue === 0) return "";
+    const difference = currentValue - selectedValue;
+    const percentage = ((difference / selectedValue) * 100).toFixed(2);
+    const direction = difference >= 0 ? "increased" : "decreased";
+    const absDifference = Math.abs(difference);
+    return `Profit ${direction} by ${Math.abs(percentage)}% (${absDifference.toFixed(2)}) compared to selected ${period}. Selected ${period} profit=${selectedValue.toFixed(2)}, current month profit=${currentValue.toFixed(2)}`;
+  };
+
+  useEffect(() => {
+    const fetchComparisonData = async () => {
+      try {
+        const query = [];
+        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
+        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
+        const queryString = query.length ? `?${query.join("&")}` : "";
+        const res = await fetch(`http://localhost:3000/Admin/getDeliveredMetrics${queryString}`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch delivered metrics");
+        const data = await res.json();
+        setDeliveredMetrics(data);
+
+        // Calculate comparison text
+        const text = selectedMonth
+          ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
+          : selectedYear
+          ? calculateComparison(data.currentMonth, data.selectedYear, "year")
+          : "";
+        setComparisonText(text);
+      } catch (error) {
+        console.error("Error fetching delivered metrics:", error);
+      }
+    };
+
+    fetchComparisonData();
+  }, [selectedMonth, selectedYear]);
 
   const generateMonthOptions = () => {
     const options = [];
@@ -629,7 +982,6 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics = { today: { 
     return options;
   };
 
-  // Prepare data for pie chart - revenue vs profit for each period
   const periods = [
     { name: 'Today', data: deliveredMetrics.today },
     { name: 'Current Month', data: deliveredMetrics.currentMonth },
@@ -637,7 +989,7 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics = { today: { 
     ...(selectedYear ? [{ name: 'Selected Year', data: deliveredMetrics.selectedYear }] : []),
   ];
 
-  const COLORS = ['#00C49F', '#FF8042']; // Green for profit, Orange for revenue
+  const COLORS = ['#00C49F', '#FF8042'];
 
   const renderActiveShape = (props) => {
     const RADIAN = Math.PI / 180;
@@ -716,8 +1068,11 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics = { today: { 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
             <select
               className="w-full sm:w-1/2 border p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
-              value={selectedMonth || ""}
-              onChange={(e) => onMonthChange(e.target.value)}
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setSelectedYear(""); // Reset year when month is selected
+              }}
             >
               <option value="">Select Month to Compare</option>
               {generateMonthOptions().map(({ value, label }) => (
@@ -726,8 +1081,11 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics = { today: { 
             </select>
             <select
               className="w-full sm:w-1/2 border p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
-              value={selectedYear || ""}
-              onChange={(e) => onYearChange(e.target.value)}
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setSelectedMonth(""); // Reset month when year is selected
+              }}
             >
               <option value="">Select Year to Compare</option>
               {generateYearOptions().map(({ value, label }) => (
@@ -735,6 +1093,11 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics = { today: { 
               ))}
             </select>
           </div>
+          {comparisonText && (
+            <div className="text-xs text-gray-600 dark:text-gray-300">
+              <p>{comparisonText}</p>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {periods.map((period, index) => (
               <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -822,11 +1185,12 @@ const Dashboard = () => {
   const [showLeadDetailsModal, setShowLeadDetailsModal] = useState(false);
   const [leadCreationCounts, setLeadCreationCounts] = useState({ createdByUser: 0, assignedAutomatically: 0 });
   const [statusComparison, setStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
-  const [selectedMonth, setSelectedMonth] = useState("");
-  const [selectedYear, setSelectedYear] = useState("");
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [orderComparisonMonth, setOrderComparisonMonth] = useState("");
+const [orderComparisonYear, setOrderComparisonYear] = useState("");
   const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
   const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0 });
+  const [orderCounts, setOrderCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
   const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState({ today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
   const [showPoSentDetailsModal, setShowPoSentDetailsModal] = useState(false);
   const [deliveredMetrics, setDeliveredMetrics] = useState({ today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
@@ -913,8 +1277,8 @@ const Dashboard = () => {
     status: status === "TotalOrders" ? "Total Orders" : status.replace(/([A-Z])/g, " $1").trim(),
     currentMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.currentMonth) : orderStatusComparison.currentMonth?.[status] || 0,
     previousMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.previousMonth) : orderStatusComparison.previousMonth?.[status] || 0,
-    ...(selectedMonth && orderStatusComparison.selectedMonth ? { selectedMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedMonth) : orderStatusComparison.selectedMonth[status] || 0 } : {}),
-    ...(selectedYear && orderStatusComparison.selectedYear ? { selectedYear: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedYear) : orderStatusComparison.selectedYear[status] || 0 } : {}),
+    ...(orderComparisonMonth && orderStatusComparison.selectedMonth ? { selectedMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedMonth) : orderStatusComparison.selectedMonth[status] || 0 } : {}),
+    ...(orderComparisonYear && orderStatusComparison.selectedYear ? { selectedYear: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedYear) : orderStatusComparison.selectedYear[status] || 0 } : {}),
   }));
 
   const getStatusCount = (status) => {
@@ -939,9 +1303,9 @@ const Dashboard = () => {
         } else if (data.user.role === "procurement") {
           navigate("/home/procurementdashboard");
         } else if (data.user.role !== "admin") {
-          navigate("/home"); // Redirect other roles (e.g., customer_relations) to home
+          navigate("/home");
         } else {
-          setLoading(false); // Admin stays on this dashboard
+          setLoading(false);
         }
       } catch (error) {
         console.error("Role verification failed:", error);
@@ -956,74 +1320,65 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const query = [];
-        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
-        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
+        if (orderComparisonMonth) query.push(`selectedMonth=${orderComparisonMonth}`);
+        if (orderComparisonYear) query.push(`selectedYear=${orderComparisonYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
-
-        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadStatusComparisonRes, orderStatusComparisonRes, orderAmountTotalsRes, poSentCountsAndTotalsRes, deliveredMetricsRes] = await Promise.all([
+  
+        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadCountsAndConversionsRes, orderStatusComparisonRes, orderAmountTotalsRes, orderCountsRes, poSentCountsAndTotalsRes, deliveredMetricsRes] = await Promise.all([
           fetch("http://localhost:3000/Admin/getleadcount", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getcountbystatus", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getallorders", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getmyteam", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getLeadCreationCounts", { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getLeadStatusComparison${queryString}`, { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getLeadCountsAndConversions${queryString}`, { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getOrderStatusComparison${queryString}`, { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getOrderAmountTotals${queryString}`, { credentials: "include" }),
+          fetch(`http://localhost:3000/Admin/getOrderCounts${queryString}`, { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getPoSentCountsAndTotals${queryString}`, { credentials: "include" }),
           fetch(`http://localhost:3000/Admin/getDeliveredMetrics${queryString}`, { credentials: "include" }),
         ]);
-
+  
         const errors = [];
         if (!leadRes.ok) errors.push(`Failed to fetch lead count: ${leadRes.status}`);
         if (!statusRes.ok) errors.push(`Failed to fetch status counts: ${statusRes.status}`);
         if (!ordersRes.ok) errors.push(`Failed to fetch orders: ${ordersRes.status}`);
         if (!usersRes.ok) errors.push(`Failed to fetch team users: ${usersRes.status}`);
         if (!creationCountsRes.ok) errors.push(`Failed to fetch lead creation counts: ${creationCountsRes.status}`);
-        if (!leadStatusComparisonRes.ok) errors.push(`Failed to fetch lead status comparison: ${leadStatusComparisonRes.status}`);
+        if (!leadCountsAndConversionsRes.ok) errors.push(`Failed to fetch lead counts and conversions: ${leadCountsAndConversionsRes.status}`);
         if (!orderStatusComparisonRes.ok) errors.push(`Failed to fetch order status comparison: ${orderStatusComparisonRes.status}`);
         if (!orderAmountTotalsRes.ok) errors.push(`Failed to fetch order amount totals: ${orderAmountTotalsRes.status}`);
+        if (!orderCountsRes.ok) errors.push(`Failed to fetch order counts: ${orderCountsRes.status}`);
         if (!poSentCountsAndTotalsRes.ok) errors.push(`Failed to fetch PO sent counts and totals: ${poSentCountsAndTotalsRes.status}`);
         if (!deliveredMetricsRes.ok) errors.push(`Failed to fetch delivered metrics: ${deliveredMetricsRes.status}`);
-
+  
         if (errors.length) {
           console.error("Fetch errors:", errors);
           errors.forEach(error => toast.error(error));
           return;
         }
-
+  
         const leadData = await leadRes.json();
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
         const usersData = await usersRes.json();
         const creationCountsData = await creationCountsRes.json();
-        const leadStatusComparisonData = await leadStatusComparisonRes.json();
+        const leadCountsAndConversionsData = await leadCountsAndConversionsRes.json();
         const orderStatusComparisonData = await orderStatusComparisonRes.json();
         const orderAmountTotalsData = await orderAmountTotalsRes.json();
+        const orderCountsData = await orderCountsRes.json();
         const poSentCountsAndTotalsData = await poSentCountsAndTotalsRes.json();
         const deliveredMetricsData = await deliveredMetricsRes.json();
-
-        console.log("Fetched data:", {
-          leadData,
-          statusData,
-          ordersData,
-          usersData,
-          creationCountsData,
-          leadStatusComparisonData,
-          orderStatusComparisonData,
-          orderAmountTotalsData,
-          poSentCountsAndTotalsData,
-          deliveredMetricsData,
-        });
-
+  
         setTotalClients(leadData.leadcount || 0);
         setCountbystatus(statusData || []);
         setOrders(ordersData || []);
         setTeamUsers(usersData || []);
+        setOrderCounts(orderCountsData || { today: 0, currentMonth: 0, currentYear: 0 });
         setLeadCreationCounts({
           createdByUser: creationCountsData.createdByUser || 0,
           assignedAutomatically: creationCountsData.assignedAutomatically || 0,
         });
-        setStatusComparison(leadStatusComparisonData || { currentMonth: {}, previousMonth: {} });
+        setStatusComparison(leadCountsAndConversionsData.statusComparison || { currentMonth: {}, previousMonth: {} });
         setOrderStatusComparison(orderStatusComparisonData || { currentMonth: {}, previousMonth: {} });
         setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0 });
         setPoSentCountsAndTotals(poSentCountsAndTotalsData || { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
@@ -1035,9 +1390,9 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-
+  
     fetchData();
-  }, [selectedMonth, selectedYear]);
+  }, [orderComparisonMonth, orderComparisonYear]);
 
   const handleAddUser = async () => {
     if (!newMember.name || !newMember.email || !newMember.role) {
@@ -1245,8 +1600,8 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <select
                   className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500"
-                  value={selectedMonth || ""}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  value={orderComparisonMonth}
+                  onChange={(e) => setOrderComparisonMonth(e.target.value)}
                 >
                   <option value="">Select Month to Compare</option>
                   {[
@@ -1264,8 +1619,8 @@ const Dashboard = () => {
                 </select>
                 <select
                   className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500"
-                  value={selectedYear || ""}
-                  onChange={(e) => setSelectedYear(e.target.value)}
+                  value={orderComparisonYear}
+                  onChange={(e) => setOrderComparisonYear(e.target.value)}
                 >
                   <option value="">Select Year to Compare</option>
                   {[
@@ -1298,14 +1653,35 @@ const Dashboard = () => {
                   <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
                   <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" strokeWidth={2} dot={{ r: 4 }} />
                   <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" strokeWidth={2} dot={{ r: 4 }} />
-                  {selectedMonth && (
+                  {orderComparisonMonth && (
                     <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" strokeWidth={2} dot={{ r: 4 }} />
                   )}
-                  {selectedYear && (
+                  {orderComparisonYear && (
                     <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" strokeWidth={2} dot={{ r: 4 }} />
                   )}
                 </LineChart>
               </ResponsiveContainer>
+              {/* Add comparison result for Ordered */}
+              {(orderComparisonMonth || orderComparisonYear) && (
+                <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                  {orderComparisonMonth && (
+                    <p>
+                      Number of orders {orderStatusComparison.selectedMonth?.Ordered > orderStatusComparison.currentMonth?.Ordered ? 'increased' : 'decreased'} by{' '}
+                      {Math.abs(((orderStatusComparison.selectedMonth?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0)) / (orderStatusComparison.selectedMonth?.Ordered || 1) * 100).toFixed(2)}%
+                      ({Math.abs((orderStatusComparison.selectedMonth?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0))}) compared to selected month. 
+                      Selected month orders: {orderStatusComparison.selectedMonth?.Ordered || 0}, Current month orders: {orderStatusComparison.currentMonth?.Ordered || 0}
+                    </p>
+                  )}
+                  {orderComparisonYear && (
+                    <p>
+                      Number of orders {orderStatusComparison.selectedYear?.Ordered > orderStatusComparison.currentMonth?.Ordered ? 'increased' : 'decreased'} by{' '}
+                      {Math.abs(((orderStatusComparison.selectedYear?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0)) / (orderStatusComparison.selectedYear?.Ordered || 1) * 100).toFixed(2)}%
+                      ({Math.abs((orderStatusComparison.selectedYear?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0))}) compared to selected year. 
+                      Selected year orders: {orderStatusComparison.selectedYear?.Ordered || 0}, Current month orders: {orderStatusComparison.currentMonth?.Ordered || 0}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1603,45 +1979,28 @@ const Dashboard = () => {
           userName={confirmUserName}
         />
         <LeadDetailsModal
-          isOpen={showLeadDetailsModal}
-          onClose={() => setShowLeadDetailsModal(false)}
-          createdByUser={leadCreationCounts.createdByUser}
-          assignedAutomatically={leadCreationCounts.assignedAutomatically}
-          statusComparison={statusComparison}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
-        <OrderDetailsModal
-          isOpen={showOrderDetailsModal}
-          onClose={() => setShowOrderDetailsModal(false)}
-          statusComparison={orderStatusComparison}
-          amountTotals={orderAmountTotals}
-          poSentCountsAndTotals={poSentCountsAndTotals}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
-        <PoSentDetailsModal
-          isOpen={showPoSentDetailsModal}
-          onClose={() => setShowPoSentDetailsModal(false)}
-          poSentCountsAndTotals={poSentCountsAndTotals}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
-        <DeliveredDetailsModal
-          isOpen={showDeliveredDetailsModal}
-          onClose={() => setShowDeliveredDetailsModal(false)}
-          deliveredMetrics={deliveredMetrics}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-        />
+            isOpen={showLeadDetailsModal}
+            onClose={() => setShowLeadDetailsModal(false)}
+            createdByUser={leadCreationCounts.createdByUser}
+            assignedAutomatically={leadCreationCounts.assignedAutomatically}
+            statusComparison={statusComparison}
+          />
+          <OrderDetailsModal
+  isOpen={showOrderDetailsModal}
+  onClose={() => setShowOrderDetailsModal(false)}
+  statusComparison={orderStatusComparison}
+  amountTotals={orderAmountTotals}
+/>
+          <PoSentDetailsModal
+            isOpen={showPoSentDetailsModal}
+            onClose={() => setShowPoSentDetailsModal(false)}
+            poSentCountsAndTotals={poSentCountsAndTotals}
+          />
+          <DeliveredDetailsModal
+            isOpen={showDeliveredDetailsModal}
+            onClose={() => setShowDeliveredDetailsModal(false)}
+            deliveredMetrics={deliveredMetrics}
+          />
       </AnimatePresence>
     </div>
   );
