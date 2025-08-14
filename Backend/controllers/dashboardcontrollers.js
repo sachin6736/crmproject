@@ -349,7 +349,7 @@ export const getOrderAmountTotals = async (req, res) => {
 
 export const getLeadCountsAndConversions = async (req, res) => {
   try {
-    const { selectedMonth, selectedYear } = req.query;
+    const { selectedMonth, selectedYear } = req.query; // Already correctly destructured
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
@@ -408,19 +408,34 @@ export const getLeadCountsAndConversions = async (req, res) => {
       return result;
     };
 
-    const [todayCount, currentMonthCount, currentYearCount, selectedMonthCount, selectedYearCount, currentMonthConversion, currentYearConversion, selectedMonthConversion, selectedYearConversion, currentMonthStatus, previousMonthStatus, currentYearStatus, selectedMonthStatus, selectedYearStatus] = await Promise.all([
+    const [
+      todayCount,
+      currentMonthCount,
+      currentYearCount,
+      selectedMonthCount,
+      selectedYearCount,
+      currentMonthConversion,
+      currentYearConversion,
+      selectedMonthConversion,
+      selectedYearConversion,
+      currentMonthStatus,
+      previousMonthStatus,
+      currentYearStatus,
+      selectedMonthStatus,
+      selectedYearStatus,
+    ] = await Promise.all([
       leadCounts({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
       leadCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
       leadCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
       selectedMonth ? leadCounts(selectedMonthQuery) : Promise.resolve(0),
       selectedYear ? leadCounts(selectedYearQuery) : Promise.resolve(0),
       conversionRates({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
-      conversionRates({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }), // Ensure currentYearConversion
+      conversionRates({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
       selectedMonth ? conversionRates(selectedMonthQuery) : Promise.resolve({ converted: 0, total: 0, rate: 0 }),
       selectedYear ? conversionRates(selectedYearQuery) : Promise.resolve({ converted: 0, total: 0, rate: 0 }),
       statusCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
       statusCounts({ createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } }),
-      statusCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }), // Ensure currentYearStatus
+      statusCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
       selectedMonth ? statusCounts(selectedMonthQuery) : Promise.resolve({}),
       selectedYear ? statusCounts(selectedYearQuery) : Promise.resolve({}),
     ]);
@@ -435,46 +450,46 @@ export const getLeadCountsAndConversions = async (req, res) => {
       },
       conversionRates: {
         currentMonth: currentMonthConversion,
-        currentYear: currentYearConversion, // Include currentYear
+        currentYear: currentYearConversion,
         ...(selectedMonth && { selectedMonth: selectedMonthConversion }),
         ...(selectedYear && { selectedYear: selectedYearConversion }),
       },
       statusComparison: {
         currentMonth: currentMonthStatus,
         previousMonth: previousMonthStatus,
-        currentYear: currentYearStatus, // Include currentYear
+        currentYear: currentYearStatus,
         ...(selectedMonth && { selectedMonth: selectedMonthStatus }),
         ...(selectedYear && { selectedYear: selectedYearStatus }),
       },
     });
   } catch (error) {
     console.error("Error fetching lead counts and conversions:", error);
+    // Define default response structure without relying on undefined variables
     res.status(500).json({
       message: "Server error",
       conversionRates: {
         currentMonth: { converted: 0, total: 0, rate: 0 },
-        currentYear: { converted: 0, total: 0, rate: 0 }, // Include currentYear
-        ...(selectedMonth && { selectedMonth: { converted: 0, total: 0, rate: 0 } }),
-        ...(selectedYear && { selectedYear: { converted: 0, total: 0, rate: 0 } }),
+        currentYear: { converted: 0, total: 0, rate: 0 },
+        ...(req.query.selectedMonth && { selectedMonth: { converted: 0, total: 0, rate: 0 } }),
+        ...(req.query.selectedYear && { selectedYear: { converted: 0, total: 0, rate: 0 } }),
       },
       leadCounts: {
         today: 0,
         currentMonth: 0,
         currentYear: 0,
-        ...(selectedMonth && { selectedMonth: 0 }),
-        ...(selectedYear && { selectedYear: 0 }),
+        ...(req.query.selectedMonth && { selectedMonth: 0 }),
+        ...(req.query.selectedYear && { selectedYear: 0 }),
       },
       statusComparison: {
         currentMonth: {},
         previousMonth: {},
-        currentYear: {}, // Include currentYear
-        ...(selectedMonth && { selectedMonth: {} }),
-        ...(selectedYear && { selectedYear: {} }),
+        currentYear: {},
+        ...(req.query.selectedMonth && { selectedMonth: {} }),
+        ...(req.query.selectedYear && { selectedYear: {} }),
       },
     });
   }
 };
-
 export const getPoSentCountsAndTotals = async (req, res) => {
     try {
         const { selectedMonth, selectedYear } = req.query;

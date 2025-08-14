@@ -435,6 +435,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
   const [amountTotals, setAmountTotals] = useState(initialAmountTotals || { today: 0, currentMonth: 0, currentYear: 0 });
   const [orderCounts, setOrderCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
   const [comparisonText, setComparisonText] = useState("");
+  const [comparisonMeta, setComparisonMeta] = useState({ direction: "", percentage: 0, difference: 0 });
 
   const statusColors = {
     LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -486,23 +487,20 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
   const calculateComparison = (current, selected, period) => {
     const selectedValue = calculateTotal(selected);
     if (selectedValue === 0) {
-      return `No data available for the selected ${period}.`;
+      return { direction: "", percentage: 0, difference: 0, text: `No data available for the selected ${period}.` };
     }
     const currentValue = calculateTotal(current);
     const difference = currentValue - selectedValue;
     const percentage = selectedValue !== 0 ? ((difference / selectedValue) * 100).toFixed(2) : 0;
     const direction = difference >= 0 ? "increased" : "decreased";
     const absDifference = Math.abs(difference);
-    const colorClass = direction === "increased" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
-    return (
-      <span>
-        Total orders <span className={`font-bold ${colorClass}`}>{direction}</span> by{" "}
-        <span className="font-bold text-blue-600 dark:text-blue-400">{Math.abs(percentage)}%</span> (
-        <span className="font-bold">{absDifference}</span>) compared to selected {period}. Selected {period} total orders=
-        <span className="font-bold">{selectedValue}</span>, current {period} total orders=
-        <span className="font-bold">{currentValue}</span>
-      </span>
-    );
+    const comparePeriod = period === "year" ? "current year" : "current month";
+    return {
+      direction,
+      percentage: Math.abs(percentage),
+      difference: absDifference,
+      text: `Total orders ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} total orders = ${selectedValue}, ${comparePeriod} total orders = ${currentValue}`,
+    };
   };
 
   useEffect(() => {
@@ -530,12 +528,13 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
         setOrderCounts(countsData);
         
         // Calculate comparison text
-        const text = selectedMonth
-          ? calculateComparison(statusData.currentMonth, statusData.selectedMonth, "month")
-          : selectedYear
-          ? calculateComparison(statusData.currentYear, statusData.selectedYear, "year")
-          : "";
-        setComparisonText(text);
+        const comparison = selectedMonth
+        ? calculateComparison(statusData.currentMonth, statusData.selectedMonth, "month")
+        : selectedYear
+        ? calculateComparison(statusData.currentYear, statusData.selectedYear, "year")
+        : { direction: "", percentage: 0, difference: 0, text: "" };
+      setComparisonText(comparison.text);
+      setComparisonMeta({ direction: comparison.direction, percentage: comparison.percentage, difference: comparison.difference });
       } catch (error) {
         console.error("Error fetching order data:", error);
       }
@@ -641,10 +640,35 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
             )}
           </div>
           {comparisonText && (
-            <div className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-2 rounded-lg">
-              <p>{comparisonText}</p>
-            </div>
+  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+    <div className="flex items-start gap-2">
+      <div className="flex-shrink-0">
+        {comparisonMeta.direction === "increased" ? (
+          <ArrowUpIcon className="w-5 h-5 text-green-500" />
+        ) : (
+          <ArrowDownIcon className="w-5 h-5 text-red-500" />
+        )}
+      </div>
+      <div>
+        <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Order Comparison</h5>
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          {comparisonMeta.direction === "increased" ? (
+            <span>
+              Total orders <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
+              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
+            </span>
+          ) : (
+            <span>
+              Total orders <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
+              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
+            </span>
           )}
+        </p>
+        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText}</p>
+      </div>
+    </div>
+  </div>
+)}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Order Status Comparison</h4>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -744,20 +768,26 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals: initialPoS
   const [selectedYear, setSelectedYear] = useState("");
   const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState(initialPoSentCountsAndTotals || { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
   const [comparisonText, setComparisonText] = useState("");
+  const [comparisonMeta, setComparisonMeta] = useState({ direction: "", percentage: 0, difference: 0 });
 
   console.log("PoSentDetailsModal - poSentCountsAndTotals:", poSentCountsAndTotals);
 
   const calculateComparison = (current, selected, period) => {
     const currentValue = current?.count || 0;
     const selectedValue = selected?.count || 0;
-    if (selectedValue === 0) return "";
+    if (selectedValue === 0) return { direction: "", percentage: 0, difference: 0, text: "" };
     const difference = currentValue - selectedValue;
     const percentage = ((difference / selectedValue) * 100).toFixed(2);
     const direction = difference >= 0 ? "increased" : "decreased";
     const absDifference = Math.abs(difference);
-    return `PO sent count ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} PO sent count=${selectedValue}, current month PO sent count=${currentValue}`;
+    const comparePeriod = period === "year" ? "current year" : "current month";
+    return {
+      direction,
+      percentage: Math.abs(percentage),
+      difference: absDifference,
+      text: `PO sent count ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} PO sent count=${selectedValue}, ${comparePeriod} PO sent count=${currentValue}`,
+    };
   };
-
   useEffect(() => {
     const fetchComparisonData = async () => {
       try {
@@ -771,12 +801,13 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals: initialPoS
         setPoSentCountsAndTotals(data);
 
         // Calculate comparison text
-        const text = selectedMonth
-          ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
-          : selectedYear
-          ? calculateComparison(data.currentMonth, data.selectedYear, "year")
-          : "";
-        setComparisonText(text);
+        const comparison = selectedMonth
+  ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
+  : selectedYear
+  ? calculateComparison(data.currentMonth, data.selectedYear, "year")
+  : { direction: "", percentage: 0, difference: 0, text: "" };
+setComparisonText(comparison.text);
+setComparisonMeta({ direction: comparison.direction, percentage: comparison.percentage, difference: comparison.difference });
       } catch (error) {
         console.error("Error fetching PO sent data:", error);
       }
@@ -865,10 +896,35 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals: initialPoS
             )}
           </div>
           {comparisonText && (
-            <div className="text-xs text-gray-600 dark:text-gray-300">
-              <p>{comparisonText}</p>
-            </div>
+  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+    <div className="flex items-start gap-2">
+      <div className="flex-shrink-0">
+        {comparisonMeta.direction === "increased" ? (
+          <ArrowUpIcon className="w-5 h-5 text-green-500" />
+        ) : (
+          <ArrowDownIcon className="w-5 h-5 text-red-500" />
+        )}
+      </div>
+      <div>
+        <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">PO Sent Comparison</h5>
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          {comparisonMeta.direction === "increased" ? (
+            <span>
+              PO sent count <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
+              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
+            </span>
+          ) : (
+            <span>
+              PO sent count <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
+              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
+            </span>
           )}
+        </p>
+        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText}</p>
+      </div>
+    </div>
+  </div>
+)}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <select
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
@@ -919,18 +975,25 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics: initialDeliv
   const [selectedYear, setSelectedYear] = useState("");
   const [deliveredMetrics, setDeliveredMetrics] = useState(initialDeliveredMetrics || { today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
   const [comparisonText, setComparisonText] = useState("");
+  const [comparisonMeta, setComparisonMeta] = useState({ direction: "", percentage: 0, difference: 0 });
 
   console.log("DeliveredDetailsModal - deliveredMetrics:", deliveredMetrics);
 
   const calculateComparison = (current, selected, period) => {
     const currentValue = current?.profit || 0;
     const selectedValue = selected?.profit || 0;
-    if (selectedValue === 0) return "";
+    if (selectedValue === 0) return { direction: "", percentage: 0, difference: 0, text: "" };
     const difference = currentValue - selectedValue;
     const percentage = ((difference / selectedValue) * 100).toFixed(2);
     const direction = difference >= 0 ? "increased" : "decreased";
     const absDifference = Math.abs(difference);
-    return `Profit ${direction} by ${Math.abs(percentage)}% (${absDifference.toFixed(2)}) compared to selected ${period}. Selected ${period} profit=${selectedValue.toFixed(2)}, current month profit=${currentValue.toFixed(2)}`;
+    const comparePeriod = period === "year" ? "current year" : "current month";
+    return {
+      direction,
+      percentage: Math.abs(percentage),
+      difference: absDifference,
+      text: `Profit ${direction} by ${Math.abs(percentage)}% ($${absDifference.toFixed(2)}) compared to selected ${period}. Selected ${period} profit=$${selectedValue.toFixed(2)}, ${comparePeriod} profit=$${currentValue.toFixed(2)}`,
+    };
   };
 
   useEffect(() => {
@@ -946,12 +1009,13 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics: initialDeliv
         setDeliveredMetrics(data);
 
         // Calculate comparison text
-        const text = selectedMonth
-          ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
-          : selectedYear
-          ? calculateComparison(data.currentMonth, data.selectedYear, "year")
-          : "";
-        setComparisonText(text);
+        const comparison = selectedMonth
+  ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
+  : selectedYear
+  ? calculateComparison(data.currentMonth, data.selectedYear, "year")
+  : { direction: "", percentage: 0, difference: 0, text: "" };
+setComparisonText(comparison.text);
+setComparisonMeta({ direction: comparison.direction, percentage: comparison.percentage, difference: comparison.difference });
       } catch (error) {
         console.error("Error fetching delivered metrics:", error);
       }
@@ -1094,10 +1158,35 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics: initialDeliv
             </select>
           </div>
           {comparisonText && (
-            <div className="text-xs text-gray-600 dark:text-gray-300">
-              <p>{comparisonText}</p>
-            </div>
+  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+    <div className="flex items-start gap-2">
+      <div className="flex-shrink-0">
+        {comparisonMeta.direction === "increased" ? (
+          <ArrowUpIcon className="w-5 h-5 text-green-500" />
+        ) : (
+          <ArrowDownIcon className="w-5 h-5 text-red-500" />
+        )}
+      </div>
+      <div>
+        <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Profit Comparison</h5>
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          {comparisonMeta.direction === "increased" ? (
+            <span>
+              Profit <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
+              <span className="font-bold">{comparisonMeta.percentage}%</span> (${comparisonMeta.difference.toFixed(2)}).
+            </span>
+          ) : (
+            <span>
+              Profit <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
+              <span className="font-bold">{comparisonMeta.percentage}%</span> (${comparisonMeta.difference.toFixed(2)}).
+            </span>
           )}
+        </p>
+        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText}</p>
+      </div>
+    </div>
+  </div>
+)}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {periods.map((period, index) => (
               <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -1186,8 +1275,6 @@ const Dashboard = () => {
   const [leadCreationCounts, setLeadCreationCounts] = useState({ createdByUser: 0, assignedAutomatically: 0 });
   const [statusComparison, setStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
-  const [orderComparisonMonth, setOrderComparisonMonth] = useState("");
-const [orderComparisonYear, setOrderComparisonYear] = useState("");
   const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
   const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0 });
   const [orderCounts, setOrderCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
@@ -1247,8 +1334,6 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
   const lineColors = {
     currentMonth: "#8884d8",
     previousMonth: "#82ca9d",
-    selectedMonth: "#ff7300",
-    selectedYear: "#d81b60",
   };
 
   const statuses = [
@@ -1277,8 +1362,6 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
     status: status === "TotalOrders" ? "Total Orders" : status.replace(/([A-Z])/g, " $1").trim(),
     currentMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.currentMonth) : orderStatusComparison.currentMonth?.[status] || 0,
     previousMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.previousMonth) : orderStatusComparison.previousMonth?.[status] || 0,
-    ...(orderComparisonMonth && orderStatusComparison.selectedMonth ? { selectedMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedMonth) : orderStatusComparison.selectedMonth[status] || 0 } : {}),
-    ...(orderComparisonYear && orderStatusComparison.selectedYear ? { selectedYear: status === "TotalOrders" ? calculateTotal(orderStatusComparison.selectedYear) : orderStatusComparison.selectedYear[status] || 0 } : {}),
   }));
 
   const getStatusCount = (status) => {
@@ -1293,7 +1376,7 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
           method: "GET",
           credentials: "include",
         });
-  
+
         if (!res.ok) {
           throw new Error("Not authorized");
         }
@@ -1312,32 +1395,27 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
         navigate("/");
       }
     };
-  
+
     verifyRole();
   }, [navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const query = [];
-        if (orderComparisonMonth) query.push(`selectedMonth=${orderComparisonMonth}`);
-        if (orderComparisonYear) query.push(`selectedYear=${orderComparisonYear}`);
-        const queryString = query.length ? `?${query.join("&")}` : "";
-  
         const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadCountsAndConversionsRes, orderStatusComparisonRes, orderAmountTotalsRes, orderCountsRes, poSentCountsAndTotalsRes, deliveredMetricsRes] = await Promise.all([
           fetch("http://localhost:3000/Admin/getleadcount", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getcountbystatus", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getallorders", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getmyteam", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getLeadCreationCounts", { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getLeadCountsAndConversions${queryString}`, { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getOrderStatusComparison${queryString}`, { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getOrderAmountTotals${queryString}`, { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getOrderCounts${queryString}`, { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getPoSentCountsAndTotals${queryString}`, { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getDeliveredMetrics${queryString}`, { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getLeadCountsAndConversions", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getOrderStatusComparison", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getOrderAmountTotals", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getOrderCounts", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getPoSentCountsAndTotals", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getDeliveredMetrics", { credentials: "include" }),
         ]);
-  
+
         const errors = [];
         if (!leadRes.ok) errors.push(`Failed to fetch lead count: ${leadRes.status}`);
         if (!statusRes.ok) errors.push(`Failed to fetch status counts: ${statusRes.status}`);
@@ -1350,13 +1428,13 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
         if (!orderCountsRes.ok) errors.push(`Failed to fetch order counts: ${orderCountsRes.status}`);
         if (!poSentCountsAndTotalsRes.ok) errors.push(`Failed to fetch PO sent counts and totals: ${poSentCountsAndTotalsRes.status}`);
         if (!deliveredMetricsRes.ok) errors.push(`Failed to fetch delivered metrics: ${deliveredMetricsRes.status}`);
-  
+
         if (errors.length) {
           console.error("Fetch errors:", errors);
           errors.forEach(error => toast.error(error));
           return;
         }
-  
+
         const leadData = await leadRes.json();
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
@@ -1368,7 +1446,9 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
         const orderCountsData = await orderCountsRes.json();
         const poSentCountsAndTotalsData = await poSentCountsAndTotalsRes.json();
         const deliveredMetricsData = await deliveredMetricsRes.json();
-  
+
+        console.log("Order Status Comparison Data:", orderStatusComparisonData); // Debug log
+
         setTotalClients(leadData.leadcount || 0);
         setCountbystatus(statusData || []);
         setOrders(ordersData || []);
@@ -1390,9 +1470,9 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
         setLoading(false);
       }
     };
-  
+
     fetchData();
-  }, [orderComparisonMonth, orderComparisonYear]);
+  }, []);
 
   const handleAddUser = async () => {
     if (!newMember.name || !newMember.email || !newMember.role) {
@@ -1547,6 +1627,14 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
     setShowConfirmModal(true);
   };
 
+  // Calculate comparison metrics for TotalOrders
+  const currentOrders = orderStatusComparison.currentMonth?.TotalOrders || 0;
+  const previousOrders = orderStatusComparison.previousMonth?.TotalOrders || 0;
+  const orderDifference = Math.abs(currentOrders - previousOrders);
+  const percentageChange = previousOrders > 0
+    ? ((currentOrders - previousOrders) / previousOrders * 100).toFixed(2)
+    : currentOrders > 0 ? 100 : 0;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -1558,87 +1646,61 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
       </div>
     );
   }
-
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center flex items-center justify-center gap-2">
-          <TrendingUp className="w-8 h-8 text-blue-500" />
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 p-4 md:p-8">
+      <div className="container mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-center flex items-center justify-center gap-2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+          <TrendingUp className="w-8 h-8 text-blue-500 animate-pulse" />
           Admin Dashboard
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
           {[
-            { title: "Ordered", value: getStatusCount("Ordered"), onClick: () => setShowOrderDetailsModal(true), icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
-            { title: "Quoted", value: getStatusCount("Quoted"), onClick: null, icon: <DollarSign className="w-5 h-5 text-yellow-500" /> },
-            { title: "Total Clients", value: totalClients, onClick: () => setShowLeadDetailsModal(true), icon: <Users className="w-5 h-5 text-blue-500" /> },
+            { title: 'Ordered', value: getStatusCount('Ordered'), onClick: () => setShowOrderDetailsModal(true), icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
+            { title: 'Quoted', value: getStatusCount('Quoted'), onClick: null, icon: <DollarSign className="w-5 h-5 text-yellow-500" /> },
+            { title: 'Total Clients', value: totalClients, onClick: () => setShowLeadDetailsModal(true), icon: <Users className="w-5 h-5 text-blue-500" /> },
             { title: "Today's Total Amount", value: `$${orderAmountTotals.today.toFixed(2)}`, onClick: null, icon: <DollarSign className="w-5 h-5 text-green-500" /> },
             { title: "Today's PO Sent", value: poSentCountsAndTotals.today?.count || 0, onClick: () => setShowPoSentDetailsModal(true), icon: <Send className="w-5 h-5 text-orange-500" /> },
             { title: "Today's PO Sent Total", value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`, onClick: () => setShowPoSentDetailsModal(true), icon: <DollarSign className="w-5 h-5 text-purple-500" /> },
             { title: "Today's Delivered", value: deliveredMetrics.today?.count || 0, onClick: () => setShowDeliveredDetailsModal(true), icon: <Truck className="w-5 h-5 text-lime-500" /> },
           ].map(({ title, value, onClick, icon }, index) => (
-            <div
+            <motion.div
               key={index}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
               onClick={onClick}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
             >
               <div className="mb-2">{icon}</div>
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">{title}</h3>
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {value}
-              </span>
-            </div>
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{value}</span>
+            </motion.div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+          <motion.div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <BarChart2 className="w-5 h-5 text-blue-500" />
               Order Status Comparison
             </h3>
             <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <select
-                  className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500"
-                  value={orderComparisonMonth}
-                  onChange={(e) => setOrderComparisonMonth(e.target.value)}
-                >
-                  <option value="">Select Month to Compare</option>
-                  {[
-                    ...Array(12).keys(),
-                  ].map((i) => {
-                    const date = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
-                    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-                    const label = date.toLocaleString("default", { month: "long", year: "numeric" });
-                    return (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </select>
-                <select
-                  className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm focus:ring-2 focus:ring-blue-500"
-                  value={orderComparisonYear}
-                  onChange={(e) => setOrderComparisonYear(e.target.value)}
-                >
-                  <option value="">Select Year to Compare</option>
-                  {[
-                    ...Array(6).keys(),
-                  ].map((i) => {
-                    const year = new Date().getFullYear() - i;
-                    return (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-                  <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                  <XAxis
+                    dataKey="status"
+                    stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'}
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
                   <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
@@ -1651,41 +1713,40 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
                     }}
                   />
                   <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-                  <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" strokeWidth={2} dot={{ r: 4 }} />
-                  {orderComparisonMonth && (
-                    <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" strokeWidth={2} dot={{ r: 4 }} />
-                  )}
-                  {orderComparisonYear && (
-                    <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" strokeWidth={2} dot={{ r: 4 }} />
-                  )}
+                  <Line
+                    type="monotone"
+                    dataKey="currentMonth"
+                    stroke={lineColors.currentMonth}
+                    name="Current Month"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="previousMonth"
+                    stroke={lineColors.previousMonth}
+                    name="Previous Month"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
-              {/* Add comparison result for Ordered */}
-              {(orderComparisonMonth || orderComparisonYear) && (
-                <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                  {orderComparisonMonth && (
-                    <p>
-                      Number of orders {orderStatusComparison.selectedMonth?.Ordered > orderStatusComparison.currentMonth?.Ordered ? 'increased' : 'decreased'} by{' '}
-                      {Math.abs(((orderStatusComparison.selectedMonth?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0)) / (orderStatusComparison.selectedMonth?.Ordered || 1) * 100).toFixed(2)}%
-                      ({Math.abs((orderStatusComparison.selectedMonth?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0))}) compared to selected month. 
-                      Selected month orders: {orderStatusComparison.selectedMonth?.Ordered || 0}, Current month orders: {orderStatusComparison.currentMonth?.Ordered || 0}
-                    </p>
-                  )}
-                  {orderComparisonYear && (
-                    <p>
-                      Number of orders {orderStatusComparison.selectedYear?.Ordered > orderStatusComparison.currentMonth?.Ordered ? 'increased' : 'decreased'} by{' '}
-                      {Math.abs(((orderStatusComparison.selectedYear?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0)) / (orderStatusComparison.selectedYear?.Ordered || 1) * 100).toFixed(2)}%
-                      ({Math.abs((orderStatusComparison.selectedYear?.Ordered || 0) - (orderStatusComparison.currentMonth?.Ordered || 0))}) compared to selected year. 
-                      Selected year orders: {orderStatusComparison.selectedYear?.Ordered || 0}, Current month orders: {orderStatusComparison.currentMonth?.Ordered || 0}
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                <p>
+                  Number of orders {currentOrders > previousOrders ? 'increased' : 'decreased'} by{' '}
+                  {Math.abs(percentageChange)}% ({orderDifference}) compared to previous month. Previous
+                  month orders: {previousOrders}, Current month orders: {currentOrders}
+                </p>
+              </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+          <motion.div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <Users className="w-5 h-5 text-purple-500" />
               Team Management
@@ -1701,9 +1762,10 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
             </div>
             <div className="space-y-3 overflow-y-auto max-h-96">
               {teamUsers.map((user) => (
-                <div
+                <motion.div
                   key={user._id}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors transform hover:scale-105"
+                  transition={{ duration: 0.3 }}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
@@ -1732,253 +1794,252 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
                         <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10 overflow-hidden">
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => showConfirmation(user.isPaused ? "Resume" : "Pause", user._id, user.name)}
+                            onClick={() => showConfirmation(user.isPaused ? 'Resume' : 'Pause', user._id, user.name)}
                           >
-                            {user.isPaused ? "Resume" : "Pause"}
+                            {user.isPaused ? 'Resume' : 'Pause'}
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction("Reassign Leads", user._id)}
+                            onClick={() => handleUserAction('Reassign Leads', user._id)}
                           >
                             Reassign Leads
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction("Change Role", user._id)}
+                            onClick={() => handleUserAction('Change Role', user._id)}
                           >
                             Change Role
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction("Password", user._id)}
+                            onClick={() => handleUserAction('Password', user._id)}
                           >
                             Reset Password
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => showConfirmation(user.Access ? "Revoke Access" : "Grant Access", user._id, user.name)}
+                            onClick={() => showConfirmation(user.Access ? 'Revoke Access' : 'Grant Access', user._id, user.name)}
                             disabled={isAccessLoading}
                           >
-                            {user.Access ? "Revoke Access" : "Grant Access"}
+                            {user.Access ? 'Revoke Access' : 'Grant Access'}
                           </button>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
 
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+        <AnimatePresence>
+          {showModal && (
             <motion.div
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Add New Member</h3>
-              <div className="space-y-3">
+              <motion.div
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
+              >
+                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Add New Member</h3>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                    value={newMember.name}
+                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                    value={newMember.email}
+                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                  />
+                  <select
+                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                    value={newMember.role}
+                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                  >
+                    <option value="">Select Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="user">User</option>
+                  </select>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
+                      onClick={handleAddUser}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+          {showPasswordModal && (
+            <motion.div
+              className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
+              >
+                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Reset Password</h3>
                 <input
-                  type="text"
-                  placeholder="Name"
+                  type="password"
+                  placeholder="New Password"
                   className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                  value={newMember.name}
-                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
                 />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                  value={newMember.email}
-                  onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                />
-                <select
-                  className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                  value={newMember.role}
-                  onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                >
-                  <option value="">Select Role</option>
-                  <option value="admin">Admin</option>
-                  <option value="user">User</option>
-                </select>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 mt-3">
                   <button
                     className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => setShowModal(false)}
+                    onClick={() => setShowPasswordModal(false)}
                   >
                     Cancel
                   </button>
                   <button
                     className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
-                    onClick={handleAddUser}
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(
+                          `http://localhost:3000/User/Resetpassword/${selectedUserId}`,
+                          {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ password: passwordInput }),
+                          }
+                        );
+                        if (res.status === 403) {
+                          toast.error('Access denied, contact admin');
+                          return;
+                        }
+                        if (!res.ok) {
+                          toast.error('Failed to reset password');
+                          return;
+                        }
+                        toast.success('Password reset successfully');
+                        setShowPasswordModal(false);
+                        setPasswordInput('');
+                      } catch (error) {
+                        console.error('Reset password error:', error);
+                        toast.error('Error resetting password');
+                      }
+                    }}
                   >
-                    Add
+                    Reset
                   </button>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-        {showPasswordModal && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+          )}
+          {showRoleModal && (
             <motion.div
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Reset Password</h3>
-              <input
-                type="password"
-                placeholder="New Password"
-                className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-              />
-              <div className="flex justify-end gap-2 mt-3">
-                <button
-                  className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => setShowPasswordModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(
-                        `http://localhost:3000/User/Resetpassword/${selectedUserId}`,
-                        {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          credentials: "include",
-                          body: JSON.stringify({ password: passwordInput }),
-                        }
-                      );
-                      if (res.status === 403) {
-                        toast.error("Access denied, contact admin");
-                        return;
-                      }
-                      if (!res.ok) {
-                        toast.error("Failed to reset password");
-                        return;
-                      }
-                      toast.success("Password reset successfully");
-                      setShowPasswordModal(false);
-                      setPasswordInput("");
-                    } catch (error) {
-                      console.error("Reset password error:", error);
-                      toast.error("Error resetting password");
-                    }
-                  }}
-                >
-                  Reset
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-        {showRoleModal && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-            >
-              <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Change Role</h3>
-              <select
-                className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
+              <motion.div
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
               >
-                <option value="">Select New Role</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
-              </select>
-              <div className="flex justify-end gap-2 mt-3">
-                <button
-                  className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => setShowRoleModal(false)}
+                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Change Role</h3>
+                <select
+                  className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
                 >
-                  Cancel
-                </button>
-                <button
-                  className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
-                  onClick={async () => {
-                    if (selectedRole === currentRole) {
-                      toast.info("Selected role is the same as current role");
-                      return;
-                    }
-                    try {
-                      const res = await fetch(
-                        `http://localhost:3000/User/Changerole/${selectedUserId}`,
-                        {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          credentials: "include",
-                          body: JSON.stringify({ role: selectedRole }),
+                  <option value="">Select New Role</option>
+                  <option value="admin">Admin</option>
+                  <option value="user">User</option>
+                </select>
+                <div className="flex justify-end gap-2 mt-3">
+                  <button
+                    className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => setShowRoleModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
+                    onClick={async () => {
+                      if (selectedRole === currentRole) {
+                        toast.info('Selected role is the same as current role');
+                        return;
+                      }
+                      try {
+                        const res = await fetch(
+                          `http://localhost:3000/User/Changerole/${selectedUserId}`,
+                          {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ role: selectedRole }),
+                          }
+                        );
+                        if (res.status === 403) {
+                          toast.error('Access denied, contact admin');
+                          return;
                         }
-                      );
-                      if (res.status === 403) {
-                        toast.error("Access denied, contact admin");
-                        return;
+                        if (!res.ok) {
+                          toast.error('Failed to change role');
+                          return;
+                        }
+                        setTeamUsers((prevUsers) =>
+                          prevUsers.map((user) =>
+                            user._id === selectedUserId ? { ...user, role: selectedRole } : user
+                          )
+                        );
+                        toast.success('Role changed successfully');
+                        setShowRoleModal(false);
+                        setSelectedRole('');
+                      } catch (error) {
+                        console.error('Change role error:', error);
+                        toast.error('Error changing role');
                       }
-                      if (!res.ok) {
-                        toast.error("Failed to change role");
-                        return;
-                      }
-                      setTeamUsers((prevUsers) =>
-                        prevUsers.map((user) =>
-                          user._id === selectedUserId ? { ...user, role: selectedRole } : user
-                        )
-                      );
-                      toast.success("Role changed successfully");
-                      setShowRoleModal(false);
-                      setSelectedRole("");
-                    } catch (error) {
-                      console.error("Change role error:", error);
-                      toast.error("Error changing role");
-                    }
-                  }}
-                >
-                  Change
-                </button>
-              </div>
+                    }}
+                  >
+                    Change
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-        <ConfirmationModal
-          isOpen={showConfirmModal}
-          onConfirm={() => {
-            handleUserAction(confirmAction, confirmUserId);
-            setShowConfirmModal(false);
-          }}
-          onCancel={() => setShowConfirmModal(false)}
-          action={confirmAction}
-          userName={confirmUserName}
-        />
-        <LeadDetailsModal
+          )}
+          <ConfirmationModal
+            isOpen={showConfirmModal}
+            onConfirm={() => {
+              handleUserAction(confirmAction, confirmUserId);
+              setShowConfirmModal(false);
+            }}
+            onCancel={() => setShowConfirmModal(false)}
+            action={confirmAction}
+            userName={confirmUserName}
+          />
+          <LeadDetailsModal
             isOpen={showLeadDetailsModal}
             onClose={() => setShowLeadDetailsModal(false)}
             createdByUser={leadCreationCounts.createdByUser}
@@ -1986,11 +2047,11 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
             statusComparison={statusComparison}
           />
           <OrderDetailsModal
-  isOpen={showOrderDetailsModal}
-  onClose={() => setShowOrderDetailsModal(false)}
-  statusComparison={orderStatusComparison}
-  amountTotals={orderAmountTotals}
-/>
+            isOpen={showOrderDetailsModal}
+            onClose={() => setShowOrderDetailsModal(false)}
+            statusComparison={orderStatusComparison}
+            amountTotals={orderAmountTotals}
+          />
           <PoSentDetailsModal
             isOpen={showPoSentDetailsModal}
             onClose={() => setShowPoSentDetailsModal(false)}
@@ -2001,7 +2062,8 @@ const [orderComparisonYear, setOrderComparisonYear] = useState("");
             onClose={() => setShowDeliveredDetailsModal(false)}
             deliveredMetrics={deliveredMetrics}
           />
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
