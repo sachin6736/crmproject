@@ -281,6 +281,49 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
     return options;
   };
 
+  let monthComparison = null;
+  if (selectedMonth) {
+    const selectedTotal = calculateTotal(statusComparison.selectedMonth);
+    const currentTotal = calculateTotal(statusComparison.currentMonth);
+    const change = selectedTotal > 0 ? ((currentTotal - selectedTotal) / selectedTotal) * 100 : null;
+    let changeText;
+    let colorClass = 'text-gray-600 dark:text-gray-300';
+    if (change === null) {
+      changeText = 'N/A (no orders in selected month)';
+    } else if (change > 0) {
+      changeText = `Increase of ${Math.abs(change).toFixed(2)}%`;
+      colorClass = 'text-green-600 dark:text-green-400';
+    } else if (change < 0) {
+      changeText = `Decrease of ${Math.abs(change).toFixed(2)}%`;
+      colorClass = 'text-red-600 dark:text-red-400';
+    } else {
+      changeText = 'No change';
+    }
+    const monthLabel = new Date(`${selectedMonth}-01`).toLocaleString("default", { month: "long", year: "numeric" });
+    monthComparison = { changeText, colorClass, monthLabel };
+  }
+
+  let yearComparison = null;
+  if (selectedYear) {
+    const selectedTotal = calculateTotal(statusComparison.selectedYear);
+    const currentTotal = calculateTotal(statusComparison.currentYear);
+    const change = selectedTotal > 0 ? ((currentTotal - selectedTotal) / selectedTotal) * 100 : null;
+    let changeText;
+    let colorClass = 'text-gray-600 dark:text-gray-300';
+    if (change === null) {
+      changeText = 'N/A (no orders in selected year)';
+    } else if (change > 0) {
+      changeText = `Increase of ${Math.abs(change).toFixed(2)}%`;
+      colorClass = 'text-green-600 dark:text-green-400';
+    } else if (change < 0) {
+      changeText = `Decrease of ${Math.abs(change).toFixed(2)}%`;
+      colorClass = 'text-red-600 dark:text-red-400';
+    } else {
+      changeText = 'No change';
+    }
+    yearComparison = { changeText, colorClass, selectedYear };
+  }
+
   return (
     <motion.div
       className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
@@ -368,6 +411,18 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
               ))}
             </select>
           </div>
+          {monthComparison && (
+            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Total Orders Change from {monthComparison.monthLabel} to Current Month:</span>
+              <span className={`text-lg font-bold ${monthComparison.colorClass}`}>{monthComparison.changeText}</span>
+            </div>
+          )}
+          {yearComparison && (
+            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Total Orders Change from {yearComparison.selectedYear} to Current Year:</span>
+              <span className={`text-lg font-bold ${yearComparison.colorClass}`}>{yearComparison.changeText}</span>
+            </div>
+          )}
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
