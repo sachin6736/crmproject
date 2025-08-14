@@ -63,13 +63,19 @@ export const getOrderStatusComparison = async (req, res, next) => {
     const now = new Date();
     const currentYear = now.getUTCFullYear();
     const currentMonth = now.getUTCMonth();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
     const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1));
     const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999));
     const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
     const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
+    const currentYearStart = new Date(Date.UTC(currentYear, 0, 1));
+    const currentYearEnd = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59, 999));
 
+    console.log("todayStart:", todayStart, "todayEnd:", todayEnd);
     console.log("currentMonthStart:", currentMonthStart, "currentMonthEnd:", currentMonthEnd);
     console.log("previousMonthStart:", previousMonthStart, "previousMonthEnd:", previousMonthEnd);
+    console.log("currentYearStart:", currentYearStart, "currentYearEnd:", currentYearEnd);
 
     let selectedMonthStart, selectedMonthEnd, selectedYearStart, selectedYearEnd;
 
@@ -87,6 +93,21 @@ export const getOrderStatusComparison = async (req, res, next) => {
     }
 
     const query = { salesPerson: new mongoose.Types.ObjectId(userId) };
+
+    const todayOrders = await Order.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: todayStart, $lte: todayEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
 
     const currentMonthOrders = await Order.aggregate([
       {
@@ -119,6 +140,22 @@ export const getOrderStatusComparison = async (req, res, next) => {
       },
     ]);
     console.log("previousMonthOrders:", previousMonthOrders);
+
+    const currentYearOrders = await Order.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: currentYearStart, $lte: currentYearEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    console.log("currentYearOrders:", currentYearOrders);
 
     let selectedMonthOrders = [];
     if (selectedMonth) {
@@ -166,8 +203,10 @@ export const getOrderStatusComparison = async (req, res, next) => {
       }, {});
 
     const response = {
+      today: formatData(todayOrders),
       currentMonth: formatData(currentMonthOrders),
       previousMonth: formatData(previousMonthOrders),
+      currentYear: formatData(currentYearOrders),
       ...(selectedMonth ? { selectedMonth: formatData(selectedMonthOrders) } : {}),
       ...(selectedYear ? { selectedYear: formatData(selectedYearOrders) } : {}),
     };
@@ -488,9 +527,14 @@ export const getOrderAmountTotals = async (req, res) => {
     const currentMonth = now.getUTCMonth() + 1;
     const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
-
     const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
     const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
+    const currentYearStart = new Date(Date.UTC(currentYear, 0, 1));
+    const currentYearEnd = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59, 999));
+
+    console.log("todayStart:", todayStart, "todayEnd:", todayEnd);
+    console.log("currentMonthStart:", currentMonthStart, "currentMonthEnd:", currentMonthEnd);
+    console.log("currentYearStart:", currentYearStart, "currentYearEnd:", currentYearEnd);
 
     let selectedMonthQuery = { salesPerson: new mongoose.Types.ObjectId(userId) };
     let selectedYearQuery = { salesPerson: new mongoose.Types.ObjectId(userId) };
@@ -518,9 +562,10 @@ export const getOrderAmountTotals = async (req, res) => {
       return result.length > 0 ? result[0].totalAmount : 0;
     };
 
-    const [todayTotal, currentMonthTotal, selectedMonthTotal, selectedYearTotal] = await Promise.all([
+    const [todayTotal, currentMonthTotal, currentYearTotal, selectedMonthTotal, selectedYearTotal] = await Promise.all([
       amountTotals({ salesPerson: new mongoose.Types.ObjectId(userId), createdAt: { $gte: todayStart, $lte: todayEnd } }),
       amountTotals({ salesPerson: new mongoose.Types.ObjectId(userId), createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      amountTotals({ salesPerson: new mongoose.Types.ObjectId(userId), createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
       selectedMonth ? amountTotals(selectedMonthQuery) : Promise.resolve(0),
       selectedYear ? amountTotals(selectedYearQuery) : Promise.resolve(0),
     ]);
@@ -528,6 +573,7 @@ export const getOrderAmountTotals = async (req, res) => {
     console.log("Order Amount Totals:");
     console.log(`Today's Total: $${todayTotal.toFixed(2)}`);
     console.log(`Current Month Total: $${currentMonthTotal.toFixed(2)}`);
+    console.log(`Current Year Total: $${currentYearTotal.toFixed(2)}`);
     if (selectedMonth) {
       console.log(`Selected Month (${selectedMonth}) Total: $${selectedMonthTotal.toFixed(2)}`);
     }
@@ -538,6 +584,7 @@ export const getOrderAmountTotals = async (req, res) => {
     res.status(200).json({
       today: todayTotal,
       currentMonth: currentMonthTotal,
+      currentYear: currentYearTotal,
       ...(selectedMonth && { selectedMonth: selectedMonthTotal }),
       ...(selectedYear && { selectedYear: selectedYearTotal }),
     });

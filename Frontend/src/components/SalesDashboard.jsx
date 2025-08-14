@@ -197,7 +197,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {} }, orderAmountTotals = { today: 0, currentMonth: 0 }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} }, orderAmountTotals = { today: 0, currentMonth: 0, currentYear: 0 }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
@@ -298,29 +298,37 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Orders</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Count</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.today) || 0}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Total</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Amount</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Orders</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Order Count</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentMonth) || 0}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Total</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Order Amount</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.currentMonth || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Order Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentYear) || 0}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Order Amount</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.currentYear || 0).toFixed(2)}</span>
             </div>
             {selectedMonth && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Orders</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Order Count</span>
                   <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedMonth) || 0}</span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Total</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Order Amount</span>
                   <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedMonth || 0).toFixed(2)}</span>
                 </div>
               </>
@@ -328,11 +336,11 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
             {selectedYear && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Orders</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Order Count</span>
                   <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedYear) || 0}</span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Total</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Order Amount</span>
                   <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedYear || 0).toFixed(2)}</span>
                 </div>
               </>
@@ -421,10 +429,10 @@ const SalesDashboard = () => {
   const [orderedCount, setOrderedCount] = useState(0);
   const [quotedCount, setQuotedCount] = useState(0);
   const [orders, setOrders] = useState([]);
-  const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {}, today: {} });
+  const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
   const [leadStatusComparison, setLeadStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
   const [leadCreationCounts, setLeadCreationCounts] = useState({ createdByUser: 0, assignedAutomatically: 0 });
-  const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0 });
+  const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [loading, setLoading] = useState(true);
@@ -543,13 +551,13 @@ const SalesDashboard = () => {
         setOrderedCount(leadsData.filter((lead) => lead.status === 'Ordered').length || 0);
         setQuotedCount(leadsData.filter((lead) => lead.status === 'Quoted').length || 0);
         setOrders(ordersData || []);
-        setOrderStatusComparison(statusComparisonData || { currentMonth: {}, previousMonth: {}, today: {} });
+        setOrderStatusComparison(statusComparisonData || { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
         setLeadStatusComparison(leadStatusComparisonData || { currentMonth: {}, previousMonth: {} });
         setLeadCreationCounts({
           createdByUser: leadCreationCountsData.createdByUser || 0,
           assignedAutomatically: leadCreationCountsData.assignedAutomatically || 0,
         });
-        setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0 });
+        setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0, currentYear: 0 });
 
         const events = leadsData.flatMap(lead =>
           lead.importantDates?.map(date => ({
@@ -797,7 +805,7 @@ const SalesDashboard = () => {
                       {order.status.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                   </td>
-                  <td className="p--2">
+                  <td className="p-2">
                     <Trash2
                       className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
                       onClick={() => handleDeleteOrder(order.order_id)}
