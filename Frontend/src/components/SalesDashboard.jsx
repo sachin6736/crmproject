@@ -114,6 +114,30 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Assigned to You</span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{assignedAutomatically}</span>
             </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Lead Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.today) || 0}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Lead Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentMonth) || 0}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Lead Count</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentYear) || 0}</span>
+            </div>
+            {selectedMonth && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Lead Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedMonth) || 0}</span>
+              </div>
+            )}
+            {selectedYear && (
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Lead Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedYear) || 0}</span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -485,7 +509,7 @@ const SalesDashboard = () => {
   const [quotedCount, setQuotedCount] = useState(0);
   const [orders, setOrders] = useState([]);
   const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
-  const [leadStatusComparison, setLeadStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
+  const [leadStatusComparison, setLeadStatusComparison] = useState({ currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
   const [leadCreationCounts, setLeadCreationCounts] = useState({ createdByUser: 0, assignedAutomatically: 0 });
   const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -607,7 +631,7 @@ const SalesDashboard = () => {
         setQuotedCount(leadsData.filter((lead) => lead.status === 'Quoted').length || 0);
         setOrders(ordersData || []);
         setOrderStatusComparison(statusComparisonData || { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
-        setLeadStatusComparison(leadStatusComparisonData || { currentMonth: {}, previousMonth: {} });
+        setLeadStatusComparison(leadStatusComparisonData || { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
         setLeadCreationCounts({
           createdByUser: leadCreationCountsData.createdByUser || 0,
           assignedAutomatically: leadCreationCountsData.assignedAutomatically || 0,

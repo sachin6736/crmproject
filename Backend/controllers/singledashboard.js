@@ -235,13 +235,19 @@ export const getLeadStatusComparison = async (req, res, next) => {
     const now = new Date();
     const currentYear = now.getUTCFullYear();
     const currentMonth = now.getUTCMonth();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
     const currentMonthStart = new Date(Date.UTC(currentYear, currentMonth, 1));
     const currentMonthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999));
     const previousMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
     const previousMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
+    const currentYearStart = new Date(Date.UTC(currentYear, 0, 1));
+    const currentYearEnd = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59, 999));
 
+    console.log("todayStart:", todayStart, "todayEnd:", todayEnd);
     console.log("currentMonthStart:", currentMonthStart, "currentMonthEnd:", currentMonthEnd);
     console.log("previousMonthStart:", previousMonthStart, "previousMonthEnd:", previousMonthEnd);
+    console.log("currentYearStart:", currentYearStart, "currentYearEnd:", currentYearEnd);
 
     let selectedMonthStart, selectedMonthEnd, selectedYearStart, selectedYearEnd;
 
@@ -259,6 +265,21 @@ export const getLeadStatusComparison = async (req, res, next) => {
     }
 
     const query = { salesPerson: new mongoose.Types.ObjectId(userId) };
+
+    const todayLeads = await Lead.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: todayStart, $lte: todayEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
 
     const currentMonthLeads = await Lead.aggregate([
       {
@@ -291,6 +312,22 @@ export const getLeadStatusComparison = async (req, res, next) => {
       },
     ]);
     console.log("previousMonthLeads:", previousMonthLeads);
+
+    const currentYearLeads = await Lead.aggregate([
+      {
+        $match: {
+          ...query,
+          createdAt: { $gte: currentYearStart, $lte: currentYearEnd },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    console.log("currentYearLeads:", currentYearLeads);
 
     let selectedMonthLeads = [];
     if (selectedMonth) {
@@ -338,8 +375,10 @@ export const getLeadStatusComparison = async (req, res, next) => {
       }, {});
 
     const response = {
+      today: formatData(todayLeads),
       currentMonth: formatData(currentMonthLeads),
       previousMonth: formatData(previousMonthLeads),
+      currentYear: formatData(currentYearLeads),
       ...(selectedMonth ? { selectedMonth: formatData(selectedMonthLeads) } : {}),
       ...(selectedYear ? { selectedYear: formatData(selectedYearLeads) } : {}),
     };
