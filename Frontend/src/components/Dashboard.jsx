@@ -1282,6 +1282,7 @@ const Dashboard = () => {
   const [showPoSentDetailsModal, setShowPoSentDetailsModal] = useState(false);
   const [deliveredMetrics, setDeliveredMetrics] = useState({ today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
   const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] = useState(false);
+  const [totalOrders, setTotalOrders] = useState(0);
 
   const statusIcons = {
     Available: (
@@ -1402,7 +1403,19 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [leadRes, statusRes, ordersRes, usersRes, creationCountsRes, leadCountsAndConversionsRes, orderStatusComparisonRes, orderAmountTotalsRes, orderCountsRes, poSentCountsAndTotalsRes, deliveredMetricsRes] = await Promise.all([
+        const [
+          leadRes,
+          statusRes,
+          ordersRes,
+          usersRes,
+          creationCountsRes,
+          leadCountsAndConversionsRes,
+          orderStatusComparisonRes,
+          orderAmountTotalsRes,
+          orderCountsRes,
+          poSentCountsAndTotalsRes,
+          deliveredMetricsRes,
+        ] = await Promise.all([
           fetch("http://localhost:3000/Admin/getleadcount", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getcountbystatus", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getallorders", { credentials: "include" }),
@@ -1415,7 +1428,7 @@ const Dashboard = () => {
           fetch("http://localhost:3000/Admin/getPoSentCountsAndTotals", { credentials: "include" }),
           fetch("http://localhost:3000/Admin/getDeliveredMetrics", { credentials: "include" }),
         ]);
-
+  
         const errors = [];
         if (!leadRes.ok) errors.push(`Failed to fetch lead count: ${leadRes.status}`);
         if (!statusRes.ok) errors.push(`Failed to fetch status counts: ${statusRes.status}`);
@@ -1428,13 +1441,13 @@ const Dashboard = () => {
         if (!orderCountsRes.ok) errors.push(`Failed to fetch order counts: ${orderCountsRes.status}`);
         if (!poSentCountsAndTotalsRes.ok) errors.push(`Failed to fetch PO sent counts and totals: ${poSentCountsAndTotalsRes.status}`);
         if (!deliveredMetricsRes.ok) errors.push(`Failed to fetch delivered metrics: ${deliveredMetricsRes.status}`);
-
+  
         if (errors.length) {
           console.error("Fetch errors:", errors);
           errors.forEach(error => toast.error(error));
           return;
         }
-
+  
         const leadData = await leadRes.json();
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
@@ -1446,14 +1459,19 @@ const Dashboard = () => {
         const orderCountsData = await orderCountsRes.json();
         const poSentCountsAndTotalsData = await poSentCountsAndTotalsRes.json();
         const deliveredMetricsData = await deliveredMetricsRes.json();
-
-        console.log("Order Status Comparison Data:", orderStatusComparisonData); // Debug log
-
+  
+        console.log("Order Status Comparison Data:", orderStatusComparisonData);
+  
         setTotalClients(leadData.leadcount || 0);
         setCountbystatus(statusData || []);
         setOrders(ordersData || []);
         setTeamUsers(usersData || []);
-        setOrderCounts(orderCountsData || { today: 0, currentMonth: 0, currentYear: 0 });
+        setOrderCounts({
+          today: orderCountsData.today || 0,
+          currentMonth: orderCountsData.currentMonth || 0,
+          currentYear: orderCountsData.currentYear || 0,
+        });
+        setTotalOrders(orderCountsData.totalOrders || 0); // Set total orders
         setLeadCreationCounts({
           createdByUser: creationCountsData.createdByUser || 0,
           assignedAutomatically: creationCountsData.assignedAutomatically || 0,
@@ -1470,7 +1488,7 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, []);
 
@@ -1654,28 +1672,28 @@ const Dashboard = () => {
           Admin Dashboard
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
-          {[
-            { title: 'Ordered', value: getStatusCount('Ordered'), onClick: () => setShowOrderDetailsModal(true), icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
-            { title: 'Quoted', value: getStatusCount('Quoted'), onClick: null, icon: <DollarSign className="w-5 h-5 text-yellow-500" /> },
-            { title: 'Total Clients', value: totalClients, onClick: () => setShowLeadDetailsModal(true), icon: <Users className="w-5 h-5 text-blue-500" /> },
-            { title: "Today's Total Amount", value: `$${orderAmountTotals.today.toFixed(2)}`, onClick: null, icon: <DollarSign className="w-5 h-5 text-green-500" /> },
-            { title: "Today's PO Sent", value: poSentCountsAndTotals.today?.count || 0, onClick: () => setShowPoSentDetailsModal(true), icon: <Send className="w-5 h-5 text-orange-500" /> },
-            { title: "Today's PO Sent Total", value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`, onClick: () => setShowPoSentDetailsModal(true), icon: <DollarSign className="w-5 h-5 text-purple-500" /> },
-            { title: "Today's Delivered", value: deliveredMetrics.today?.count || 0, onClick: () => setShowDeliveredDetailsModal(true), icon: <Truck className="w-5 h-5 text-lime-500" /> },
-          ].map(({ title, value, onClick, icon }, index) => (
-            <motion.div
-              key={index}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
-              onClick={onClick}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <div className="mb-2">{icon}</div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">{title}</h3>
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{value}</span>
-            </motion.div>
-          ))}
+        {[
+  { title: 'Ordered', value: totalOrders, onClick: () => setShowOrderDetailsModal(true), icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
+  { title: 'Quoted', value: getStatusCount('Quoted'), onClick: null, icon: <DollarSign className="w-5 h-5 text-yellow-500" /> },
+  { title: 'Total Clients', value: totalClients, onClick: () => setShowLeadDetailsModal(true), icon: <Users className="w-5 h-5 text-blue-500" /> },
+  { title: "Today's Total Amount", value: `$${orderAmountTotals.today.toFixed(2)}`, onClick: null, icon: <DollarSign className="w-5 h-5 text-green-500" /> },
+  { title: "Today's PO Sent", value: poSentCountsAndTotals.today?.count || 0, onClick: () => setShowPoSentDetailsModal(true), icon: <Send className="w-5 h-5 text-orange-500" /> },
+  { title: "Today's PO Sent Total", value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`, onClick: () => setShowPoSentDetailsModal(true), icon: <DollarSign className="w-5 h-5 text-purple-500" /> },
+  { title: "Today's Delivered", value: deliveredMetrics.today?.count || 0, onClick: () => setShowDeliveredDetailsModal(true), icon: <Truck className="w-5 h-5 text-lime-500" /> },
+].map(({ title, value, onClick, icon }, index) => (
+  <motion.div
+    key={index}
+    className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
+    onClick={onClick}
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: index * 0.1 }}
+  >
+    <div className="mb-2">{icon}</div>
+    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">{title}</h3>
+    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{value}</span>
+  </motion.div>
+))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

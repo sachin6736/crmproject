@@ -105,18 +105,20 @@ export const getOrderCounts = async (req, res) => {
       return count;
     };
 
-    const [todayCount, currentMonthCount, currentYearCount, selectedMonthCount, selectedYearCount] = await Promise.all([
+    const [todayCount, currentMonthCount, currentYearCount, selectedMonthCount, selectedYearCount, totalOrders] = await Promise.all([
       orderCounts({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
       orderCounts({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
       orderCounts({ createdAt: { $gte: currentYearStart, $lte: currentYearEnd } }),
       selectedMonth ? orderCounts(selectedMonthQuery) : Promise.resolve(0),
       selectedYear ? orderCounts(selectedYearQuery) : Promise.resolve(0),
+      Order.countDocuments({}), // Fetch total number of orders in the database
     ]);
 
     res.status(200).json({
       today: todayCount,
       currentMonth: currentMonthCount,
       currentYear: currentYearCount,
+      totalOrders, // Include total orders
       ...(selectedMonth && { selectedMonth: selectedMonthCount }),
       ...(selectedYear && { selectedYear: selectedYearCount }),
     });
