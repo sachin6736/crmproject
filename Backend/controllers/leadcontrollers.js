@@ -360,10 +360,42 @@ export const editstatus = async (req, res, next) => {
     const id = req.params.id;
     console.log("id of the lead:", id);
     const { status } = req.body;
+
     const lead = await Lead.findById(id);
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
     }
+
+    // Check if the new status is the same as the current status
+    if (lead.status === status) {
+      return res.status(400).json({
+        message: `Status is already set to ${status}.`,
+      });
+    }
+
+    // Prevent changing status if current status is "Ordered"
+    if (lead.status === "Ordered" && status !== "Ordered") {
+      return res.status(400).json({
+        message: "Cannot change status: Lead is already set to Ordered.",
+      });
+    }
+
+    // Check if status is being set to "Ordered"
+    if (status === "Ordered") {
+      // Verify that partCost, shippingCost, grossProfit, and totalCost are set
+      if (
+        !lead.partCost ||
+        !lead.shippingCost ||
+        !lead.grossProfit ||
+        !lead.totalCost
+      ) {
+        return res.status(400).json({
+          message:
+            "Cannot set status to Ordered: Part Cost, Shipping Cost, Gross Profit, and Total Cost must be set.",
+        });
+      }
+    }
+
     lead.status = status;
 
     console.log("testing", req.user);
@@ -373,6 +405,7 @@ export const editstatus = async (req, res, next) => {
       addedBy: userIdentity,
       createdAt: new Date(),
     });
+
     await lead.save();
     return res.status(200).json({ message: "Lead status updated", lead });
   } catch (error) {
@@ -380,7 +413,6 @@ export const editstatus = async (req, res, next) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 //======================================leadsbyid
 export const getLeadById = async (req, res, next) => {
   try {

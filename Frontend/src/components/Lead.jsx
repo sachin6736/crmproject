@@ -217,7 +217,8 @@ const Lead = () => {
         const updatedLead = await leadResponse.json();
         setSingleLead(updatedLead);
       } else {
-        toast.error("Failed to update status");
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to update status");
       }
     } catch (error) {
       toast.error("Error updating lead status");
