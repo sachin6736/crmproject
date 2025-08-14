@@ -681,7 +681,7 @@ const SalesDashboard = () => {
         });
 
         setTotalClients(leadsData.length || 0);
-        setOrderedCount(leadsData.filter((lead) => lead.status === 'Ordered').length || 0);
+        setOrderedCount(ordersData.length || 0); // Updated to use ordersData.length
         setQuotedCount(leadsData.filter((lead) => lead.status === 'Quoted').length || 0);
         setOrders(ordersData || []);
         setOrderStatusComparison(statusComparisonData || { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
