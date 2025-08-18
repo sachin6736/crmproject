@@ -21,7 +21,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const localizer = momentLocalizer(moment);
 
-const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear, loading }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
@@ -141,11 +141,20 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto relative"
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
+        {loading && (
+          <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+            <FullPageLoader
+              size="w-8 h-8"
+              color="text-blue-500 dark:text-blue-400"
+              fill="fill-blue-300 dark:fill-blue-600"
+            />
+          </div>
+        )}
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Lead Details</h3>
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
@@ -201,6 +210,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedMonth || ""}
                 onChange={(e) => onMonthChange(e.target.value)}
+                disabled={loading}
               >
                 <option value="">Select Month to Compare</option>
                 {generateMonthOptions().map(({ value, label }) => (
@@ -211,6 +221,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedYear || ""}
                 onChange={(e) => onYearChange(e.target.value)}
+                disabled={loading}
               >
                 <option value="">Select Year to Compare</option>
                 {generateYearOptions().map(({ value, label }) => (
@@ -265,6 +276,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
             <button
               className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={onClose}
+              disabled={loading}
             >
               Close
             </button>
@@ -275,13 +287,10 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} }, orderAmountTotals = { today: 0, currentMonth: 0, currentYear: 0 }, onMonthChange, onYearChange, selectedMonth, selectedYear }) => {
+const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} }, orderAmountTotals = { today: 0, currentMonth: 0, currentYear: 0 }, onMonthChange, onYearChange, selectedMonth, selectedYear, loading }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
-
-  console.log("OrderDetailsModal - statusComparison:", statusComparison);
-  console.log("OrderDetailsModal - orderAmountTotals:", orderAmountTotals);
 
   const statusColors = {
     LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -410,11 +419,20 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto relative"
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
+        {loading && (
+          <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+            <FullPageLoader
+              size="w-8 h-8"
+              color="text-blue-500 dark:text-blue-400"
+              fill="fill-blue-300 dark:fill-blue-600"
+            />
+          </div>
+        )}
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Details</h3>
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
@@ -472,6 +490,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
               value={selectedMonth || ""}
               onChange={(e) => onMonthChange(e.target.value)}
+              disabled={loading}
             >
               <option value="">Select Month to Compare</option>
               {generateMonthOptions().map(({ value, label }) => (
@@ -482,6 +501,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
               value={selectedYear || ""}
               onChange={(e) => onYearChange(e.target.value)}
+              disabled={loading}
             >
               <option value="">Select Year to Compare</option>
               {generateYearOptions().map(({ value, label }) => (
@@ -547,6 +567,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
           <button
             className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={onClose}
+            disabled={loading}
           >
             Close
           </button>
@@ -569,6 +590,7 @@ const SalesDashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [showLeadDetailsModal, setShowLeadDetailsModal] = useState(false);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState([]);
@@ -618,37 +640,52 @@ const SalesDashboard = () => {
   useEffect(() => {
     const fetchSalesData = async () => {
       try {
+        setLoading(true);
         const query = [];
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join('&')}` : '';
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+          toast.warn('Request taking longer than expected. Please check your network.');
+        }, 10000); // 10-second timeout
+
         const [leadsRes, ordersRes, statusComparisonRes, leadStatusComparisonRes, leadCreationCountsRes, orderAmountTotalsRes] = await Promise.all([
           fetch('http://localhost:3000/Sales/getsingleleads', {
             method: 'GET',
             credentials: 'include',
+            signal: controller.signal,
           }),
           fetch('http://localhost:3000/Sales/getsingleorders', {
             method: 'GET',
             credentials: 'include',
+            signal: controller.signal,
           }),
           fetch(`http://localhost:3000/Sales/getOrderStatusComparison${queryString}`, {
             method: 'GET',
             credentials: 'include',
+            signal: controller.signal,
           }),
           fetch(`http://localhost:3000/Sales/getLeadStatusComparison${queryString}`, {
             method: 'GET',
             credentials: 'include',
+            signal: controller.signal,
           }),
           fetch('http://localhost:3000/Sales/getLeadCreationCounts', {
             method: 'GET',
             credentials: 'include',
+            signal: controller.signal,
           }),
           fetch(`http://localhost:3000/Sales/getOrderAmountTotals${queryString}`, {
             method: 'GET',
             credentials: 'include',
+            signal: controller.signal,
           }),
         ]);
+
+        clearTimeout(timeoutId);
 
         const errors = [];
         if (!leadsRes.ok) errors.push(`Failed to fetch sales leads: ${leadsRes.status}`);
@@ -681,7 +718,7 @@ const SalesDashboard = () => {
         });
 
         setTotalClients(leadsData.length || 0);
-        setOrderedCount(ordersData.length || 0); // Updated to use ordersData.length
+        setOrderedCount(ordersData.length || 0);
         setQuotedCount(leadsData.filter((lead) => lead.status === 'Quoted').length || 0);
         setOrders(ordersData || []);
         setOrderStatusComparison(statusComparisonData || { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
@@ -703,7 +740,11 @@ const SalesDashboard = () => {
         setCalendarEvents(events);
       } catch (error) {
         console.error("Fetch sales data error:", error);
-        toast.error(`Error fetching data: ${error.message}`);
+        if (error.name === 'AbortError') {
+          toast.error('Request timed out. Please try again.');
+        } else {
+          toast.error(`Error fetching data: ${error.message}`);
+        }
       } finally {
         setLoading(false);
       }
@@ -713,11 +754,23 @@ const SalesDashboard = () => {
   }, [selectedMonth, selectedYear]);
 
   const handleDeleteOrder = async (orderId) => {
+    if (actionLoading) return; // Prevent double clicks
+    setActionLoading(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        toast.warn('Delete request taking longer than expected. Please check your network.');
+      }, 10000); // 10-second timeout
+
       const response = await fetch(`http://localhost:3000/Order/delete/${orderId}`, {
         method: 'DELETE',
         credentials: 'include',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         toast.success('Order deleted successfully');
         setOrders((prevOrders) => prevOrders.filter((order) => order.order_id !== orderId));
@@ -726,8 +779,14 @@ const SalesDashboard = () => {
         toast.error(errorData.message || 'Failed to delete order');
       }
     } catch (error) {
-      toast.error('Network error: Unable to delete order');
+      if (error.name === 'AbortError') {
+        toast.error('Delete request timed out. Please try again.');
+      } else {
+        toast.error('Network error: Unable to delete order');
+      }
       console.error('Error deleting order:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -762,15 +821,26 @@ const SalesDashboard = () => {
         {['Ordered', 'Quoted'].map((status) => (
           <div
             key={status}
-            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
             onClick={() => {
-              if (status === 'Ordered') {
-                setShowOrderDetailsModal(true);
-              } else if (status === 'Quoted') {
-                setShowLeadDetailsModal(true);
+              if (!actionLoading) {
+                if (status === 'Ordered') {
+                  setShowOrderDetailsModal(true);
+                } else if (status === 'Quoted') {
+                  setShowLeadDetailsModal(true);
+                }
               }
             }}
           >
+            {actionLoading && (
+              <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+                <FullPageLoader
+                  size="w-6 h-6"
+                  color="text-blue-500 dark:text-blue-400"
+                  fill="fill-blue-300 dark:fill-blue-600"
+                />
+              </div>
+            )}
             <h3 className="text-gray-500 dark:text-gray-400 text-lg">{status}</h3>
             <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
               {status === 'Ordered' ? orderedCount : quotedCount}
@@ -778,30 +848,58 @@ const SalesDashboard = () => {
           </div>
         ))}
         <div
-          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-          onClick={() => setShowLeadDetailsModal(true)}
+          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
+          onClick={() => !actionLoading && setShowLeadDetailsModal(true)}
         >
+          {actionLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+              <FullPageLoader
+                size="w-6 h-6"
+                color="text-blue-500 dark:text-blue-400"
+                fill="fill-blue-300 dark:fill-blue-600"
+              />
+            </div>
+          )}
           <h3 className="text-gray-500 dark:text-gray-400 text-lg">Total Clients</h3>
           <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalClients}</span>
         </div>
         <div
-          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-          onClick={() => setShowOrderDetailsModal(true)}
+          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
+          onClick={() => !actionLoading && setShowOrderDetailsModal(true)}
         >
+          {actionLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+              <FullPageLoader
+                size="w-6 h-6"
+                color="text-blue-500 dark:text-blue-400"
+                fill="fill-blue-300 dark:fill-blue-600"
+              />
+            </div>
+          )}
           <h3 className="text-gray-500 dark:text-gray-400 text-lg">Today's Total</h3>
           <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
-        <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+        <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative">
+          {actionLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+              <FullPageLoader
+                size="w-8 h-8"
+                color="text-blue-500 dark:text-blue-400"
+                fill="fill-blue-300 dark:fill-blue-600"
+              />
+            </div>
+          )}
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedMonth || ''}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => !actionLoading && setSelectedMonth(e.target.value)}
+                disabled={actionLoading}
               >
                 <option value="">Select Month to Compare</option>
                 {(() => {
@@ -821,7 +919,8 @@ const SalesDashboard = () => {
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedYear || ''}
-                onChange={(e) => setSelectedYear(e.target.value)}
+                onChange={(e) => !actionLoading && setSelectedYear(e.target.value)}
+                disabled={actionLoading}
               >
                 <option value="">Select Year to Compare</option>
                 {(() => {
@@ -864,7 +963,16 @@ const SalesDashboard = () => {
           </div>
         </div>
 
-        <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+        <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative">
+          {actionLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+              <FullPageLoader
+                size="w-8 h-8"
+                color="text-blue-500 dark:text-blue-400"
+                fill="fill-blue-300 dark:fill-blue-600"
+              />
+            </div>
+          )}
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Calendar</h3>
           <Calendar
             localizer={localizer}
@@ -892,14 +1000,29 @@ const SalesDashboard = () => {
       </div>
 
       <div className="w-full px-4 sm:px-20 py-8">
-        <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-600 overflow-x-auto">
+        <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-600 overflow-x-auto relative">
+          {actionLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+              <FullPageLoader
+                size="w-8 h-8"
+                color="text-blue-500 dark:text-blue-400"
+                fill="fill-blue-300 dark:fill-blue-600"
+              />
+            </div>
+          )}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
             <div className="space-x-2">
-              <button className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <button
+                className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                disabled={actionLoading}
+              >
                 Filter
               </button>
-              <button className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <button
+                className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                disabled={actionLoading}
+              >
                 See all
               </button>
             </div>
@@ -938,10 +1061,19 @@ const SalesDashboard = () => {
                       {order.status.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                   </td>
-                  <td className="p-2">
+                  <td className="p-2 relative">
+                    {actionLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <FullPageLoader
+                          size="w-4 h-4"
+                          color="text-blue-500 dark:text-blue-400"
+                          fill="fill-blue-300 dark:fill-blue-600"
+                        />
+                      </div>
+                    )}
                     <Trash2
-                      className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
-                      onClick={() => handleDeleteOrder(order.order_id)}
+                      className={`w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer ${actionLoading ? 'opacity-50' : ''}`}
+                      onClick={() => !actionLoading && handleDeleteOrder(order.order_id)}
                     />
                   </td>
                 </tr>
@@ -956,9 +1088,11 @@ const SalesDashboard = () => {
           <LeadDetailsModal
             isOpen={showLeadDetailsModal}
             onClose={() => {
-              setShowLeadDetailsModal(false);
-              setSelectedMonth('');
-              setSelectedYear('');
+              if (!actionLoading) {
+                setShowLeadDetailsModal(false);
+                setSelectedMonth('');
+                setSelectedYear('');
+              }
             }}
             createdByUser={leadCreationCounts.createdByUser}
             assignedAutomatically={leadCreationCounts.assignedAutomatically}
@@ -967,15 +1101,18 @@ const SalesDashboard = () => {
             onYearChange={setSelectedYear}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
+            loading={actionLoading}
           />
         )}
         {showOrderDetailsModal && orderAmountTotals && orderStatusComparison && (
           <OrderDetailsModal
             isOpen={showOrderDetailsModal}
             onClose={() => {
-              setShowOrderDetailsModal(false);
-              setSelectedMonth('');
-              setSelectedYear('');
+              if (!actionLoading) {
+                setShowOrderDetailsModal(false);
+                setSelectedMonth('');
+                setSelectedYear('');
+              }
             }}
             statusComparison={orderStatusComparison}
             orderAmountTotals={orderAmountTotals}
@@ -983,6 +1120,7 @@ const SalesDashboard = () => {
             onYearChange={setSelectedYear}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
+            loading={actionLoading}
           />
         )}
       </AnimatePresence>
