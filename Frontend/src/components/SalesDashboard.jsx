@@ -21,10 +21,14 @@ import { useTheme } from '../context/ThemeContext';
 
 const localizer = momentLocalizer(moment);
 
-const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, statusComparison, onMonthChange, onYearChange, selectedMonth, selectedYear, loading }) => {
+const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, onMonthChange, onYearChange, loading }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [statusComparison, setStatusComparison] = useState({ currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
+  const [fetchLoading, setFetchLoading] = useState(false);
 
   const statusColors = {
     Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
@@ -90,6 +94,50 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
     return options;
   };
 
+  useEffect(() => {
+    const fetchLeadStatusComparison = async () => {
+      try {
+        setFetchLoading(true);
+        const query = [];
+        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
+        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
+        const queryString = query.length ? `?${query.join('&')}` : '';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+          toast.warn('Request taking longer than expected. Please check your network.');
+        }, 10000);
+
+        const response = await fetch(`http://localhost:3000/Sales/getLeadStatusComparison${queryString}`, {
+          method: 'GET',
+          credentials: 'include',
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch lead status comparison: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setStatusComparison(data || { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
+      } catch (error) {
+        console.error("Fetch lead status comparison error:", error);
+        if (error.name === 'AbortError') {
+          toast.error('Request timed out. Please try again.');
+        } else {
+          toast.error(`Error fetching lead status data: ${error.message}`);
+        }
+      } finally {
+        setFetchLoading(false);
+      }
+    };
+
+    fetchLeadStatusComparison();
+  }, [selectedMonth, selectedYear]);
+
   let monthComparison = null;
   if (selectedMonth) {
     const selectedTotal = calculateTotal(statusComparison.selectedMonth);
@@ -146,7 +194,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        {loading && (
+        {(loading || fetchLoading) && (
           <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
             <FullPageLoader
               size="w-8 h-8"
@@ -209,8 +257,11 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedMonth || ""}
-                onChange={(e) => onMonthChange(e.target.value)}
-                disabled={loading}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  onMonthChange(e.target.value);
+                }}
+                disabled={loading || fetchLoading}
               >
                 <option value="">Select Month to Compare</option>
                 {generateMonthOptions().map(({ value, label }) => (
@@ -220,8 +271,11 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedYear || ""}
-                onChange={(e) => onYearChange(e.target.value)}
-                disabled={loading}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  onYearChange(e.target.value);
+                }}
+                disabled={loading || fetchLoading}
               >
                 <option value="">Select Year to Compare</option>
                 {generateYearOptions().map(({ value, label }) => (
@@ -271,12 +325,11 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               ))}
             </div>
           </div>
-
           <div className="flex justify-end gap-2">
             <button
               className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={onClose}
-              disabled={loading}
+              disabled={loading || fetchLoading}
             >
               Close
             </button>
@@ -287,10 +340,15 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} }, orderAmountTotals = { today: 0, currentMonth: 0, currentYear: 0 }, onMonthChange, onYearChange, selectedMonth, selectedYear, loading }) => {
+const OrderDetailsModal = ({ isOpen, onClose, onMonthChange, onYearChange, loading }) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [statusComparison, setStatusComparison] = useState({ currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
+  const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
+  const [fetchLoading, setFetchLoading] = useState(false);
 
   const statusColors = {
     LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -305,7 +363,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
     Delivered: "bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200",
     Replacement: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     Litigation: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
-    ReplacementCancelled: "bg-rose-pz-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+    ReplacementCancelled: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
     TotalOrders: "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
   };
 
@@ -368,6 +426,65 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
     return options;
   };
 
+  useEffect(() => {
+    const fetchOrderData = async () => {
+      try {
+        setFetchLoading(true);
+        const query = [];
+        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
+        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
+        const queryString = query.length ? `?${query.join('&')}` : '';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+          toast.warn('Request taking longer than expected. Please check your network.');
+        }, 10000);
+
+        const [statusResponse, amountResponse] = await Promise.all([
+          fetch(`http://localhost:3000/Sales/getOrderStatusComparison${queryString}`, {
+            method: 'GET',
+            credentials: 'include',
+            signal: controller.signal,
+          }),
+          fetch(`http://localhost:3000/Sales/getOrderAmountTotals${queryString}`, {
+            method: 'GET',
+            credentials: 'include',
+            signal: controller.signal,
+          }),
+        ]);
+
+        clearTimeout(timeoutId);
+
+        if (!statusResponse.ok) {
+          throw new Error(`Failed to fetch order status comparison: ${statusResponse.status}`);
+        }
+        if (!amountResponse.ok) {
+          throw new Error(`Failed to fetch order amount totals: ${amountResponse.status}`);
+        }
+
+        const [statusComparisonData, orderAmountTotalsData] = await Promise.all([
+          statusResponse.json(),
+          amountResponse.json(),
+        ]);
+
+        setStatusComparison(statusComparisonData || { currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
+        setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0, currentYear: 0 });
+      } catch (error) {
+        console.error("Fetch order data error:", error);
+        if (error.name === 'AbortError') {
+          toast.error('Request timed out. Please try again.');
+        } else {
+          toast.error(`Error fetching order data: ${error.message}`);
+        }
+      } finally {
+        setFetchLoading(false);
+      }
+    };
+
+    fetchOrderData();
+  }, [selectedMonth, selectedYear]);
+
   let monthComparison = null;
   if (selectedMonth) {
     const selectedTotal = calculateTotal(statusComparison.selectedMonth);
@@ -424,7 +541,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        {loading && (
+        {(loading || fetchLoading) && (
           <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
             <FullPageLoader
               size="w-8 h-8"
@@ -485,30 +602,6 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
               </>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <select
-              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedMonth || ""}
-              onChange={(e) => onMonthChange(e.target.value)}
-              disabled={loading}
-            >
-              <option value="">Select Month to Compare</option>
-              {generateMonthOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-            <select
-              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedYear || ""}
-              onChange={(e) => onYearChange(e.target.value)}
-              disabled={loading}
-            >
-              <option value="">Select Year to Compare</option>
-              {generateYearOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
           {monthComparison && (
             <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">Total Orders Change from {monthComparison.monthLabel} to Current Month:</span>
@@ -521,6 +614,36 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
               <span className={`text-lg font-bold ${yearComparison.colorClass}`}>{yearComparison.changeText}</span>
             </div>
           )}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <select
+              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+              value={selectedMonth || ""}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                onMonthChange(e.target.value);
+              }}
+              disabled={loading || fetchLoading}
+            >
+              <option value="">Select Month to Compare</option>
+              {generateMonthOptions().map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+            <select
+              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+              value={selectedYear || ""}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                onYearChange(e.target.value);
+              }}
+              disabled={loading || fetchLoading}
+            >
+              <option value="">Select Year to Compare</option>
+              {generateYearOptions().map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
@@ -567,7 +690,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
           <button
             className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={onClose}
-            disabled={loading}
+            disabled={loading || fetchLoading}
           >
             Close
           </button>
@@ -587,8 +710,6 @@ const SalesDashboard = () => {
   const [leadStatusComparison, setLeadStatusComparison] = useState({ currentMonth: {}, previousMonth: {}, today: {}, currentYear: {} });
   const [leadCreationCounts, setLeadCreationCounts] = useState({ createdByUser: 0, assignedAutomatically: 0 });
   const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
-  const [selectedMonth, setSelectedMonth] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showLeadDetailsModal, setShowLeadDetailsModal] = useState(false);
@@ -603,8 +724,6 @@ const SalesDashboard = () => {
   const lineColors = {
     currentMonth: '#8884d8',
     previousMonth: '#82ca9d',
-    selectedMonth: '#ff7300',
-    selectedYear: '#d81b60',
   };
 
   const statuses = [
@@ -639,16 +758,11 @@ const SalesDashboard = () => {
     const fetchSalesData = async () => {
       try {
         setLoading(true);
-        const query = [];
-        if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
-        if (selectedYear) query.push(`selectedYear=${selectedYear}`);
-        const queryString = query.length ? `?${query.join('&')}` : '';
-
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
           controller.abort();
           toast.warn('Request taking longer than expected. Please check your network.');
-        }, 10000); // 10-second timeout
+        }, 10000);
 
         const [leadsRes, ordersRes, statusComparisonRes, leadStatusComparisonRes, leadCreationCountsRes, orderAmountTotalsRes] = await Promise.all([
           fetch('http://localhost:3000/Sales/getsingleleads', {
@@ -661,12 +775,12 @@ const SalesDashboard = () => {
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`http://localhost:3000/Sales/getOrderStatusComparison${queryString}`, {
+          fetch('http://localhost:3000/Sales/getOrderStatusComparison', {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`http://localhost:3000/Sales/getLeadStatusComparison${queryString}`, {
+          fetch('http://localhost:3000/Sales/getLeadStatusComparison', {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
@@ -676,7 +790,7 @@ const SalesDashboard = () => {
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`http://localhost:3000/Sales/getOrderAmountTotals${queryString}`, {
+          fetch('http://localhost:3000/Sales/getOrderAmountTotals', {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
@@ -705,15 +819,6 @@ const SalesDashboard = () => {
         const leadStatusComparisonData = await leadStatusComparisonRes.json();
         const leadCreationCountsData = await leadCreationCountsRes.json();
         const orderAmountTotalsData = await orderAmountTotalsRes.json();
-
-        console.log("Fetched data:", {
-          leadsData,
-          ordersData,
-          statusComparisonData,
-          leadStatusComparisonData,
-          leadCreationCountsData,
-          orderAmountTotalsData,
-        });
 
         setTotalClients(leadsData.length || 0);
         setOrderedCount(ordersData.length || 0);
@@ -749,17 +854,17 @@ const SalesDashboard = () => {
     };
 
     fetchSalesData();
-  }, [selectedMonth, selectedYear]);
+  }, []);
 
   const handleDeleteOrder = async (orderId) => {
-    if (actionLoading) return; // Prevent double clicks
+    if (actionLoading) return;
     setActionLoading(true);
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
         toast.warn('Delete request taking longer than expected. Please check your network.');
-      }, 10000); // 10-second timeout
+      }, 10000);
 
       const response = await fetch(`http://localhost:3000/Order/delete/${orderId}`, {
         method: 'DELETE',
@@ -817,34 +922,30 @@ const SalesDashboard = () => {
     <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="flex flex-wrap gap-6 p-3 px-4 sm:px-20">
         {['Ordered', 'Quoted'].map((status) => (
-          <div
-            key={status}
-            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
-            onClick={() => {
-              if (!actionLoading) {
-                if (status === 'Ordered') {
-                  setShowOrderDetailsModal(true);
-                } else if (status === 'Quoted') {
-                  setShowLeadDetailsModal(true);
-                }
-              }
-            }}
-          >
-            {actionLoading && (
-              <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-                <FullPageLoader
-                  size="w-6 h-6"
-                  color="text-blue-500 dark:text-blue-400"
-                  fill="fill-blue-300 dark:fill-blue-600"
-                />
-              </div>
-            )}
-            <h3 className="text-gray-500 dark:text-gray-400 text-lg">{status}</h3>
-            <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-              {status === 'Ordered' ? orderedCount : quotedCount}
-            </span>
-          </div>
-        ))}
+  <div
+    key={status}
+    className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
+    onClick={() => {
+      if (!actionLoading && status === 'Ordered') {
+        setShowOrderDetailsModal(true);
+      }
+    }}
+  >
+    {actionLoading && (
+      <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
+        <FullPageLoader
+          size="w-6 h-6"
+          color="text-blue-500 dark:text-blue-400"
+          fill="fill-blue-300 dark:fill-blue-600"
+        />
+      </div>
+    )}
+    <h3 className="text-gray-500 dark:text-gray-400 text-lg">{status}</h3>
+    <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+      {status === 'Ordered' ? orderedCount : quotedCount}
+    </span>
+  </div>
+))}
         <div
           className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
           onClick={() => !actionLoading && setShowLeadDetailsModal(true)}
@@ -892,48 +993,6 @@ const SalesDashboard = () => {
           )}
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              {/* <select
-                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedMonth || ''}
-                onChange={(e) => !actionLoading && setSelectedMonth(e.target.value)}
-                disabled={actionLoading}
-              >
-                <option value="">Select Month to Compare</option>
-                {(() => {
-                  const options = [];
-                  const now = new Date();
-                  for (let i = 0; i < 12; i++) {
-                    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                    const label = date.toLocaleString('default', { month: 'long', year: 'numeric' });
-                    options.push({ value, label });
-                  }
-                  return options;
-                })().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <select
-                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedYear || ''}
-                onChange={(e) => !actionLoading && setSelectedYear(e.target.value)}
-                disabled={actionLoading}
-              >
-                <option value="">Select Year to Compare</option>
-                {(() => {
-                  const options = [];
-                  const now = new Date();
-                  const currentYear = now.getFullYear();
-                  for (let i = currentYear - 5; i <= currentYear; i++) {
-                    options.push({ value: String(i), label: String(i) });
-                  }
-                  return options;
-                })().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select> */}
-            </div>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
@@ -1082,36 +1141,25 @@ const SalesDashboard = () => {
             onClose={() => {
               if (!actionLoading) {
                 setShowLeadDetailsModal(false);
-                setSelectedMonth('');
-                setSelectedYear('');
               }
             }}
             createdByUser={leadCreationCounts.createdByUser}
             assignedAutomatically={leadCreationCounts.assignedAutomatically}
-            statusComparison={leadStatusComparison}
-            onMonthChange={setSelectedMonth}
-            onYearChange={setSelectedYear}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
+            onMonthChange={() => {}}
+            onYearChange={() => {}}
             loading={actionLoading}
           />
         )}
-        {showOrderDetailsModal && orderAmountTotals && orderStatusComparison && (
+        {showOrderDetailsModal && (
           <OrderDetailsModal
             isOpen={showOrderDetailsModal}
             onClose={() => {
               if (!actionLoading) {
                 setShowOrderDetailsModal(false);
-                setSelectedMonth('');
-                setSelectedYear('');
               }
             }}
-            statusComparison={orderStatusComparison}
-            orderAmountTotals={orderAmountTotals}
-            onMonthChange={setSelectedMonth}
-            onYearChange={setSelectedYear}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
+            onMonthChange={() => {}}
+            onYearChange={() => {}}
             loading={actionLoading}
           />
         )}
