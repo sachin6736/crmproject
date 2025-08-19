@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import 'react-toastify/dist/ReactToastify.css';
-import FullPageLoader from './utilities/FullPageLoader';
+import LoadingOverlay from './LoadingOverlay'; // Import LoadingOverlay
 import {
   LineChart,
   Line,
@@ -194,145 +194,139 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        {(loading || fetchLoading) && (
-          <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-            <FullPageLoader
-              size="w-8 h-8"
-              color="text-blue-500 dark:text-blue-400"
-              fill="fill-blue-300 dark:fill-blue-600"
-            />
-          </div>
-        )}
+        <LoadingOverlay isLoading={loading || fetchLoading} /> {/* Replace FullPageLoader */}
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Lead Details</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Created by You</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{createdByUser}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Assigned to You</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{assignedAutomatically}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Lead Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.today) || 0}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Lead Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentMonth) || 0}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Lead Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentYear) || 0}</span>
-            </div>
-            {selectedMonth && (
-              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Lead Count</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedMonth) || 0}</span>
-              </div>
-            )}
-            {selectedYear && (
-              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Lead Count</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedYear) || 0}</span>
-              </div>
-            )}
-          </div>
-          {monthComparison && (
-            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Total Leads Change from {monthComparison.monthLabel} to Current Month:</span>
-              <span className={`text-lg font-bold ${monthComparison.colorClass}`}>{monthComparison.changeText}</span>
-            </div>
-          )}
-          {yearComparison && (
-            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Total Leads Change from {yearComparison.selectedYear} to Current Year:</span>
-              <span className={`text-lg font-bold ${yearComparison.colorClass}`}>{yearComparison.changeText}</span>
-            </div>
-          )}
+        <div className={`${(loading || fetchLoading) ? "blur-[1px]" : ""}`}>
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Lead Status Comparison</h4>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <select
-                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedMonth || ""}
-                onChange={(e) => {
-                  setSelectedMonth(e.target.value);
-                  onMonthChange(e.target.value);
-                }}
-                disabled={loading || fetchLoading}
-              >
-                <option value="">Select Month to Compare</option>
-                {generateMonthOptions().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <select
-                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                value={selectedYear || ""}
-                onChange={(e) => {
-                  setSelectedYear(e.target.value);
-                  onYearChange(e.target.value);
-                }}
-                disabled={loading || fetchLoading}
-              >
-                <option value="">Select Year to Compare</option>
-                {generateYearOptions().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                    fontSize: '12px',
-                  }}
-                />
-                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
-                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
-                {selectedMonth && (
-                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
-                )}
-                {selectedYear && (
-                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {statuses.map(status => (
-                <div
-                  key={status}
-                  className={`p-2 rounded-lg text-center ${statusColors[status.replace(" ", "")]}`}
-                >
-                  <span className="text-xs font-medium">
-                    {status === "TotalLeads"
-                      ? "Total Leads"
-                      : status.replace("PriceTooHigh", "Price Too High").replace("PartNotAvailable", "Part Not Available").replace("NoResponse", "No Response")}
-                  </span>
-                  <div className="text-md font-bold">
-                    {status === "TotalLeads" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Created by You</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{createdByUser}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Assigned to You</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{assignedAutomatically}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Lead Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.today) || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Lead Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentMonth) || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Lead Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentYear) || 0}</span>
+              </div>
+              {selectedMonth && (
+                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Lead Count</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedMonth) || 0}</span>
                 </div>
-              ))}
+              )}
+              {selectedYear && (
+                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Lead Count</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedYear) || 0}</span>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={onClose}
-              disabled={loading || fetchLoading}
-            >
-              Close
-            </button>
+            {monthComparison && (
+              <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Total Leads Change from {monthComparison.monthLabel} to Current Month:</span>
+                <span className={`text-lg font-bold ${monthComparison.colorClass}`}>{monthComparison.changeText}</span>
+              </div>
+            )}
+            {yearComparison && (
+              <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Total Leads Change from {yearComparison.selectedYear} to Current Year:</span>
+                <span className={`text-lg font-bold ${yearComparison.colorClass}`}>{yearComparison.changeText}</span>
+              </div>
+            )}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Lead Status Comparison</h4>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <select
+                  className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                  value={selectedMonth || ""}
+                  onChange={(e) => {
+                    setSelectedMonth(e.target.value);
+                    onMonthChange(e.target.value);
+                  }}
+                  disabled={loading || fetchLoading}
+                >
+                  <option value="">Select Month to Compare</option>
+                  {generateMonthOptions().map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+                <select
+                  className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                  value={selectedYear || ""}
+                  onChange={(e) => {
+                    setSelectedYear(e.target.value);
+                    onYearChange(e.target.value);
+                  }}
+                  disabled={loading || fetchLoading}
+                >
+                  <option value="">Select Year to Compare</option>
+                  {generateYearOptions().map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+                  <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                  <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                      border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                      color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+                  <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
+                  <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+                  {selectedMonth && (
+                    <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+                  )}
+                  {selectedYear && (
+                    <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {statuses.map(status => (
+                  <div
+                    key={status}
+                    className={`p-2 rounded-lg text-center ${statusColors[status.replace(" ", "")]}`}
+                  >
+                    <span className="text-xs font-medium">
+                      {status === "TotalLeads"
+                        ? "Total Leads"
+                        : status.replace("PriceTooHigh", "Price Too High").replace("PartNotAvailable", "Part Not Available").replace("NoResponse", "No Response")}
+                    </span>
+                    <div className="text-md font-bold">
+                      {status === "TotalLeads" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={onClose}
+                disabled={loading || fetchLoading}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -436,7 +430,7 @@ const OrderDetailsModal = ({ isOpen, onClose, onMonthChange, onYearChange, loadi
         const queryString = query.length ? `?${query.join('&')}` : '';
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
+       const timeoutId = setTimeout(() => {
           controller.abort();
           toast.warn('Request taking longer than expected. Please check your network.');
         }, 10000);
@@ -541,159 +535,153 @@ const OrderDetailsModal = ({ isOpen, onClose, onMonthChange, onYearChange, loadi
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        {(loading || fetchLoading) && (
-          <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-            <FullPageLoader
-              size="w-8 h-8"
-              color="text-blue-500 dark:text-blue-400"
-              fill="fill-blue-300 dark:fill-blue-600"
-            />
-          </div>
-        )}
+        <LoadingOverlay isLoading={loading || fetchLoading} /> {/* Replace FullPageLoader */}
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Details</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.today) || 0}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Amount</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Order Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentMonth) || 0}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Order Amount</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.currentMonth || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Order Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentYear) || 0}</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Order Amount</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.currentYear || 0).toFixed(2)}</span>
-            </div>
-            {selectedMonth && (
-              <>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Order Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedMonth) || 0}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Order Amount</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedMonth || 0).toFixed(2)}</span>
-                </div>
-              </>
-            )}
-            {selectedYear && (
-              <>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Order Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedYear) || 0}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Order Amount</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedYear || 0).toFixed(2)}</span>
-                </div>
-              </>
-            )}
-          </div>
-          {monthComparison && (
-            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Total Orders Change from {monthComparison.monthLabel} to Current Month:</span>
-              <span className={`text-lg font-bold ${monthComparison.colorClass}`}>{monthComparison.changeText}</span>
-            </div>
-          )}
-          {yearComparison && (
-            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Total Orders Change from {yearComparison.selectedYear} to Current Year:</span>
-              <span className={`text-lg font-bold ${yearComparison.colorClass}`}>{yearComparison.changeText}</span>
-            </div>
-          )}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <select
-              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedMonth || ""}
-              onChange={(e) => {
-                setSelectedMonth(e.target.value);
-                onMonthChange(e.target.value);
-              }}
-              disabled={loading || fetchLoading}
-            >
-              <option value="">Select Month to Compare</option>
-              {generateMonthOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-            <select
-              className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-              value={selectedYear || ""}
-              onChange={(e) => {
-                setSelectedYear(e.target.value);
-                onYearChange(e.target.value);
-              }}
-              disabled={loading || fetchLoading}
-            >
-              <option value="">Select Year to Compare</option>
-              {generateYearOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-              <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-              <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                  color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                  fontSize: '12px',
-                }}
-              />
-              <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-              <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
-              <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+        <div className={`${(loading || fetchLoading) ? "blur-[1px]" : ""}`}>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.today) || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Amount</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Order Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentMonth) || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month's Order Amount</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.currentMonth || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Order Count</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.currentYear) || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year's Order Amount</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.currentYear || 0).toFixed(2)}</span>
+              </div>
               {selectedMonth && (
-                <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+                <>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Order Count</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedMonth) || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month ({selectedMonth}) Order Amount</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedMonth || 0).toFixed(2)}</span>
+                  </div>
+                </>
               )}
               {selectedYear && (
-                <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                <>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Order Count</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{calculateTotal(statusComparison.selectedYear) || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year ({selectedYear}) Order Amount</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.selectedYear || 0).toFixed(2)}</span>
+                  </div>
+                </>
               )}
-            </LineChart>
-          </ResponsiveContainer>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {statuses.map(status => (
-              <div
-                key={status}
-                className={`p-2 rounded-lg text-center ${statusColors[status]}`}
-              >
-                <span className="text-xs font-medium">
-                  {status === "TotalOrders"
-                    ? "Total Orders"
-                    : status.replace(/([A-Z])/g, " $1").trim()}
-                </span>
-                <div className="text-md font-bold">
-                  {status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
-                </div>
+            </div>
+            {monthComparison && (
+              <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Total Orders Change from {monthComparison.monthLabel} to Current Month:</span>
+                <span className={`text-lg font-bold ${monthComparison.colorClass}`}>{monthComparison.changeText}</span>
               </div>
-            ))}
+            )}
+            {yearComparison && (
+              <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-300 text-xs">Total Orders Change from {yearComparison.selectedYear} to Current Year:</span>
+                <span className={`text-lg font-bold ${yearComparison.colorClass}`}>{yearComparison.changeText}</span>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <select
+                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                value={selectedMonth || ""}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  onMonthChange(e.target.value);
+                }}
+                disabled={loading || fetchLoading}
+              >
+                <option value="">Select Month to Compare</option>
+                {generateMonthOptions().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <select
+                className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                value={selectedYear || ""}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  onYearChange(e.target.value);
+                }}
+                disabled={loading || fetchLoading}
+              >
+                <option value="">Select Year to Compare</option>
+                {generateYearOptions().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
+                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+                {selectedMonth && (
+                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+                )}
+                {selectedYear && (
+                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {statuses.map(status => (
+                <div
+                  key={status}
+                  className={`p-2 rounded-lg text-center ${statusColors[status]}`}
+                >
+                  <span className="text-xs font-medium">
+                    {status === "TotalOrders"
+                      ? "Total Orders"
+                      : status.replace(/([A-Z])/g, " $1").trim()}
+                  </span>
+                  <div className="text-md font-bold">
+                    {status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-3">
-          <button
-            className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={onClose}
-            disabled={loading || fetchLoading}
-          >
-            Close
-          </button>
+          <div className="flex justify-end gap-2 mt-3">
+            <button
+              className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={onClose}
+              disabled={loading || fetchLoading}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -906,264 +894,192 @@ const SalesDashboard = () => {
     };
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
-        <FullPageLoader
-          size="w-10 h-10"
-          color="text-blue-500 dark:text-blue-400"
-          fill="fill-blue-300 dark:fill-blue-600"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="flex flex-wrap gap-6 p-3 px-4 sm:px-20">
-        {['Ordered', 'Quoted'].map((status) => (
-  <div
-    key={status}
-    className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
-    onClick={() => {
-      if (!actionLoading && status === 'Ordered') {
-        setShowOrderDetailsModal(true);
-      }
-    }}
-  >
-    {actionLoading && (
-      <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-        <FullPageLoader
-          size="w-6 h-6"
-          color="text-blue-500 dark:text-blue-400"
-          fill="fill-blue-300 dark:fill-blue-600"
-        />
-      </div>
-    )}
-    <h3 className="text-gray-500 dark:text-gray-400 text-lg">{status}</h3>
-    <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-      {status === 'Ordered' ? orderedCount : quotedCount}
-    </span>
-  </div>
-))}
-        <div
-          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
-          onClick={() => !actionLoading && setShowLeadDetailsModal(true)}
-        >
-          {actionLoading && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-              <FullPageLoader
-                size="w-6 h-6"
-                color="text-blue-500 dark:text-blue-400"
-                fill="fill-blue-300 dark:fill-blue-600"
-              />
+    <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
+      <LoadingOverlay isLoading={loading || actionLoading} /> {/* Main page loading overlay */}
+      <div className={`${(loading || actionLoading) ? "blur-[1px]" : ""}`}>
+        <div className="flex flex-wrap gap-6 p-3 px-4 sm:px-20">
+          {['Ordered', 'Quoted'].map((status) => (
+            <div
+              key={status}
+              className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={() => {
+                if (!actionLoading && status === 'Ordered') {
+                  setShowOrderDetailsModal(true);
+                }
+              }}
+            >
+              <h3 className="text-gray-500 dark:text-gray-400 text-lg">{status}</h3>
+              <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                {status === 'Ordered' ? orderedCount : quotedCount}
+              </span>
             </div>
-          )}
-          <h3 className="text-gray-500 dark:text-gray-400 text-lg">Total Clients</h3>
-          <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalClients}</span>
-        </div>
-        <div
-          className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 relative"
-          onClick={() => !actionLoading && setShowOrderDetailsModal(true)}
-        >
-          {actionLoading && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-              <FullPageLoader
-                size="w-6 h-6"
-                color="text-blue-500 dark:text-blue-400"
-                fill="fill-blue-300 dark:fill-blue-600"
-              />
-            </div>
-          )}
-          <h3 className="text-gray-500 dark:text-gray-400 text-lg">Today's Total</h3>
-          <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
-        <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative">
-          {actionLoading && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-              <FullPageLoader
-                size="w-8 h-8"
-                color="text-blue-500 dark:text-blue-400"
-                fill="fill-blue-300 dark:fill-blue-600"
-              />
-            </div>
-          )}
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
-          <div className="space-y-3">
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                    fontSize: '12px',
-                  }}
-                />
-                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
-                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
-              </LineChart>
-            </ResponsiveContainer>
+          ))}
+          <div
+            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+            onClick={() => !actionLoading && setShowLeadDetailsModal(true)}
+          >
+            <h3 className="text-gray-500 dark:text-gray-400 text-lg">Total Clients</h3>
+            <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalClients}</span>
+          </div>
+          <div
+            className="flex-1 min-w-[250px] max-w-sm h-40 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+            onClick={() => !actionLoading && setShowOrderDetailsModal(true)}
+          >
+            <h3 className="text-gray-500 dark:text-gray-400 text-lg">Today's Total</h3>
+            <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">${(orderAmountTotals.today || 0).toFixed(2)}</span>
           </div>
         </div>
 
-        <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative">
-          {actionLoading && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-              <FullPageLoader
-                size="w-8 h-8"
-                color="text-blue-500 dark:text-blue-400"
-                fill="fill-blue-300 dark:fill-blue-600"
-              />
-            </div>
-          )}
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Calendar</h3>
-          <Calendar
-            localizer={localizer}
-            events={calendarEvents}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ height: 300 }}
-            eventPropGetter={eventStyleGetter}
-            className="rbc-calendar-custom"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
-        <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow">
-          <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
-            Placeholder for future content
-          </div>
-        </div>
-        <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow">
-          <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
-            Placeholder for future content
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full px-4 sm:px-20 py-8">
-        <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-600 overflow-x-auto relative">
-          {actionLoading && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-10">
-              <FullPageLoader
-                size="w-8 h-8"
-                color="text-blue-500 dark:text-blue-400"
-                fill="fill-blue-300 dark:fill-blue-600"
-              />
-            </div>
-          )}
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
-            <div className="space-x-2">
-              <button
-                className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                disabled={actionLoading}
-              >
-                Filter
-              </button>
-              <button
-                className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                disabled={actionLoading}
-              >
-                See all
-              </button>
+        <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
+          <div className="flex-1 min-w-[300px] bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
+            <div className="space-y-3">
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+                  <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                  <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                      border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
+                      color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+                  <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
+                  <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <table className="min-w-[700px] w-full table-auto">
-            <thead>
-              <tr className="text-left text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
-                <th className="p-2">Client Name</th>
-                <th className="p-2 pl-14">Email</th>
-                <th className="p-2">Part Requested</th>
-                <th className="p-2">Close Date</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr
-                  key={order.order_id}
-                  className="border-b border-gray-200 dark:border-gray-600 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+          <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Calendar</h3>
+            <Calendar
+              localizer={localizer}
+              events={calendarEvents}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 300 }}
+              eventPropGetter={eventStyleGetter}
+              className="rbc-calendar-custom"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
+          <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow">
+            <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
+              Placeholder for future content
+            </div>
+          </div>
+          <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow">
+            <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
+              Placeholder for future content
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full px-4 sm:px-20 py-8">
+          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-600 overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
+              <div className="space-x-2">
+                <button
+                  className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  disabled={actionLoading}
                 >
-                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.clientName}</td>
-                  <td className="p-2 flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-blue-400 dark:bg-blue-500">
-                      {order.email[0].toUpperCase()}
-                    </div>
-                    <div className="text-gray-500 dark:text-gray-400">{order.email}</div>
-                  </td>
-                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.partRequested}</td>
-                  <td className="p-2 text-gray-900 dark:text-gray-100">{order.createdAt.split('T')[0]}</td>
-                  <td className="p-2">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full font-medium ${statusColor[order.status] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
-                    >
-                      {order.status.replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                  </td>
-                  <td className="p-2 relative">
-                    {actionLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <FullPageLoader
-                          size="w-4 h-4"
-                          color="text-blue-500 dark:text-blue-400"
-                          fill="fill-blue-300 dark:fill-blue-600"
-                        />
-                      </div>
-                    )}
-                    <Trash2
-                      className={`w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer ${actionLoading ? 'opacity-50' : ''}`}
-                      onClick={() => !actionLoading && handleDeleteOrder(order.order_id)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  Filter
+                </button>
+                <button
+                  className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  disabled={actionLoading}
+                >
+                  See all
+                </button>
+              </div>
+            </div>
 
-      <AnimatePresence>
-        {showLeadDetailsModal && (
-          <LeadDetailsModal
-            isOpen={showLeadDetailsModal}
-            onClose={() => {
-              if (!actionLoading) {
-                setShowLeadDetailsModal(false);
-              }
-            }}
-            createdByUser={leadCreationCounts.createdByUser}
-            assignedAutomatically={leadCreationCounts.assignedAutomatically}
-            onMonthChange={() => {}}
-            onYearChange={() => {}}
-            loading={actionLoading}
-          />
-        )}
-        {showOrderDetailsModal && (
-          <OrderDetailsModal
-            isOpen={showOrderDetailsModal}
-            onClose={() => {
-              if (!actionLoading) {
-                setShowOrderDetailsModal(false);
-              }
-            }}
-            onMonthChange={() => {}}
-            onYearChange={() => {}}
-            loading={actionLoading}
-          />
-        )}
-      </AnimatePresence>
+            <table className="min-w-[700px] w-full table-auto">
+              <thead>
+                <tr className="text-left text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
+                  <th className="p-2">Client Name</th>
+                  <th className="p-2 pl-14">Email</th>
+                  <th className="p-2">Part Requested</th>
+                  <th className="p-2">Close Date</th>
+                  <th className="p-2">Status</th>
+                  <th className="p-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr
+                    key={order.order_id}
+                    className="border-b border-gray-200 dark:border-gray-600 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <td className="p-2 text-gray-900 dark:text-gray-100">{order.clientName}</td>
+                    <td className="p-2 flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-blue-400 dark:bg-blue-500">
+                        {order.email[0].toUpperCase()}
+                      </div>
+                      <div className="text-gray-500 dark:text-gray-400">{order.email}</div>
+                    </td>
+                    <td className="p-2 text-gray-900 dark:text-gray-100">{order.partRequested}</td>
+                    <td className="p-2 text-gray-900 dark:text-gray-100">{order.createdAt.split('T')[0]}</td>
+                    <td className="p-2">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full font-medium ${statusColor[order.status] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
+                      >
+                        {order.status.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </td>
+                    <td className="p-2">
+                      <Trash2
+                        className={`w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer ${actionLoading ? 'opacity-50' : ''}`}
+                        onClick={() => !actionLoading && handleDeleteOrder(order.order_id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {showLeadDetailsModal && (
+            <LeadDetailsModal
+              isOpen={showLeadDetailsModal}
+              onClose={() => {
+                if (!actionLoading) {
+                  setShowLeadDetailsModal(false);
+                }
+              }}
+              createdByUser={leadCreationCounts.createdByUser}
+              assignedAutomatically={leadCreationCounts.assignedAutomatically}
+              onMonthChange={() => {}}
+              onYearChange={() => {}}
+              loading={actionLoading}
+            />
+          )}
+          {showOrderDetailsModal && (
+            <OrderDetailsModal
+              isOpen={showOrderDetailsModal}
+              onClose={() => {
+                if (!actionLoading) {
+                  setShowOrderDetailsModal(false);
+                }
+              }}
+              onMonthChange={() => {}}
+              onYearChange={() => {}}
+              loading={actionLoading}
+            />
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
