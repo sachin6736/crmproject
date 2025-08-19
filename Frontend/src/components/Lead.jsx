@@ -10,11 +10,11 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import FullPageLoader from "./utilities/FullPageLoader";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
 import { useTheme } from "../context/ThemeContext";
+import LoadingOverlay from "./LoadingOverlay";
 
 const statusOptions = [
   "Quoted",
@@ -55,8 +55,9 @@ const Lead = () => {
   const [totalCost, setTotalCost] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingQuote, setIsSendingQuote] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Sync notes state with singleLead.notes whenever singleLead changes
   useEffect(() => {
     if (singleLead && singleLead.notes) {
       setNotes(singleLead.notes);
@@ -65,6 +66,7 @@ const Lead = () => {
 
   useEffect(() => {
     const fetchSingleLead = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch(
           `http://localhost:3000/Lead/getleadbyid/${id}`,
@@ -94,6 +96,8 @@ const Lead = () => {
         console.error("Error fetching single lead:", error);
         toast.error("Failed to load lead data");
         navigate("/home");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -102,6 +106,7 @@ const Lead = () => {
     } else {
       toast.error("Invalid lead ID");
       navigate("/home");
+      setIsLoading(false);
     }
   }, [id, navigate]);
 
@@ -139,6 +144,7 @@ const Lead = () => {
       return;
     }
 
+    setActionLoading(true);
     try {
       const response = await fetch(
         `http://localhost:3000/Lead/updateNotes/${id}`,
@@ -161,12 +167,15 @@ const Lead = () => {
     } catch (error) {
       toast.error("Error updating notes");
       console.error("Error updating notes:", error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDateClick = async (date) => {
     const dateStr = date.toISOString().split("T")[0];
     const isDateSelected = selectedDates.includes(dateStr);
+    setActionLoading(true);
     try {
       const response = await fetch(
         isDateSelected
@@ -193,10 +202,13 @@ const Lead = () => {
     } catch (error) {
       toast.error("Error updating date");
       console.error("Error updating date:", error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const updateStatus = async (leadId, newStatus) => {
+    setActionLoading(true);
     try {
       const response = await fetch(
         `http://localhost:3000/Lead/editstatus/${leadId}`,
@@ -223,10 +235,13 @@ const Lead = () => {
     } catch (error) {
       toast.error("Error updating lead status");
       console.error("Error updating lead status:", error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleEditLead = async () => {
+    setActionLoading(true);
     try {
       const response = await fetch(
         `http://localhost:3000/Lead/editlead/${id}`,
@@ -249,12 +264,23 @@ const Lead = () => {
     } catch (error) {
       toast.error("Error updating lead");
       console.error("Error updating lead:", error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (singleLead) {
-      exportToExcel([singleLead], "LeadData.xlsx");
+      setActionLoading(true);
+      try {
+        await exportToExcel([singleLead], "LeadData.xlsx");
+        toast.success("Lead data exported successfully");
+      } catch (error) {
+        toast.error("Error exporting lead data");
+        console.error("Error exporting lead data:", error);
+      } finally {
+        setActionLoading(false);
+      }
     } else {
       toast.error("No lead data available to download");
     }
@@ -267,6 +293,7 @@ const Lead = () => {
     }
 
     setIsSubmitting(true);
+    setActionLoading(true);
     try {
       const response = await fetch(
         `http://localhost:3000/Lead/updatecost/${id}`,
@@ -297,6 +324,7 @@ const Lead = () => {
       console.error("Error updating costs:", error);
     } finally {
       setIsSubmitting(false);
+      setActionLoading(false);
     }
   };
 
@@ -307,6 +335,7 @@ const Lead = () => {
     }
 
     setIsSendingQuote(true);
+    setActionLoading(true);
     try {
       const response = await fetch(
         `http://localhost:3000/Lead/leadquatation/${id}`,
@@ -329,6 +358,7 @@ const Lead = () => {
       console.error("Error sending quotation:", error);
     } finally {
       setIsSendingQuote(false);
+      setActionLoading(false);
     }
   };
 
@@ -336,316 +366,323 @@ const Lead = () => {
     navigate(`/home/order/${id}`);
   };
 
-  if (!singleLead) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
-        <FullPageLoader
-          size="w-10 h-10"
-          color="text-blue-500 dark:text-blue-400"
-          fill="fill-blue-300 dark:fill-blue-600"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 md:p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {/* Action Buttons */}
-      <div className="flex justify-end mb-4">
-        <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2">
-          <button
-            onClick={handleSendQuote}
-            className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm border-r border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50"
-            disabled={isSendingQuote || !areCostsValid()}
-          >
-            {isSendingQuote ? "Sending..." : "Send Quote"}
-          </button>
-          <button
-            onClick={handleDownload}
-            className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300"
-          >
-            Download
-          </button>
-          {singleLead.status === "Ordered" && (
+    <div className="p-4 md:p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
+      <LoadingOverlay isLoading={isLoading || actionLoading} />
+      <div className={`${isLoading || actionLoading ? "blur-[1px]" : ""}`}>
+        {/* Action Buttons */}
+        <div className="flex justify-end mb-4">
+          <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2">
             <button
-              onClick={handleGoToOrder}
-              className="px-4 py-2 text-green-600 dark:text-green-400 text-sm border-l border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-green-700 dark:hover:text-green-300"
+              onClick={handleSendQuote}
+              className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm border-r border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSendingQuote || !areCostsValid() || actionLoading}
             >
-              Go to Order
+              {isSendingQuote ? "Sending..." : "Send Quote"}
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* Active Status Row */}
-      <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full h-14 space-x-2 overflow-x-auto">
-        <div className="flex gap-4 px-2">
-          {statusOptions.map((status, index) => (
             <button
-              key={index}
-              onClick={() => updateStatus(singleLead._id, status)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
-                singleLead.status === status
-                  ? "bg-blue-600 dark:bg-blue-500 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-              }`}
+              onClick={handleDownload}
+              className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={actionLoading}
             >
-              {status}
+              Download
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-200 dark:bg-gray-800 p-4 rounded-xl">
-        {/* Lead Details */}
-        <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-700 p-4 shadow-md">
-          <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {singleLead.clientName}
-            </h2>
-            <div className="flex gap-2">
+            {singleLead?.status === "Ordered" && (
               <button
-                onClick={() => setIsEditingLead(!isEditingLead)}
-                className={`flex items-center gap-1 text-sm ${
-                  isEditingLead
-                    ? "text-red-500 dark:text-red-400"
-                    : "text-blue-500 dark:text-blue-400"
-                }`}
+                onClick={handleGoToOrder}
+                className="px-4 py-2 text-green-600 dark:text-green-400 text-sm border-l border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-green-700 dark:hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={actionLoading}
               >
-                {isEditingLead ? <>Cancel</> : <><Edit size={18} /> Edit</>}
+                Go to Order
               </button>
-              {isEditingLead && (
-                <button
-                  onClick={handleEditLead}
-                  className="flex items-center gap-1 text-sm text-green-500 dark:text-green-400"
-                >
-                  <Save size={18} /> Save
-                </button>
-              )}
-            </div>
+            )}
           </div>
-          <div
-            className={`mt-2 space-y-2 ${
-              isEditingLead ? "max-h-72 overflow-y-auto pr-1" : ""
-            }`}
-          >
-            {[
-              { label: "Client Name", key: "clientName" },
-              { label: "Phone Number", key: "phoneNumber" },
-              { label: "Email", key: "email", isLink: true },
-              { label: "ZIP Code", key: "zip" },
-              { label: "Part Requested", key: "partRequested" },
-              { label: "Make", key: "make" },
-              { label: "Model", key: "model" },
-              { label: "Year", key: "year" },
-              { label: "Trim", key: "trim" },
-              { label: "Status", key: "status" },
-            ].map((item, index) => (
-              <div
+        </div>
+
+        {/* Active Status Row */}
+        <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full h-14 space-x-2 overflow-x-auto">
+          <div className="flex gap-4 px-2">
+            {statusOptions.map((status, index) => (
+              <button
                 key={index}
-                className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-1 text-sm"
+                onClick={() => !actionLoading && updateStatus(singleLead?._id, status)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+                  singleLead?.status === status
+                    ? "bg-blue-600 dark:bg-blue-500 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                disabled={actionLoading}
               >
-                <div className="text-gray-600 dark:text-gray-400 font-medium">
-                  {item.label}
-                </div>
-                <div className="flex items-center gap-2 w-1/2">
-                  {isEditingLead && item.key !== "status" ? (
-                    <input
-                      type="text"
-                      value={editForm[item.key] || ""}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, [item.key]: e.target.value })
-                      }
-                      className="bg-transparent border-b border-transparent focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none text-right text-sm w-full transition-colors duration-200 text-gray-900 dark:text-gray-100"
-                    />
-                  ) : item.isLink ? (
-                    <a
-                      href={`mailto:${singleLead[item.key]}`}
-                      className="text-blue-500 dark:text-blue-400 hover:underline truncate"
-                    >
-                      {singleLead[item.key]}
-                    </a>
-                  ) : (
-                    <div
-                      className={`truncate ${
-                        statusTextColors[singleLead[item.key]] ||
-                        "text-gray-900 dark:text-gray-100"
-                      }`}
-                    >
-                      {singleLead[item.key]}
-                    </div>
-                  )}
-                </div>
-              </div>
+                {status}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Notes and Costs Section */}
-        <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md overflow-hidden relative">
-          <div
-            className="w-full h-full flex transition-transform duration-500 ease-in-out"
-            style={{
-              transform: showNotes ? "translateX(0%)" : "translateX(-100%)",
-            }}
-          >
-            <div className="w-full flex-shrink-0 flex flex-col">
-              <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">
-                Notes
-              </h2>
-              <div className="p-2 mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-wrap overflow-y-auto flex-1">
-                {notes.length > 0 ? (
-                  [...notes]
-                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                    .map((note, index) => (
-                      <div
-                        key={note._id || index}
-                        className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex justify-between items-center"
-                      >
-                        <div>
-                          <p className="text-gray-900 dark:text-gray-100">
-                            {note.text}
-                          </p>
-                          <small className="text-gray-500 dark:text-gray-400">
-                            {new Date(note.createdAt).toLocaleString()}
-                          </small>
-                        </div>
-                      </div>
-                    ))
-                ) : (
-                  <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
-                    No notes added yet
-                  </p>
-                )}
-              </div>
-
-              {isEditing ? (
-                <div className="mt-4">
-                  <textarea
-                    className="w-full p-2 border rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Add a note..."
-                  />
-                  <div className="flex justify-end gap-2 mt-2">
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-200 dark:bg-gray-800 p-4 rounded-xl">
+          {/* Lead Details */}
+          {singleLead && (
+            <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-700 p-4 shadow-md">
+              <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-2">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {singleLead.clientName}
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => !actionLoading && setIsEditingLead(!isEditingLead)}
+                    className={`flex items-center gap-1 text-sm ${
+                      isEditingLead
+                        ? "text-red-500 dark:text-red-400"
+                        : "text-blue-500 dark:text-blue-400"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    disabled={actionLoading}
+                  >
+                    {isEditingLead ? <>Cancel</> : <><Edit size={18} /> Edit</>}
+                  </button>
+                  {isEditingLead && (
                     <button
-                      onClick={() => setIsEditing(false)}
-                      className="text-red-500 dark:text-red-400 text-sm"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveNotes}
-                      className="text-green-500 dark:text-green-400 flex items-center gap-1 text-sm"
+                      onClick={handleEditLead}
+                      className="flex items-center gap-1 text-sm text-green-500 dark:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={actionLoading}
                     >
                       <Save size={18} /> Save
                     </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-blue-500 dark:text-blue-400 flex items-center gap-1 mt-2 text-sm"
-                >
-                  <Edit size={18} /> Add Note
-                </button>
-              )}
-              <button
-                onClick={() => setShowNotes(false)}
-                className="text-sm text-blue-600 dark:text-blue-400 mt-4"
-              >
-                View Costs →
-              </button>
-            </div>
-            <div className="w-full flex-shrink-0 flex flex-col items-center justify-center gap-3">
-              {[
-                { label: "Part Cost", value: partCost, setter: setPartCost, type: "number" },
-                {
-                  label: "Shipping Cost",
-                  value: shippingCost,
-                  setter: setShippingCost,
-                  type: "number",
-                },
-                {
-                  label: "Gross Profit",
-                  value: grossProfit,
-                  setter: setGrossProfit,
-                  type: "number",
-                },
-                { label: "Warranty", value: warranty, setter: setWarranty, type: "select" },
-                { label: "Total Cost", value: totalCost, readonly: true },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="w-full h-20 bg-gray-100 dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
-                >
-                  <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-                    {item.label}
-                  </p>
-                  {item.readonly ? (
-                    <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                      {item.value ? `$${item.value}` : "-"}
-                    </p>
-                  ) : item.type === "select" ? (
-                    <select
-                      value={warranty}
-                      onChange={(e) => setWarranty(e.target.value)}
-                      className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-                    >
-                      {["0 months", "3 months", "6 months", "12 months", "24 months"].map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={item.type}
-                      value={item.value}
-                      onChange={(e) => item.setter(e.target.value)}
-                      className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                    />
                   )}
                 </div>
-              ))}
-              <div className="flex justify-end w-full pr-6">
+              </div>
+              <div
+                className={`mt-2 space-y-2 ${
+                  isEditingLead ? "max-h-72 overflow-y-auto pr-1" : ""
+                }`}
+              >
+                {[
+                  { label: "Client Name", key: "clientName" },
+                  { label: "Phone Number", key: "phoneNumber" },
+                  { label: "Email", key: "email", isLink: true },
+                  { label: "ZIP Code", key: "zip" },
+                  { label: "Part Requested", key: "partRequested" },
+                  { label: "Make", key: "make" },
+                  { label: "Model", key: "model" },
+                  { label: "Year", key: "year" },
+                  { label: "Trim", key: "trim" },
+                  { label: "Status", key: "status" },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center border-b border-gray-300 dark:border-gray-600 pb-1 text-sm"
+                  >
+                    <div className="text-gray-600 dark:text-gray-400 font-medium">
+                      {item.label}
+                    </div>
+                    <div className="flex items-center gap-2 w-1/2">
+                      {isEditingLead && item.key !== "status" ? (
+                        <input
+                          type="text"
+                          value={editForm[item.key] || ""}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, [item.key]: e.target.value })
+                          }
+                          className="bg-transparent border-b border-transparent focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none text-right text-sm w-full transition-colors duration-200 text-gray-900 dark:text-gray-100"
+                          disabled={actionLoading}
+                        />
+                      ) : item.isLink ? (
+                        <a
+                          href={`mailto:${singleLead[item.key]}`}
+                          className="text-blue-500 dark:text-blue-400 hover:underline truncate"
+                        >
+                          {singleLead[item.key]}
+                        </a>
+                      ) : (
+                        <div
+                          className={`truncate ${
+                            statusTextColors[singleLead[item.key]] ||
+                            "text-gray-900 dark:text-gray-100"
+                          }`}
+                        >
+                          {singleLead[item.key]}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notes and Costs Section */}
+          <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md overflow-hidden relative">
+            <div
+              className="w-full h-full flex transition-transform duration-500 ease-in-out"
+              style={{
+                transform: showNotes ? "translateX(0%)" : "translateX(-100%)",
+              }}
+            >
+              <div className="w-full flex-shrink-0 flex flex-col">
+                <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">
+                  Notes
+                </h2>
+                <div className="p-2 mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-wrap overflow-y-auto flex-1">
+                  {notes.length > 0 ? (
+                    [...notes]
+                      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                      .map((note, index) => (
+                        <div
+                          key={note._id || index}
+                          className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded flex justify-between items-center"
+                        >
+                          <div>
+                            <p className="text-gray-900 dark:text-gray-100">
+                              {note.text}
+                            </p>
+                            <small className="text-gray-500 dark:text-gray-400">
+                              {new Date(note.createdAt).toLocaleString()}
+                            </small>
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
+                      No notes added yet
+                    </p>
+                  )}
+                </div>
+
+                {isEditing ? (
+                  <div className="mt-4">
+                    <textarea
+                      className="w-full p-2 border rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Add a note..."
+                      disabled={actionLoading}
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button
+                        onClick={() => !actionLoading && setIsEditing(false)}
+                        className="text-red-500 dark:text-red-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={actionLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveNotes}
+                        className="text-green-500 dark:text-green-400 flex items-center gap-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={actionLoading}
+                      >
+                        <Save size={18} /> Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => !actionLoading && setIsEditing(true)}
+                    className="text-blue-500 dark:text-blue-400 flex items-center gap-1 mt-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={actionLoading}
+                  >
+                    <Edit size={18} /> Add Note
+                  </button>
+                )}
                 <button
-                  onClick={handleSubmitCosts}
-                  className="bg-green-600 dark:bg-green-500 text-white w-20 disabled:opacity-50 hover:bg-green-700 dark:hover:bg-green-600 rounded-md"
-                  disabled={isSubmitting || !areCostsValid()}
+                  onClick={() => !actionLoading && setShowNotes(false)}
+                  className="text-sm text-blue-600 dark:text-blue-400 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={actionLoading}
                 >
-                  {isSubmitting ? "Saving..." : "Submit"}
+                  View Costs →
                 </button>
               </div>
-              <button
-                onClick={() => setShowNotes(true)}
-                className="text-sm text-blue-600 dark:text-blue-400 mt-4"
-              >
-                ← Back to Notes
-              </button>
+              <div className="w-full flex-shrink-0 flex flex-col items-center justify-center gap-3">
+                {[
+                  { label: "Part Cost", value: partCost, setter: setPartCost, type: "number" },
+                  {
+                    label: "Shipping Cost",
+                    value: shippingCost,
+                    setter: setShippingCost,
+                    type: "number",
+                  },
+                  {
+                    label: "Gross Profit",
+                    value: grossProfit,
+                    setter: setGrossProfit,
+                    type: "number",
+                  },
+                  { label: "Warranty", value: warranty, setter: setWarranty, type: "select" },
+                  { label: "Total Cost", value: totalCost, readonly: true },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="w-full h-20 bg-gray-100 dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
+                  >
+                    <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+                      {item.label}
+                    </p>
+                    {item.readonly ? (
+                      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                        {item.value ? `$${item.value}` : "-"}
+                      </p>
+                    ) : item.type === "select" ? (
+                      <select
+                        value={warranty}
+                        onChange={(e) => setWarranty(e.target.value)}
+                        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                        disabled={actionLoading}
+                      >
+                        {["0 months", "3 months", "6 months", "12 months", "24 months"].map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={item.type}
+                        value={item.value}
+                        onChange={(e) => item.setter(e.target.value)}
+                        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        disabled={actionLoading}
+                      />
+                    )}
+                  </div>
+                ))}
+                <div className="flex justify-end w-full pr-6">
+                  <button
+                    onClick={handleSubmitCosts}
+                    className="bg-green-600 dark:bg-green-500 text-white w-20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 dark:hover:bg-green-600 rounded-md"
+                    disabled={isSubmitting || !areCostsValid() || actionLoading}
+                  >
+                    {isSubmitting ? "Saving..." : "Submit"}
+                  </button>
+                </div>
+                <button
+                  onClick={() => !actionLoading && setShowNotes(true)}
+                  className="text-sm text-blue-600 dark:text-blue-400 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={actionLoading}
+                >
+                  ← Back to Notes
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Important Dates */}
-        <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md">
-          <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">
-            Important Dates
-          </h2>
-          <div className="flex justify-center p-2">
-            <Calendar
-              onClickDay={handleDateClick}
-              tileClassName={({ date }) =>
-                selectedDates.includes(date.toISOString().split("T")[0])
-                  ? "bg-blue-500 dark:bg-blue-600 text-white rounded-full"
-                  : ""
-              }
-              className={theme === "dark" ? "dark-calendar" : ""}
-            />
+          {/* Important Dates */}
+          <div className="w-full h-auto md:h-96 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-md">
+            <h2 className="text-lg font-semibold border-b border-gray-300 dark:border-gray-600 pb-2 text-gray-900 dark:text-gray-100">
+              Important Dates
+            </h2>
+            <div className="flex justify-center p-2">
+              <Calendar
+                onClickDay={(date) => !actionLoading && handleDateClick(date)}
+                tileClassName={({ date }) =>
+                  selectedDates.includes(date.toISOString().split("T")[0])
+                    ? "bg-blue-500 dark:bg-blue-600 text-white rounded-full"
+                    : ""
+                }
+                className={theme === "dark" ? "dark-calendar" : ""}
+              />
+            </div>
           </div>
         </div>
       </div>

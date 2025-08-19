@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import FullPageLoader from './utilities/FullPageLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from '../context/ThemeContext';
+import LoadingOverlay from "./LoadingOverlay";
 
-// Heroicons for status indicators (install with `npm install @heroicons/react`)
+// Heroicons for status indicators
 import {
   CheckCircleIcon,
   PauseCircleIcon,
@@ -21,9 +21,10 @@ const AdminStatusLogs = () => {
   const [users, setUsers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [durations, setDurations] = useState({});
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingDurations, setLoadingDurations] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false); // Added for async actions
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -105,18 +106,24 @@ const AdminStatusLogs = () => {
       toast.error(error.message || 'Failed to load status durations');
     } finally {
       setLoadingDurations(false);
+      setActionLoading(false); // Reset actionLoading
     }
   };
 
   const handleFetchDurations = (e) => {
     e.preventDefault();
+    setActionLoading(true); // Set actionLoading for form submission
     fetchDurations();
   };
 
   const handleClearFilters = () => {
-    setSelectedUserId('');
-    setDate(new Date().toISOString().split('T')[0]);
-    setDurations({});
+    if (!actionLoading) {
+      setActionLoading(true);
+      setSelectedUserId('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setDurations({});
+      setActionLoading(false);
+    }
   };
 
   // Status card configurations
@@ -149,16 +156,9 @@ const AdminStatusLogs = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      {loadingUser ? (
-        <div className="flex justify-center items-center py-8">
-          <FullPageLoader
-            size="w-10 h-10"
-            color="text-blue-500 dark:text-blue-400"
-            fill="fill-blue-300 dark:fill-blue-600"
-          />
-        </div>
-      ) : (
+    <div className="p-4 md:p-6 min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 relative">
+      <LoadingOverlay isLoading={loadingUser || loadingDurations || actionLoading} />
+      <div className={`${loadingUser || loadingDurations || actionLoading ? "blur-[1px]" : ""}`}>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8 max-w-3xl mx-auto transform transition-all duration-300 hover:shadow-3xl">
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">
             User Status Insights
@@ -175,7 +175,7 @@ const AdminStatusLogs = () => {
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                  disabled={loadingUser}
+                  disabled={loadingUser || actionLoading}
                 >
                   <option value="">Select a user</option>
                   {users.length === 0 ? (
@@ -198,7 +198,8 @@ const AdminStatusLogs = () => {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="w-full px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                  max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                  max={new Date().toISOString().split('T')[0]}
+                  disabled={actionLoading}
                 />
               </div>
             </div>
@@ -206,7 +207,7 @@ const AdminStatusLogs = () => {
               <button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-all duration-200"
-                disabled={loadingDurations}
+                disabled={loadingDurations || actionLoading}
               >
                 {loadingDurations ? 'Loading...' : 'View Insights'}
               </button>
@@ -214,6 +215,7 @@ const AdminStatusLogs = () => {
                 type="button"
                 onClick={handleClearFilters}
                 className="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200"
+                disabled={actionLoading}
               >
                 Clear Filters
               </button>
@@ -221,15 +223,7 @@ const AdminStatusLogs = () => {
           </form>
 
           {/* Durations Display */}
-          {loadingDurations ? (
-            <div className="flex justify-center items-center py-8">
-              <FullPageLoader
-                size="w-10 h-10"
-                color="text-blue-500 dark:text-blue-400"
-                fill="fill-blue-300 dark:fill-blue-600"
-              />
-            </div>
-          ) : Object.keys(durations).length > 0 ? (
+          {Object.keys(durations).length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {statusCards.map(({ status, icon: Icon, color }) => (
                 <div
@@ -252,7 +246,7 @@ const AdminStatusLogs = () => {
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

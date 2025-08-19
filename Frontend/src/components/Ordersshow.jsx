@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
 import { useTheme } from "../context/ThemeContext";
 import debounce from "lodash/debounce";
+import LoadingOverlay from "./LoadingOverlay"; // Added import
 
 const OrdersHistory = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const OrdersHistory = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false); // Added for async actions
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const itemsPerPage = 10;
 
@@ -59,6 +61,7 @@ const OrdersHistory = () => {
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
+      setLoadingUser(true);
       try {
         const response = await fetch("http://localhost:3000/Auth/check", {
           credentials: "include",
@@ -127,7 +130,7 @@ const OrdersHistory = () => {
     if (user) {
       fetchOrders(user, searchQuery, statusFilter, currentPage);
     }
-    return () => fetchOrders.cancel(); // Cleanup debounce on unmount
+    return () => fetchOrders.cancel();
   }, [user, searchQuery, statusFilter, currentPage, fetchOrders]);
 
   // Handle search input change
@@ -135,12 +138,13 @@ const OrdersHistory = () => {
     debouncedSearch(e.target.value);
   };
 
-  const handleExportToExcel = () => {
+  const handleExportToExcel = async () => {
     if (orders.length === 0) {
       toast.error("No orders available to export");
       return;
     }
 
+    setActionLoading(true); // Set loading for export
     const formattedOrders = orders.map((order) => ({
       OrderID: order.order_id || "N/A",
       ClientName: order.clientName || "N/A",
@@ -155,11 +159,13 @@ const OrdersHistory = () => {
     }));
 
     try {
-      exportToExcel(formattedOrders, "orders.xlsx");
+      await exportToExcel(formattedOrders, "orders.xlsx");
       toast.success("Orders exported to Excel successfully");
     } catch (error) {
       toast.error("Error exporting orders to Excel");
       console.error("Error exporting to Excel:", error);
+    } finally {
+      setActionLoading(false); // Reset loading
     }
   };
 
@@ -173,201 +179,193 @@ const OrdersHistory = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {loadingUser || loadingOrders ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 dark:border-blue-400"></div>
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Search by Client Name, Order ID, Phone, Email, or Part..."
-                className="px-4 py-2 border rounded-lg w-full sm:w-80 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 transition-all duration-200"
-                onChange={handleSearchChange}
-              />
-              <div className="relative w-full sm:w-auto">
-                <select
-                  className="w-full sm:w-48 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 appearance-none"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="">All Statuses</option>
-                  {[
-                    "Locate Pending",
-                    "PO Pending",
-                    "PO Sent",
-                    "PO Confirmed",
-                    "Vendor Payment Pending",
-                    "Vendor Payment Confirmed",
-                    "Shipping Pending",
-                    "Ship Out",
-                    "Intransit",
-                    "Delivered",
-                    "Replacement",
-                  ].map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-                <svg
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </div>
-              {user?.role === "admin" && (
-                <button
-                  onClick={handleExportToExcel}
-                  className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm font-medium"
-                  disabled={loadingOrders || orders.length === 0}
-                >
-                  Download as Excel
-                </button>
-              )}
+    <div className="p-4 sm:p-6 min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
+      <LoadingOverlay isLoading={loadingUser || loadingOrders || actionLoading} />
+      <div className={`${loadingUser || loadingOrders || actionLoading ? "blur-[1px]" : ""}`}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <input
+              type="text"
+              placeholder="Search by Client Name, Order ID, Phone, Email, or Part..."
+              className="px-4 py-2 border rounded-lg w-full sm:w-80 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 transition-all duration-200"
+              onChange={handleSearchChange}
+              disabled={actionLoading} // Disable during action
+            />
+            <div className="relative w-full sm:w-auto">
+              <select
+                className="w-full sm:w-48 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 appearance-none"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                disabled={actionLoading} // Disable during action
+              >
+                <option value="">All Statuses</option>
+                {[
+                  "Locate Pending",
+                  "PO Pending",
+                  "PO Sent",
+                  "PO Confirmed",
+                  "Vendor Payment Pending",
+                  "Vendor Payment Confirmed",
+                  "Shipping Pending",
+                  "Ship Out",
+                  "Intransit",
+                  "Delivered",
+                  "Replacement",
+                ].map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+              <svg
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-x-auto flex-grow relative">
-            {loadingOrders ? (
-              <div className="flex justify-center items-center py-16">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 dark:border-blue-400"></div>
-              </div>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0 z-10">
-                  <tr>
-                    {[
-                      "Order ID",
-                      "Client Name",
-                      "Phone",
-                      "Email",
-                      "Date",
-                      "Part Requested",
-                      "Total Cost",
-                      "Status",
-                    ].map((header, i) => (
-                      <th
-                        key={i}
-                        className="px-4 py-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-sm sm:text-base"
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.length > 0 ? (
-                    orders.map((order, index) => (
-                      <tr
-                        key={order._id || index}
-                        className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
-                          order.isOwnOrder && user?.role === "customer_relations"
-                            ? "bg-red-50 dark:bg-red-900/20"
-                            : ""
-                        }`}
-                      >
-                        <td
-                          className="px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                          onClick={() => handleOrderClick(order._id)}
-                        >
-                          {order.order_id || "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.clientName || "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.phone || "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.email || "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.createdAt
-                            ? new Date(order.createdAt).toLocaleString()
-                            : "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.leadId?.partRequested || "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.leadId?.totalCost
-                            ? `$${order.leadId.totalCost.toFixed(2)}`
-                            : "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`font-semibold ${
-                              statusTextColors[order.status] ||
-                              statusTextColors.default
-                            }`}
-                          >
-                            {order.status || "Unknown"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="text-center py-6 text-gray-600 dark:text-gray-400"
-                      >
-                        No orders found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            {user?.role === "admin" && (
+              <button
+                onClick={handleExportToExcel}
+                className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm font-medium"
+                disabled={loadingOrders || orders.length === 0 || actionLoading}
+              >
+                Download as Excel
+              </button>
             )}
           </div>
+        </div>
 
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center mt-6 space-x-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-x-auto flex-grow relative">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 sticky top-0 z-10">
+              <tr>
+                {[
+                  "Order ID",
+                  "Client Name",
+                  "Phone",
+                  "Email",
+                  "Date",
+                  "Part Requested",
+                  "Total Cost",
+                  "Status",
+                ].map((header, i) => (
+                  <th
+                    key={i}
+                    className="px-4 py-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-sm sm:text-base"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {orders.length > 0 ? (
+                orders.map((order, index) => (
+                  <tr
+                    key={order._id || index}
+                    className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
+                      order.isOwnOrder && user?.role === "customer_relations"
+                        ? "bg-red-50 dark:bg-red-900/20"
+                        : ""
+                    }`}
+                  >
+                    <td
+                      className="px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                      onClick={() => !actionLoading && handleOrderClick(order._id)}
+                    >
+                      {order.order_id || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {order.clientName || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {order.phone || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {order.email || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {order.createdAt
+                        ? new Date(order.createdAt).toLocaleString()
+                        : "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {order.leadId?.partRequested || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                      {order.leadId?.totalCost
+                        ? `$${order.leadId.totalCost.toFixed(2)}`
+                        : "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span
+                        className={`font-semibold ${
+                          statusTextColors[order.status] ||
+                          statusTextColors.default
+                        }`}
+                      >
+                        {order.status || "Unknown"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="text-center py-6 text-gray-600 dark:text-gray-400"
+                  >
+                    No orders found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center mt-6 space-x-2">
+            <button
+              onClick={() => !actionLoading && setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
+              disabled={currentPage === 1 || actionLoading}
+            >
+              Prev
+            </button>
+            {[...Array(totalPages)].map((_, index) => (
               <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
-                disabled={currentPage === 1}
+                key={index}
+                onClick={() => !actionLoading && setCurrentPage(index + 1)}
+                className={`px-4 py-2 border rounded-lg ${
+                  currentPage === index + 1
+                    ? "bg-blue-600 dark:bg-blue-500 text-white"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                } hover:bg-blue-100 dark:hover:bg-blue-600 border-gray-300 dark:border-gray-600 transition-all duration-200 text-sm font-medium`}
+                disabled={actionLoading}
               >
-                Prev
+                {index + 1}
               </button>
-              {[...Array(totalPages)].map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPage(index + 1)}
-                  className={`px-4 py-2 border rounded-lg ${
-                    currentPage === index + 1
-                      ? "bg-blue-600 dark:bg-blue-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  } hover:bg-blue-100 dark:hover:bg-blue-600 border-gray-300 dark:border-gray-600 transition-all duration-200 text-sm font-medium`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
+            ))}
+            <button
+              onClick={() =>
+                !actionLoading && setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              className="px-4 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-500 transition-all duration-200 text-sm font-medium"
+              disabled={currentPage === totalPages || actionLoading}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
