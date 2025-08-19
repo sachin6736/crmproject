@@ -305,7 +305,7 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison = { currentMonth:
     Delivered: "bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200",
     Replacement: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     Litigation: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
-    ReplacementCancelled: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+    ReplacementCancelled: "bg-rose-pz-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
     TotalOrders: "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
   };
 
@@ -633,8 +633,6 @@ const SalesDashboard = () => {
     status: status === 'TotalOrders' ? 'Total Orders' : status.replace(/([A-Z])/g, ' $1').trim(),
     currentMonth: status === 'TotalOrders' ? calculateTotal(orderStatusComparison.currentMonth) : orderStatusComparison.currentMonth?.[status] || 0,
     previousMonth: status === 'TotalOrders' ? calculateTotal(orderStatusComparison.previousMonth) : orderStatusComparison.previousMonth?.[status] || 0,
-    ...(selectedMonth && orderStatusComparison.selectedMonth ? { selectedMonth: status === 'TotalOrders' ? calculateTotal(orderStatusComparison.selectedMonth) : orderStatusComparison.selectedMonth[status] || 0 } : {}),
-    ...(selectedYear && orderStatusComparison.selectedYear ? { selectedYear: status === 'TotalOrders' ? calculateTotal(orderStatusComparison.selectedYear) : orderStatusComparison.selectedYear[status] || 0 } : {}),
   }));
 
   useEffect(() => {
@@ -895,7 +893,7 @@ const SalesDashboard = () => {
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Order Status Comparison</h3>
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <select
+              {/* <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                 value={selectedMonth || ''}
                 onChange={(e) => !actionLoading && setSelectedMonth(e.target.value)}
@@ -934,7 +932,7 @@ const SalesDashboard = () => {
                 })().map(({ value, label }) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
-              </select>
+              </select> */}
             </div>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={chartData}>
@@ -952,12 +950,6 @@ const SalesDashboard = () => {
                 <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
                 <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
                 <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
-                {selectedMonth && (
-                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
-                )}
-                {selectedYear && (
-                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
-                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
