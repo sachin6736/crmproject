@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useRef} from "react";
 import { Trash2, Plus, MoreVertical, CheckCircle, Coffee, Utensils, Calendar, LogOut, DollarSign, TrendingUp,Users,Send,Truck,BarChart2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from 'react-dom';
 import {
   LineChart,
   Line,
@@ -1283,6 +1284,7 @@ const Dashboard = () => {
   const [deliveredMetrics, setDeliveredMetrics] = useState({ today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
   const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] = useState(false);
   const [totalOrders, setTotalOrders] = useState(0);
+  const buttonRefs = useRef({});
 
   const statusIcons = {
     Available: (
@@ -1759,97 +1761,109 @@ const Dashboard = () => {
             </div>
           </motion.div>
 
-          <motion.div
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <Users className="w-5 h-5 text-purple-500" />
-              Team Management
-            </h3>
-            <div className="flex justify-end mb-4">
-              <button
-                className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                onClick={() => setShowModal(true)}
-              >
-                <Plus className="w-4 h-4" />
-                Add New Member
-              </button>
-            </div>
-            <div className="space-y-3 overflow-y-auto max-h-96">
-              {teamUsers.map((user) => (
-                <motion.div
-                  key={user._id}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors transform hover:scale-105"
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
-                      <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
-                      <p className="text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {statusIcons[user.status] || (
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">Unknown</span>
-                    )}
-                    <div className="relative">
-                      <button
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
-                        onClick={() =>
-                          setDropdownOpen(dropdownOpen === user._id ? null : user._id)
-                        }
-                      >
-                        <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                      </button>
-                      {dropdownOpen === user._id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10 overflow-hidden">
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => showConfirmation(user.isPaused ? 'Resume' : 'Pause', user._id, user.name)}
-                          >
-                            {user.isPaused ? 'Resume' : 'Pause'}
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction('Reassign Leads', user._id)}
-                          >
-                            Reassign Leads
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction('Change Role', user._id)}
-                          >
-                            Change Role
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction('Password', user._id)}
-                          >
-                            Reset Password
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => showConfirmation(user.Access ? 'Revoke Access' : 'Grant Access', user._id, user.name)}
-                            disabled={isAccessLoading}
-                          >
-                            {user.Access ? 'Revoke Access' : 'Grant Access'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+
+<motion.div
+  className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
+  initial={{ opacity: 0, x: 100 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.5 }}
+>
+  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+    <Users className="w-5 h-5 text-purple-500" />
+    Team Management
+  </h3>
+  <div className="flex justify-end mb-4">
+    <button
+      className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+      onClick={() => setShowModal(true)}
+    >
+      <Plus className="w-4 h-4" />
+      Add New Member
+    </button>
+  </div>
+  <div className="space-y-3">
+    {teamUsers.map((user) => (
+      <motion.div
+        key={user._id}
+        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors transform hover:scale-105 relative"
+        transition={{ duration: 0.3 }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="text-sm">
+            <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+            <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
+            <p className="text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
+          </div>
         </div>
+        <div className="flex items-center gap-2">
+          {statusIcons[user.status] || (
+            <span className="text-gray-500 dark:text-gray-400 text-xs">Unknown</span>
+          )}
+          <div className="relative">
+<button
+  ref={(el) => (buttonRefs.current[user._id] = el)}
+  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+  onClick={() => setDropdownOpen(dropdownOpen === user._id ? null : user._id)}
+>
+  <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+</button>
+            {dropdownOpen === user._id &&
+  createPortal(
+    <div
+      className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[10000] w-48 overflow-visible"
+      style={{
+        top: buttonRefs.current[user._id]
+          ? buttonRefs.current[user._id].getBoundingClientRect().bottom + window.scrollY + 4
+          : 0,
+        left: buttonRefs.current[user._id]
+          ? buttonRefs.current[user._id].getBoundingClientRect().right + window.scrollX - 192 // Adjust for dropdown width (w-48 = 192px)
+          : 0,
+      }}
+    >
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => showConfirmation(user.isPaused ? 'Resume' : 'Pause', user._id, user.name)}
+                  >
+                    {user.isPaused ? 'Resume' : 'Pause'}
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => handleUserAction('Reassign Leads', user._id)}
+                  >
+                    Reassign Leads
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => handleUserAction('Change Role', user._id)}
+                  >
+                    Change Role
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => handleUserAction('Password', user._id)}
+                  >
+                    Reset Password
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => showConfirmation(user.Access ? 'Revoke Access' : 'Grant Access', user._id, user.name)}
+                    disabled={isAccessLoading}
+                  >
+                    {user.Access ? 'Revoke Access' : 'Grant Access'}
+                  </button>
+                </div>,
+                document.body // Render the dropdown at the root level
+              )}
+          </div>
+        </div>
+      </motion.div>
+    ))}
+  </div>
+</motion.div>
+      </div>
 
         <AnimatePresence>
           {showModal && (
