@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Outlet, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import {
@@ -39,6 +40,8 @@ function Home() {
   const statusDropdownRef = useRef(null);
   const notificationDropdownRef = useRef(null);
   const socketRef = useRef(null);
+  const userButtonRef = useRef(null);
+  const notificationButtonRef = useRef(null); // Added for notification button positioning
 
   const formatDate = (date) => {
     try {
@@ -115,13 +118,18 @@ function Home() {
     const handleClickOutside = (event) => {
       if (
         statusDropdownRef.current &&
-        !statusDropdownRef.current.contains(event.target)
+        !statusDropdownRef.current.contains(event.target) &&
+        userButtonRef.current &&
+        !userButtonRef.current.contains(event.target)
       ) {
         setShowStatusDropdown(false);
+        setShowDropdown(false);
       }
       if (
         notificationDropdownRef.current &&
-        !notificationDropdownRef.current.contains(event.target)
+        !notificationDropdownRef.current.contains(event.target) &&
+        notificationButtonRef.current &&
+        !notificationButtonRef.current.contains(event.target)
       ) {
         setShowNotifications(false);
       }
@@ -153,12 +161,14 @@ function Home() {
     if (!user?._id) {
       toast.error('User ID not found');
       setShowStatusDropdown(false);
+      setShowDropdown(false);
       return;
     }
 
     if (selectedStatus === user.status) {
       toast.info('Status is already set to ' + selectedStatus);
       setShowStatusDropdown(false);
+      setShowDropdown(false);
       return;
     }
 
@@ -192,6 +202,7 @@ function Home() {
       toast.error(err.message || 'Failed to update status');
     } finally {
       setShowStatusDropdown(false);
+      setShowDropdown(false);
     }
   };
 
@@ -381,6 +392,7 @@ function Home() {
             <ThemeToggle />
             <div className='relative'>
               <button
+                ref={notificationButtonRef}
                 onClick={() => setShowNotifications(!showNotifications)}
                 type='button'
                 className='w-8 h-8 bg-white dark:bg-gray-700 text-[#066afe] dark:text-gray-100 rounded-full flex items-center justify-center relative'
@@ -392,10 +404,18 @@ function Home() {
                   </span>
                 )}
               </button>
-              {showNotifications && (
+              {showNotifications && createPortal(
                 <div
                   ref={notificationDropdownRef}
-                  className='absolute top-12 right-0 w-80 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2 max-h-96 overflow-y-auto'
+                  className='fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-[10000] w-80 max-w-[90vw] p-2 max-h-96 overflow-y-auto'
+                  style={{
+                    top: notificationButtonRef.current
+                      ? notificationButtonRef.current.getBoundingClientRect().bottom + window.scrollY + 4
+                      : 0,
+                    left: notificationButtonRef.current
+                      ? notificationButtonRef.current.getBoundingClientRect().right + window.scrollX - 320
+                      : 0,
+                  }}
                 >
                   <h3 className='text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200'>
                     Notifications
@@ -441,62 +461,75 @@ function Home() {
                       </div>
                     ))
                   )}
-                </div>
+                </div>,
+                document.body
               )}
             </div>
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              type='button'
-              className='w-8 h-8 bg-white dark:bg-gray-700 text-[#066afe] dark:text-gray-100 rounded-full flex items-center justify-center'
-            >
-              {statusOptions.find((opt) => opt.value === user?.status)?.icon || (
-                <User className='w-5 h-5' />
-              )}
-            </button>
-            {showDropdown && (
-              <div className='absolute top-12 right-4 w-48 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2'>
-                <div className='mb-2'>
-                  <label className='text-sm font-semibold block mb-1 text-gray-900 dark:text-gray-200'>
-                    {user.name}
-                  </label>
-                  <label className='text-sm font-semibold block mb-1 text-amber-500 dark:text-amber-500'>
-                    {user.role}
-                  </label>
-                  <div
-                    className='w-full border rounded px-2 py-1 text-sm flex items-center justify-between cursor-pointer bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  >
-                    <div className='flex items-center space-x-2'>
-                      {statusOptions.find((opt) => opt.value === user?.status)?.icon || (
-                        <User className='w-4 h-4' />
-                      )}
-                      <span>
-                        {statusOptions.find((opt) => opt.value === user?.status)?.label ||
-                          'Unknown Status'}
-                      </span>
-                    </div>
-                    <span>{showStatusDropdown ? '▲' : '▼'}</span>
-                  </div>
-                  {showStatusDropdown && (
+            <div className='relative'>
+              <button
+                ref={userButtonRef}
+                onClick={() => setShowDropdown(!showDropdown)}
+                type='button'
+                className='w-8 h-8 bg-white dark:bg-gray-700 text-[#066afe] dark:text-gray-100 rounded-full flex items-center justify-center'
+              >
+                {statusOptions.find((opt) => opt.value === user?.status)?.icon || (
+                  <User className='w-5 h-5' />
+                )}
+              </button>
+              {showDropdown && createPortal(
+                <div
+                  ref={statusDropdownRef}
+                  className='fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-[10000] w-48 max-w-[90vw] p-2'
+                  style={{
+                    top: userButtonRef.current
+                      ? userButtonRef.current.getBoundingClientRect().bottom + window.scrollY + 4
+                      : 0,
+                    left: userButtonRef.current
+                      ? userButtonRef.current.getBoundingClientRect().right + window.scrollX - 192
+                      : 0,
+                  }}
+                >
+                  <div className='mb-2'>
+                    <label className='text-sm font-semibold block mb-1 text-gray-900 dark:text-gray-200'>
+                      {user.name}
+                    </label>
+                    <label className='text-sm font-semibold block mb-1 text-amber-500 dark:text-amber-500'>
+                      {user.role}
+                    </label>
                     <div
-                      ref={statusDropdownRef}
-                      className='absolute top-16 left-0 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-20'
+                      className='w-full border rounded px-2 py-1 text-sm flex items-center justify-between cursor-pointer bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
+                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                     >
-                      {statusOptions.map((option) => (
-                        <div
-                          key={option.value}
-                          className='flex items-center space-x-2 px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-700 dark:text-gray-200'
-                          onClick={() => handleStatusChange(option.value)}
-                        >
-                          {option.icon}
-                          <span>{option.label}</span>
-                        </div>
-                      ))}
+                      <div className='flex items-center space-x-2'>
+                        {statusOptions.find((opt) => opt.value === user?.status)?.icon || (
+                          <User className='w-4 h-4' />
+                        )}
+                        <span>
+                          {statusOptions.find((opt) => opt.value === user?.status)?.label ||
+                            'Unknown Status'}
+                        </span>
+                      </div>
+                      <span>{showStatusDropdown ? '▲' : '▼'}</span>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
+                    {showStatusDropdown && (
+                      <div className='mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg'>
+                        {statusOptions.map((option) => (
+                          <div
+                            key={option.value}
+                            className='flex items-center space-x-2 px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-700 dark:text-gray-200'
+                            onClick={() => handleStatusChange(option.value)}
+                          >
+                            {option.icon}
+                            <span>{option.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>,
+                document.body
+              )}
+            </div>
           </div>
         </div>
         <div className='flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-4'>
