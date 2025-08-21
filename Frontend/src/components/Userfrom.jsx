@@ -120,7 +120,7 @@ function UserForm() {
     { label: 'Zip', name: 'zip', type: 'text', ariaLabel: 'ZIP code' },
     { label: 'Part Requested', name: 'partRequested', type: 'text', ariaLabel: 'Part requested' },
     { label: 'Make', name: 'make', type: 'text', ariaLabel: 'Vehicle make' },
-    { label: 'Model', name: 'model', type: 'text', ariaLabel: 'Vehicle model' },
+    { label: 'Model', name: 'model', type: 'text', ariaLabel: 'Vehicle model'},
     { label: 'Year', name: 'year', type: 'text', ariaLabel: 'Vehicle year' },
     { label: 'Trim', name: 'trim', type: 'text', ariaLabel: 'Vehicle trim' },
   ];
