@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingOverlay from './LoadingOverlay';
 import { useTheme } from '../context/ThemeContext';
+import ConfirmationModal from './ConfirmationModal';
 
 function UserForm() {
   const { theme } = useTheme();
@@ -20,6 +21,11 @@ function UserForm() {
     trim: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmText, setConfirmText] = useState('Confirm');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,11 +60,31 @@ function UserForm() {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const showSubmitConfirmation = (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
+    setConfirmTitle('Confirm Lead Creation');
+    setConfirmMessage('Are you sure you want to create this new lead?');
+    setConfirmText('Save Lead');
+    setConfirmAction(() => async () => {
+      await handleSubmit();
+      setShowConfirmModal(false);
+    });
+    setShowConfirmModal(true);
+  };
 
+  const showCancelConfirmation = () => {
+    setConfirmTitle('Confirm Cancel');
+    setConfirmMessage('Are you sure you want to discard your changes and cancel?');
+    setConfirmText('Discard Changes');
+    setConfirmAction(() => () => {
+      handleCancel();
+      setShowConfirmModal(false);
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleSubmit = async () => {
     setIsLoading(true);
     try {
       const response = await fetch('http://localhost:3000/Lead/createnewlead', {
@@ -135,7 +161,7 @@ function UserForm() {
               New Lead
             </h2>
           </div>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={showSubmitConfirmation} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {formFields.map(({ label, name, type, ariaLabel }) => (
               <div key={name} className="col-span-1">
                 <label className="block text-sm font-medium text-slate-500 dark:text-gray-400">
@@ -157,7 +183,7 @@ function UserForm() {
               <button
                 type="button"
                 className="px-4 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded-md shadow-md text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleCancel}
+                onClick={showCancelConfirmation}
                 aria-label="Cancel lead creation"
                 disabled={isLoading}
               >
@@ -175,6 +201,23 @@ function UserForm() {
           </form>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmAction}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText="Cancel"
+        confirmButtonProps={{
+          disabled: isLoading,
+          className: `${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+        }}
+        cancelButtonProps={{
+          disabled: isLoading,
+          className: `${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+        }}
+      />
     </div>
   );
 }

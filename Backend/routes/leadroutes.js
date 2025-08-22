@@ -18,11 +18,11 @@ router.post('/updatecost/:id',protect,updatecost)//updatecost;
 router.post('/leadquatation/:id',leadquatation)//
 router.post('/reassign/:id',protect,changeowner)
 
-router.put('/updateNotes/:id',createnotes)//creating notes
+router.put('/updateNotes/:id',protect,createnotes)//creating notes
 router.delete('/deleteNotes/:id/:noteid',deletenotes)
 
-router.post('/updateDates/:id',adddate)//adddates
-router.delete("/updateDates/:id/:date", deleteDate);
+router.post('/updateDates/:id',protect,adddate)//adddates
+router.delete("/updateDates/:id/:date",protect, deleteDate);
 
 
 export default router;

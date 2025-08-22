@@ -15,6 +15,15 @@ import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
 import { useTheme } from "../context/ThemeContext";
 import LoadingOverlay from "./LoadingOverlay";
+import ConfirmationModal from "./ConfirmationModal";
+
+// Utility function to format date to YYYY-MM-DD in local timezone
+const formatLocalDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const statusOptions = [
   "Quoted",
@@ -57,6 +66,18 @@ const Lead = () => {
   const [isSendingQuote, setIsSendingQuote] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("Confirm");
+  const [secondaryConfirmText, setSecondaryConfirmText] = useState("");
+  const [secondaryConfirmAction, setSecondaryConfirmAction] = useState(null);
+  const [confirmOverrideClass, setConfirmOverrideClass] = useState("");
+  const [secondaryOverrideClass, setSecondaryOverrideClass] = useState("");
+  const [showDateNoteModal, setShowDateNoteModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [dateNote, setDateNote] = useState("");
 
   useEffect(() => {
     if (singleLead && singleLead.notes) {
@@ -75,7 +96,7 @@ const Lead = () => {
         if (!response.ok) throw new Error("Failed to fetch lead");
         const data = await response.json();
         setSingleLead(data);
-        setSelectedDates(data.importantDates || []);
+        setSelectedDates(data.importantDates.map(d => d.date) || []);
         setEditForm({
           clientName: data.clientName || "",
           phoneNumber: data.phoneNumber || "",
@@ -138,6 +159,85 @@ const Lead = () => {
     );
   };
 
+  const showEditLeadConfirmation = () => {
+    setIsEditingLead(false);
+    setConfirmTitle("Confirm Lead Edit");
+    setConfirmMessage("Are you sure you want to save changes to this lead?");
+    setConfirmText("Save Changes");
+    setConfirmAction(() => async () => {
+      await handleEditLead();
+      setShowConfirmModal(false);
+    });
+    setConfirmOverrideClass("");
+    setSecondaryConfirmText("");
+    setSecondaryConfirmAction(null);
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
+  };
+
+  const showSendQuoteConfirmation = () => {
+    setConfirmTitle("Confirm Send Quote");
+    setConfirmMessage("Are you sure you want to send the quotation for this lead?");
+    setConfirmText("Send Quote");
+    setConfirmAction(() => async () => {
+      await handleSendQuote();
+      setShowConfirmModal(false);
+    });
+    setConfirmOverrideClass("");
+    setSecondaryConfirmText("");
+    setSecondaryConfirmAction(null);
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
+  };
+
+  const showSubmitCostsConfirmation = () => {
+    setConfirmTitle("Confirm Cost Submission");
+    setConfirmMessage("Are you sure you want to submit these cost details?");
+    setConfirmText("Submit Costs");
+    setConfirmAction(() => async () => {
+      await handleSubmitCosts();
+      setShowConfirmModal(false);
+    });
+    setConfirmOverrideClass("");
+    setSecondaryConfirmText("");
+    setSecondaryConfirmAction(null);
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
+  };
+
+  const showOrderedConfirmation = (leadId, newStatus) => {
+    setConfirmTitle("Confirm Status Change");
+    setConfirmMessage("Status will be changed to 'Ordered'. Do you want to go to the Order Page?");
+    setConfirmText("Yes, go to Order Page");
+    setConfirmAction(() => async () => {
+      await updateStatus(leadId, newStatus, true);
+      setShowConfirmModal(false);
+    });
+    setConfirmOverrideClass("!bg-green-600 !dark:bg-green-500 !hover:bg-green-700 !dark:hover:bg-green-600 !focus:ring-green-500");
+    setSecondaryConfirmText("No, just change status");
+    setSecondaryConfirmAction(() => async () => {
+      await updateStatus(leadId, newStatus, false);
+      setShowConfirmModal(false);
+    });
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
+  };
+
+  const showStatusConfirmation = (leadId, newStatus) => {
+    setConfirmTitle("Confirm Status Change");
+    setConfirmMessage(`Are you sure you want to change the status to '${newStatus}'?`);
+    setConfirmText("Change Status");
+    setConfirmAction(() => async () => {
+      await updateStatus(leadId, newStatus, false);
+      setShowConfirmModal(false);
+    });
+    setConfirmOverrideClass("");
+    setSecondaryConfirmText("");
+    setSecondaryConfirmAction(null);
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
+  };
+
   const handleSaveNotes = async () => {
     if (!newNote.trim()) {
       toast.warning("Please enter a note");
@@ -173,41 +273,94 @@ const Lead = () => {
   };
 
   const handleDateClick = async (date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    if (actionLoading) return;
+    const dateStr = formatLocalDate(date); // Use local date formatting
     const isDateSelected = selectedDates.includes(dateStr);
+    
+    if (isDateSelected) {
+      // Show confirmation for deleting the date
+      setConfirmTitle("Confirm Date Removal");
+      setConfirmMessage(`Are you sure you want to remove the date ${dateStr}?`);
+      setConfirmText("Remove Date");
+      setConfirmAction(() => async () => {
+        await handleRemoveDate(dateStr);
+        setShowConfirmModal(false);
+      });
+      setConfirmOverrideClass("");
+      setSecondaryConfirmText("");
+      setSecondaryConfirmAction(null);
+      setSecondaryOverrideClass("");
+      setShowConfirmModal(true);
+    } else {
+      // Show modal to add note for the new date
+      setSelectedDate(dateStr);
+      setDateNote("");
+      setShowDateNoteModal(true);
+    }
+  };
+
+  const handleAddDateWithNote = async () => {
+    if (actionLoading) return;
     setActionLoading(true);
     try {
       const response = await fetch(
-        isDateSelected
-          ? `http://localhost:3000/Lead/updateDates/${id}/${dateStr}`
-          : `http://localhost:3000/Lead/updateDates/${id}`,
+        `http://localhost:3000/Lead/updateDates/${id}`,
         {
-          method: isDateSelected ? "DELETE" : "POST",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: isDateSelected ? null : JSON.stringify({ selectedDate: dateStr }),
+          body: JSON.stringify({ selectedDate, note: dateNote }),
         }
       );
 
       if (response.ok) {
-        toast.success("Event updated successfully");
-        setSelectedDates((prevDates) =>
-          isDateSelected
-            ? prevDates.filter((d) => d !== dateStr)
-            : [...prevDates, dateStr]
-        );
+        toast.success("Date and note added successfully");
+        const updatedLead = await response.json();
+        setSingleLead(updatedLead.lead);
+        setSelectedDates(updatedLead.lead.importantDates.map(d => d.date));
+        setShowDateNoteModal(false);
+        setDateNote("");
       } else {
-        toast.error("Failed to update date");
+        toast.error("Failed to add date");
       }
     } catch (error) {
-      toast.error("Error updating date");
-      console.error("Error updating date:", error);
+      toast.error("Error adding date");
+      console.error("Error adding date:", error);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const updateStatus = async (leadId, newStatus) => {
+  const handleRemoveDate = async (dateStr) => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:3000/Lead/updateDates/${id}/${dateStr}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Date removed successfully");
+        const updatedLead = await response.json();
+        setSingleLead(updatedLead.lead);
+        setSelectedDates(updatedLead.lead.importantDates.map(d => d.date));
+      } else {
+        toast.error("Failed to remove date");
+      }
+    } catch (error) {
+      toast.error("Error removing date");
+      console.error("Error removing date:", error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const updateStatus = async (leadId, newStatus, goToOrderPage = false) => {
     setActionLoading(true);
     try {
       const response = await fetch(
@@ -228,6 +381,9 @@ const Lead = () => {
         );
         const updatedLead = await leadResponse.json();
         setSingleLead(updatedLead);
+        if (newStatus === "Ordered" && goToOrderPage) {
+          navigate(`/home/order/${leadId}`);
+        }
       } else {
         const errorData = await response.json();
         toast.error(errorData.message || "Failed to update status");
@@ -349,7 +505,7 @@ const Lead = () => {
       const data = await response.json();
       if (response.ok) {
         toast.success(data.message);
-        await updateStatus(id, "Quoted");
+        await updateStatus(id, "Quoted", false);
       } else {
         toast.error(data.message || "Failed to send quotation");
       }
@@ -372,9 +528,9 @@ const Lead = () => {
       <div className={`${isLoading || actionLoading ? "blur-[1px]" : ""}`}>
         {/* Action Buttons */}
         <div className="flex justify-end mb-4">
-          <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2">
+          <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2 z-[900]">
             <button
-              onClick={handleSendQuote}
+              onClick={() => !actionLoading && showSendQuoteConfirmation()}
               className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm border-r border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSendingQuote || !areCostsValid() || actionLoading}
             >
@@ -400,12 +556,12 @@ const Lead = () => {
         </div>
 
         {/* Active Status Row */}
-        <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full h-14 space-x-2 overflow-x-auto">
+        <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full h-14 space-x-2 overflow-x-auto z-[900]">
           <div className="flex gap-4 px-2">
             {statusOptions.map((status, index) => (
               <button
                 key={index}
-                onClick={() => !actionLoading && updateStatus(singleLead?._id, status)}
+                onClick={() => !actionLoading && (status === "Ordered" ? showOrderedConfirmation(singleLead?._id, status) : showStatusConfirmation(singleLead?._id, status))}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
                   singleLead?.status === status
                     ? "bg-blue-600 dark:bg-blue-500 text-white"
@@ -442,7 +598,7 @@ const Lead = () => {
                   </button>
                   {isEditingLead && (
                     <button
-                      onClick={handleEditLead}
+                      onClick={() => !actionLoading && showEditLeadConfirmation()}
                       className="flex items-center gap-1 text-sm text-green-500 dark:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={actionLoading}
                     >
@@ -649,7 +805,7 @@ const Lead = () => {
                 ))}
                 <div className="flex justify-end w-full pr-6">
                   <button
-                    onClick={handleSubmitCosts}
+                    onClick={() => !actionLoading && showSubmitCostsConfirmation()}
                     className="bg-green-600 dark:bg-green-500 text-white w-20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 dark:hover:bg-green-600 rounded-md"
                     disabled={isSubmitting || !areCostsValid() || actionLoading}
                   >
@@ -676,8 +832,10 @@ const Lead = () => {
               <Calendar
                 onClickDay={(date) => !actionLoading && handleDateClick(date)}
                 tileClassName={({ date }) =>
-                  selectedDates.includes(date.toISOString().split("T")[0])
-                    ? "bg-blue-500 dark:bg-blue-600 text-white rounded-full"
+                  selectedDates.includes(formatLocalDate(date))
+                    ? theme === "dark"
+                      ? "bg-red-600 text-white rounded-full"
+                      : "bg-blue-500 text-white rounded-full"
                     : ""
                 }
                 className={theme === "dark" ? "dark-calendar" : ""}
@@ -685,9 +843,68 @@ const Lead = () => {
             </div>
           </div>
         </div>
+
+        {/* Confirmation Modal for Actions */}
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={confirmAction}
+          title={confirmTitle}
+          message={confirmMessage}
+          confirmText={confirmText}
+          cancelText="Cancel"
+          secondaryText={secondaryConfirmText}
+          secondaryOnClick={secondaryConfirmAction}
+          confirmButtonProps={{
+            disabled: actionLoading,
+            className: `${confirmOverrideClass} ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+          }}
+          cancelButtonProps={{
+            disabled: actionLoading,
+            className: `${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+          }}
+          secondaryButtonProps={{
+            disabled: actionLoading,
+            className: `${secondaryOverrideClass} ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+          }}
+        />
+
+        {/* Date Note Modal */}
+        {showDateNoteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Add Note for {selectedDate}
+              </h2>
+              <textarea
+                className="w-full p-2 border rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                value={dateNote}
+                onChange={(e) => setDateNote(e.target.value)}
+                placeholder="Add a note for this date..."
+                disabled={actionLoading}
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={() => !actionLoading && setShowDateNoteModal(false)}
+                  className="text-red-500 dark:text-red-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddDateWithNote}
+                  className="text-green-500 dark:text-green-400 flex items-center gap-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={actionLoading}
+                >
+                  <Save size={18} /> Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default Lead;
+export default Lead;  

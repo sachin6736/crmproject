@@ -1,5 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Trash2, Plus, MoreVertical, CheckCircle, Coffee, Utensils, Calendar, LogOut, DollarSign, TrendingUp,Users,Send,Truck,BarChart2 } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  MoreVertical,
+  CheckCircle,
+  Coffee,
+  Utensils,
+  Calendar,
+  LogOut,
+  DollarSign,
+  TrendingUp,
+  Users,
+  Send,
+  Truck,
+  BarChart2,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,7 +37,13 @@ import FullPageLoader from "./utilities/FullPageLoader";
 import { useTheme } from "../context/ThemeContext";
 import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/solid";
 
-const ConfirmationModal = ({ isOpen, onConfirm, onCancel, action, userName }) => {
+const ConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  action,
+  userName,
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -38,7 +59,9 @@ const ConfirmationModal = ({ isOpen, onConfirm, onCancel, action, userName }) =>
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Confirm {action}</h3>
+        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+          Confirm {action}
+        </h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">
           Are you sure you want to {action.toLowerCase()} for {userName}?
         </p>
@@ -61,30 +84,56 @@ const ConfirmationModal = ({ isOpen, onConfirm, onCancel, action, userName }) =>
   );
 };
 
-const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, statusComparison: initialStatusComparison }) => {
+const LeadDetailsModal = ({
+  isOpen,
+  onClose,
+  createdByUser,
+  assignedAutomatically,
+  statusComparison: initialStatusComparison,
+}) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [statusComparison, setStatusComparison] = useState(initialStatusComparison || { currentMonth: {}, previousMonth: {}, currentYear: {} });
-  const [leadCounts, setLeadCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
+  const [statusComparison, setStatusComparison] = useState(
+    initialStatusComparison || {
+      currentMonth: {},
+      previousMonth: {},
+      currentYear: {},
+    }
+  );
+  const [leadCounts, setLeadCounts] = useState({
+    today: 0,
+    currentMonth: 0,
+    currentYear: 0,
+  });
   const [conversionRates, setConversionRates] = useState({
     currentMonth: { converted: 0, total: 0, rate: 0 },
     currentYear: { converted: 0, total: 0, rate: 0 },
     selectedMonth: { converted: 0, total: 0, rate: 0 },
     selectedYear: { converted: 0, total: 0, rate: 0 },
   });
-  const [comparisonText, setComparisonText] = useState({ totalLeads: "", conversionRate: "", totalLeadsMeta: { direction: "", percentage: 0, difference: 0 }, conversionRateMeta: { direction: "", percentage: 0 } });
+  const [comparisonText, setComparisonText] = useState({
+    totalLeads: "",
+    conversionRate: "",
+    totalLeadsMeta: { direction: "", percentage: 0, difference: 0 },
+    conversionRateMeta: { direction: "", percentage: 0 },
+  });
 
   const statusColors = {
-    Quoted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    Quoted:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
     NoResponse: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
     WrongNumber: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    NotInterested: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    PriceTooHigh: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-    PartNotAvailable: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    Ordered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    NotInterested:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    PriceTooHigh:
+      "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+    PartNotAvailable:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    Ordered:
+      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     TotalLeads: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   };
 
@@ -112,10 +161,16 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
     return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
   };
 
-  const calculateTotalLeadsComparison = (current, selected, period, isYear = false) => {
+  const calculateTotalLeadsComparison = (
+    current,
+    selected,
+    period,
+    isYear = false
+  ) => {
     const currentValue = calculateTotal(current);
     const selectedValue = calculateTotal(selected);
-    if (selectedValue === 0) return { direction: "", percentage: 0, difference: 0, text: "" };
+    if (selectedValue === 0)
+      return { direction: "", percentage: 0, difference: 0, text: "" };
     const difference = currentValue - selectedValue;
     const percentage = ((difference / selectedValue) * 100).toFixed(2);
     const direction = difference >= 0 ? "increased" : "decreased";
@@ -125,22 +180,41 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
       direction,
       percentage: Math.abs(percentage),
       difference: absDifference,
-      text: `Total leads ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} total leads = ${selectedValue}, ${comparePeriod} total leads = ${currentValue}`,
+      text: `Total leads ${direction} by ${Math.abs(
+        percentage
+      )}% (${absDifference}) compared to selected ${period}. Selected ${period} total leads = ${selectedValue}, ${comparePeriod} total leads = ${currentValue}`,
     };
   };
 
-  const calculateConversionComparison = (current, selected, period, isYear = false) => {
-    if (selected.total === 0 || current.total === 0) return { direction: "", percentage: 0, text: "" };
+  const calculateConversionComparison = (
+    current,
+    selected,
+    period,
+    isYear = false
+  ) => {
+    if (selected.total === 0 || current.total === 0)
+      return { direction: "", percentage: 0, text: "" };
     const currentRate = current.rate;
     const selectedRate = selected.rate;
     const difference = currentRate - selectedRate;
-    const percentage = selectedRate !== 0 ? ((difference / selectedRate) * 100).toFixed(2) : 0;
+    const percentage =
+      selectedRate !== 0 ? ((difference / selectedRate) * 100).toFixed(2) : 0;
     const direction = difference >= 0 ? "increased" : "decreased";
     const comparePeriod = isYear ? "current year" : "current month";
     return {
       direction,
       percentage: Math.abs(percentage),
-      text: `Conversion rate ${direction} by ${Math.abs(percentage)}%. Selected ${period} = ${selected.converted} out of ${selected.total} leads converted to sales (${selectedRate.toFixed(2)}% conversion rate). ${comparePeriod.charAt(0).toUpperCase() + comparePeriod.slice(1)} = ${current.converted} out of ${current.total} leads converted to sales (${currentRate.toFixed(2)}% conversion rate)`,
+      text: `Conversion rate ${direction} by ${Math.abs(
+        percentage
+      )}%. Selected ${period} = ${selected.converted} out of ${
+        selected.total
+      } leads converted to sales (${selectedRate.toFixed(
+        2
+      )}% conversion rate). ${
+        comparePeriod.charAt(0).toUpperCase() + comparePeriod.slice(1)
+      } = ${current.converted} out of ${
+        current.total
+      } leads converted to sales (${currentRate.toFixed(2)}% conversion rate)`,
     };
   };
 
@@ -151,41 +225,105 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
-        const res = await fetch(`http://localhost:3000/Admin/getLeadCountsAndConversions${queryString}`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch lead counts and conversions");
+        const res = await fetch(
+          `http://localhost:3000/Admin/getLeadCountsAndConversions${queryString}`,
+          {
+            credentials: "include",
+          }
+        );
+        if (!res.ok)
+          throw new Error("Failed to fetch lead counts and conversions");
         const data = await res.json();
-        setStatusComparison(data.statusComparison || { currentMonth: {}, previousMonth: {}, currentYear: {} });
+        setStatusComparison(
+          data.statusComparison || {
+            currentMonth: {},
+            previousMonth: {},
+            currentYear: {},
+          }
+        );
         setLeadCounts({
           today: data.leadCounts.today || 0,
           currentMonth: data.leadCounts.currentMonth || 0,
           currentYear: data.leadCounts.currentYear || 0,
-          ...(selectedMonth && { selectedMonth: data.leadCounts.selectedMonth || 0 }),
-          ...(selectedYear && { selectedYear: data.leadCounts.selectedYear || 0 }),
+          ...(selectedMonth && {
+            selectedMonth: data.leadCounts.selectedMonth || 0,
+          }),
+          ...(selectedYear && {
+            selectedYear: data.leadCounts.selectedYear || 0,
+          }),
         });
         setConversionRates({
-          currentMonth: data.conversionRates?.currentMonth || { converted: 0, total: 0, rate: 0 },
-          currentYear: data.conversionRates?.currentYear || { converted: 0, total: 0, rate: 0 },
-          ...(selectedMonth && { selectedMonth: data.conversionRates?.selectedMonth || { converted: 0, total: 0, rate: 0 } }),
-          ...(selectedYear && { selectedYear: data.conversionRates?.selectedYear || { converted: 0, total: 0, rate: 0 } }),
+          currentMonth: data.conversionRates?.currentMonth || {
+            converted: 0,
+            total: 0,
+            rate: 0,
+          },
+          currentYear: data.conversionRates?.currentYear || {
+            converted: 0,
+            total: 0,
+            rate: 0,
+          },
+          ...(selectedMonth && {
+            selectedMonth: data.conversionRates?.selectedMonth || {
+              converted: 0,
+              total: 0,
+              rate: 0,
+            },
+          }),
+          ...(selectedYear && {
+            selectedYear: data.conversionRates?.selectedYear || {
+              converted: 0,
+              total: 0,
+              rate: 0,
+            },
+          }),
         });
 
         // Calculate comparison text
-        let totalLeadsText = { direction: "", percentage: 0, difference: 0, text: "" };
+        let totalLeadsText = {
+          direction: "",
+          percentage: 0,
+          difference: 0,
+          text: "",
+        };
         let conversionText = { direction: "", percentage: 0, text: "" };
         if (selectedMonth) {
-          totalLeadsText = calculateTotalLeadsComparison(data.statusComparison.currentMonth, data.statusComparison.selectedMonth, "month");
-          conversionText = calculateConversionComparison(data.conversionRates.currentMonth, data.conversionRates.selectedMonth, "month");
+          totalLeadsText = calculateTotalLeadsComparison(
+            data.statusComparison.currentMonth,
+            data.statusComparison.selectedMonth,
+            "month"
+          );
+          conversionText = calculateConversionComparison(
+            data.conversionRates.currentMonth,
+            data.conversionRates.selectedMonth,
+            "month"
+          );
         } else if (selectedYear) {
-          totalLeadsText = calculateTotalLeadsComparison(data.statusComparison.currentYear, data.statusComparison.selectedYear, "year", true);
-          conversionText = calculateConversionComparison(data.conversionRates.currentYear, data.conversionRates.selectedYear, "year", true);
+          totalLeadsText = calculateTotalLeadsComparison(
+            data.statusComparison.currentYear,
+            data.statusComparison.selectedYear,
+            "year",
+            true
+          );
+          conversionText = calculateConversionComparison(
+            data.conversionRates.currentYear,
+            data.conversionRates.selectedYear,
+            "year",
+            true
+          );
         }
         setComparisonText({
           totalLeads: totalLeadsText.text,
           conversionRate: conversionText.text,
-          totalLeadsMeta: { direction: totalLeadsText.direction, percentage: totalLeadsText.percentage, difference: totalLeadsText.difference },
-          conversionRateMeta: { direction: conversionText.direction, percentage: conversionText.percentage },
+          totalLeadsMeta: {
+            direction: totalLeadsText.direction,
+            percentage: totalLeadsText.percentage,
+            difference: totalLeadsText.difference,
+          },
+          conversionRateMeta: {
+            direction: conversionText.direction,
+            percentage: conversionText.percentage,
+          },
         });
       } catch (error) {
         console.error("Error fetching lead counts and conversions:", error);
@@ -195,12 +333,32 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
-  const chartData = statuses.map(status => ({
+  const chartData = statuses.map((status) => ({
     status: status === "TotalLeads" ? "Total Leads" : status,
-    currentMonth: status === "TotalLeads" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0,
-    previousMonth: status === "TotalLeads" ? calculateTotal(statusComparison.previousMonth) : statusComparison.previousMonth?.[status] || 0,
-    ...(selectedMonth && statusComparison.selectedMonth ? { selectedMonth: status === "TotalLeads" ? calculateTotal(statusComparison.selectedMonth) : statusComparison.selectedMonth[status] || 0 } : {}),
-    ...(selectedYear && statusComparison.selectedYear ? { selectedYear: status === "TotalLeads" ? calculateTotal(statusComparison.selectedYear) : statusComparison.selectedYear[status] || 0 } : {}),
+    currentMonth:
+      status === "TotalLeads"
+        ? calculateTotal(statusComparison.currentMonth)
+        : statusComparison.currentMonth?.[status] || 0,
+    previousMonth:
+      status === "TotalLeads"
+        ? calculateTotal(statusComparison.previousMonth)
+        : statusComparison.previousMonth?.[status] || 0,
+    ...(selectedMonth && statusComparison.selectedMonth
+      ? {
+          selectedMonth:
+            status === "TotalLeads"
+              ? calculateTotal(statusComparison.selectedMonth)
+              : statusComparison.selectedMonth[status] || 0,
+        }
+      : {}),
+    ...(selectedYear && statusComparison.selectedYear
+      ? {
+          selectedYear:
+            status === "TotalLeads"
+              ? calculateTotal(statusComparison.selectedYear)
+              : statusComparison.selectedYear[status] || 0,
+        }
+      : {}),
   }));
 
   const generateMonthOptions = () => {
@@ -208,8 +366,13 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+      const value = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+      const label = date.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
       options.push({ value, label });
     }
     return options;
@@ -238,45 +401,77 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Lead Details</h3>
+        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+          Lead Details
+        </h3>
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Created by Users</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{createdByUser}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Leads Created by Users
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {createdByUser}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Leads Automatically Assigned</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{assignedAutomatically}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Leads Automatically Assigned
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {assignedAutomatically}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Lead Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.today}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Today's Lead Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {leadCounts.today}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Lead Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.currentMonth}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Month Lead Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {leadCounts.currentMonth}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year Lead Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.currentYear}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Year Lead Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {leadCounts.currentYear}
+              </span>
             </div>
             {selectedMonth && (
               <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Lead Count</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.selectedMonth || 0}</span>
+                <span className="text-gray-600 dark:text-gray-300 text-xs">
+                  Selected Month Lead Count
+                </span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                  {leadCounts.selectedMonth || 0}
+                </span>
               </div>
             )}
             {selectedYear && (
               <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Lead Count</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{leadCounts.selectedYear || 0}</span>
+                <span className="text-gray-600 dark:text-gray-300 text-xs">
+                  Selected Year Lead Count
+                </span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                  {leadCounts.selectedYear || 0}
+                </span>
               </div>
             )}
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Lead Status Comparison</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Lead Status Comparison
+            </h4>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
@@ -288,7 +483,9 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               >
                 <option value="">Select Month to Compare</option>
                 {generateMonthOptions().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
               <select
@@ -301,7 +498,9 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
               >
                 <option value="">Select Year to Compare</option>
                 {generateYearOptions().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -310,59 +509,99 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
                 {comparisonText.totalLeads && (
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0">
-                      {comparisonText.totalLeadsMeta.direction === "increased" ? (
+                      {comparisonText.totalLeadsMeta.direction ===
+                      "increased" ? (
                         <ArrowUpIcon className="w-5 h-5 text-green-500" />
                       ) : (
                         <ArrowDownIcon className="w-5 h-5 text-red-500" />
                       )}
                     </div>
                     <div>
-                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Total Leads Comparison</h5>
+                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Total Leads Comparison
+                      </h5>
                       <p className="text-xs text-gray-600 dark:text-gray-300">
-                        {comparisonText.totalLeadsMeta.direction === "increased" ? (
+                        {comparisonText.totalLeadsMeta.direction ===
+                        "increased" ? (
                           <span>
-                            Total leads <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
-                            <span className="font-bold">{comparisonText.totalLeadsMeta.percentage}%</span> (
-                            {comparisonText.totalLeadsMeta.difference} leads).
+                            Total leads{" "}
+                            <span className="font-bold text-green-600 dark:text-green-400">
+                              increased
+                            </span>{" "}
+                            by{" "}
+                            <span className="font-bold">
+                              {comparisonText.totalLeadsMeta.percentage}%
+                            </span>{" "}
+                            ({comparisonText.totalLeadsMeta.difference} leads).
                           </span>
                         ) : (
                           <span>
-                            Total leads <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
-                            <span className="font-bold">{comparisonText.totalLeadsMeta.percentage}%</span> (
-                            {comparisonText.totalLeadsMeta.difference} leads).
+                            Total leads{" "}
+                            <span className="font-bold text-red-600 dark:text-red-400">
+                              decreased
+                            </span>{" "}
+                            by{" "}
+                            <span className="font-bold">
+                              {comparisonText.totalLeadsMeta.percentage}%
+                            </span>{" "}
+                            ({comparisonText.totalLeadsMeta.difference} leads).
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText.totalLeads.split(". ")[1]}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                        {comparisonText.totalLeads.split(". ")[1]}
+                      </p>
                     </div>
                   </div>
                 )}
                 {comparisonText.conversionRate && (
                   <div className="flex items-start gap-2">
                     <div className="flex-shrink-0">
-                      {comparisonText.conversionRateMeta.direction === "increased" ? (
+                      {comparisonText.conversionRateMeta.direction ===
+                      "increased" ? (
                         <ArrowUpIcon className="w-5 h-5 text-green-500" />
                       ) : (
                         <ArrowDownIcon className="w-5 h-5 text-red-500" />
                       )}
                     </div>
                     <div>
-                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Conversion Rate Comparison</h5>
+                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Conversion Rate Comparison
+                      </h5>
                       <p className="text-xs text-gray-600 dark:text-gray-300">
-                        {comparisonText.conversionRateMeta.direction === "increased" ? (
+                        {comparisonText.conversionRateMeta.direction ===
+                        "increased" ? (
                           <span>
-                            Conversion rate <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
-                            <span className="font-bold">{comparisonText.conversionRateMeta.percentage}%</span>.
+                            Conversion rate{" "}
+                            <span className="font-bold text-green-600 dark:text-green-400">
+                              increased
+                            </span>{" "}
+                            by{" "}
+                            <span className="font-bold">
+                              {comparisonText.conversionRateMeta.percentage}%
+                            </span>
+                            .
                           </span>
                         ) : (
                           <span>
-                            Conversion rate <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
-                            <span className="font-bold">{comparisonText.conversionRateMeta.percentage}%</span>.
+                            Conversion rate{" "}
+                            <span className="font-bold text-red-600 dark:text-red-400">
+                              decreased
+                            </span>{" "}
+                            by{" "}
+                            <span className="font-bold">
+                              {comparisonText.conversionRateMeta.percentage}%
+                            </span>
+                            .
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText.conversionRate.split(". ")[1]}</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-300">{comparisonText.conversionRate.split(". ")[2]}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                        {comparisonText.conversionRate.split(". ")[1]}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
+                        {comparisonText.conversionRate.split(". ")[2]}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -370,41 +609,85 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
             )}
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={theme === "dark" ? "#4B5563" : "#E5E7EB"}
+                />
+                <XAxis
+                  dataKey="status"
+                  stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis
+                  stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
+                  tick={{ fontSize: 12 }}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                    fontSize: '12px',
+                    backgroundColor: theme === "dark" ? "#1F2937" : "#FFFFFF",
+                    border: `1px solid ${
+                      theme === "dark" ? "#4B5563" : "#E5E7EB"
+                    }`,
+                    color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                    fontSize: "12px",
                   }}
                 />
-                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
-                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+                <Legend
+                  wrapperStyle={{
+                    color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                    fontSize: "12px",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="currentMonth"
+                  stroke={lineColors.currentMonth}
+                  name="Current Month"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="previousMonth"
+                  stroke={lineColors.previousMonth}
+                  name="Previous Month"
+                />
                 {selectedMonth && (
-                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+                  <Line
+                    type="monotone"
+                    dataKey="selectedMonth"
+                    stroke={lineColors.selectedMonth}
+                    name="Selected Month"
+                  />
                 )}
                 {selectedYear && (
-                  <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
+                  <Line
+                    type="monotone"
+                    dataKey="selectedYear"
+                    stroke={lineColors.selectedYear}
+                    name="Selected Year"
+                  />
                 )}
               </LineChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {statuses.map(status => (
+              {statuses.map((status) => (
                 <div
                   key={status}
-                  className={`p-2 rounded-lg text-center ${statusColors[status.replace(" ", "")]}`}
+                  className={`p-2 rounded-lg text-center ${
+                    statusColors[status.replace(" ", "")]
+                  }`}
                 >
                   <span className="text-xs font-medium">
                     {status === "TotalLeads"
                       ? "Total Leads"
-                      : status.replace("PriceTooHigh", "Price Too High").replace("PartNotAvailable", "Part Not Available").replace("NoResponse", "No Response")}
+                      : status
+                          .replace("PriceTooHigh", "Price Too High")
+                          .replace("PartNotAvailable", "Part Not Available")
+                          .replace("NoResponse", "No Response")}
                   </span>
                   <div className="text-md font-bold">
-                    {status === "TotalLeads" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
+                    {status === "TotalLeads"
+                      ? calculateTotal(statusComparison.currentMonth)
+                      : statusComparison.currentMonth?.[status] || 0}
                   </div>
                 </div>
               ))}
@@ -425,33 +708,64 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
   );
 };
 
-const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusComparison, amountTotals: initialAmountTotals }) => {
+const OrderDetailsModal = ({
+  isOpen,
+  onClose,
+  statusComparison: initialStatusComparison,
+  amountTotals: initialAmountTotals,
+}) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [statusComparison, setStatusComparison] = useState(initialStatusComparison || { currentMonth: {}, previousMonth: {}, currentYear: {} });
-  const [amountTotals, setAmountTotals] = useState(initialAmountTotals || { today: 0, currentMonth: 0, currentYear: 0 });
-  const [orderCounts, setOrderCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
+  const [statusComparison, setStatusComparison] = useState(
+    initialStatusComparison || {
+      currentMonth: {},
+      previousMonth: {},
+      currentYear: {},
+    }
+  );
+  const [amountTotals, setAmountTotals] = useState(
+    initialAmountTotals || { today: 0, currentMonth: 0, currentYear: 0 }
+  );
+  const [orderCounts, setOrderCounts] = useState({
+    today: 0,
+    currentMonth: 0,
+    currentYear: 0,
+  });
   const [comparisonText, setComparisonText] = useState("");
-  const [comparisonMeta, setComparisonMeta] = useState({ direction: "", percentage: 0, difference: 0 });
+  const [comparisonMeta, setComparisonMeta] = useState({
+    direction: "",
+    percentage: 0,
+    difference: 0,
+  });
 
   const statusColors = {
-    LocatePending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    POPending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    POSent: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    POConfirmed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    VendorPaymentPending: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    VendorPaymentConfirmed: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
-    ShippingPending: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-    ShipOut: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+    LocatePending:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    POPending:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    POSent:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    POConfirmed:
+      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    VendorPaymentPending:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    VendorPaymentConfirmed:
+      "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+    ShippingPending:
+      "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+    ShipOut:
+      "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
     Intransit: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
     Delivered: "bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200",
     Replacement: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     Litigation: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
-    ReplacementCancelled: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
-    TotalOrders: "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
+    ReplacementCancelled:
+      "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+    TotalOrders:
+      "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
   };
 
   const lineColors = {
@@ -487,11 +801,17 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
   const calculateComparison = (current, selected, period) => {
     const selectedValue = calculateTotal(selected);
     if (selectedValue === 0) {
-      return { direction: "", percentage: 0, difference: 0, text: `No data available for the selected ${period}.` };
+      return {
+        direction: "",
+        percentage: 0,
+        difference: 0,
+        text: `No data available for the selected ${period}.`,
+      };
     }
     const currentValue = calculateTotal(current);
     const difference = currentValue - selectedValue;
-    const percentage = selectedValue !== 0 ? ((difference / selectedValue) * 100).toFixed(2) : 0;
+    const percentage =
+      selectedValue !== 0 ? ((difference / selectedValue) * 100).toFixed(2) : 0;
     const direction = difference >= 0 ? "increased" : "decreased";
     const absDifference = Math.abs(difference);
     const comparePeriod = period === "year" ? "current year" : "current month";
@@ -499,7 +819,9 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
       direction,
       percentage: Math.abs(percentage),
       difference: absDifference,
-      text: `Total orders ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} total orders = ${selectedValue}, ${comparePeriod} total orders = ${currentValue}`,
+      text: `Total orders ${direction} by ${Math.abs(
+        percentage
+      )}% (${absDifference}) compared to selected ${period}. Selected ${period} total orders = ${selectedValue}, ${comparePeriod} total orders = ${currentValue}`,
     };
   };
 
@@ -511,9 +833,17 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
         const [statusRes, amountRes, countsRes] = await Promise.all([
-          fetch(`http://localhost:3000/Admin/getOrderStatusComparison${queryString}`, { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getOrderAmountTotals${queryString}`, { credentials: "include" }),
-          fetch(`http://localhost:3000/Admin/getOrderCounts${queryString}`, { credentials: "include" }),
+          fetch(
+            `http://localhost:3000/Admin/getOrderStatusComparison${queryString}`,
+            { credentials: "include" }
+          ),
+          fetch(
+            `http://localhost:3000/Admin/getOrderAmountTotals${queryString}`,
+            { credentials: "include" }
+          ),
+          fetch(`http://localhost:3000/Admin/getOrderCounts${queryString}`, {
+            credentials: "include",
+          }),
         ]);
         if (!statusRes.ok || !amountRes.ok || !countsRes.ok) {
           throw new Error("Failed to fetch order data");
@@ -526,15 +856,27 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
         setStatusComparison(statusData);
         setAmountTotals(amountData);
         setOrderCounts(countsData);
-        
+
         // Calculate comparison text
         const comparison = selectedMonth
-        ? calculateComparison(statusData.currentMonth, statusData.selectedMonth, "month")
-        : selectedYear
-        ? calculateComparison(statusData.currentYear, statusData.selectedYear, "year")
-        : { direction: "", percentage: 0, difference: 0, text: "" };
-      setComparisonText(comparison.text);
-      setComparisonMeta({ direction: comparison.direction, percentage: comparison.percentage, difference: comparison.difference });
+          ? calculateComparison(
+              statusData.currentMonth,
+              statusData.selectedMonth,
+              "month"
+            )
+          : selectedYear
+          ? calculateComparison(
+              statusData.currentYear,
+              statusData.selectedYear,
+              "year"
+            )
+          : { direction: "", percentage: 0, difference: 0, text: "" };
+        setComparisonText(comparison.text);
+        setComparisonMeta({
+          direction: comparison.direction,
+          percentage: comparison.percentage,
+          difference: comparison.difference,
+        });
       } catch (error) {
         console.error("Error fetching order data:", error);
       }
@@ -543,13 +885,43 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
-  const chartData = statuses.map(status => ({
-    status: status === "TotalOrders" ? "Total Orders" : status.replace(/([A-Z])/g, " $1").trim(),
-    currentMonth: status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0,
-    previousMonth: status === "TotalOrders" ? calculateTotal(statusComparison.previousMonth) : statusComparison.previousMonth?.[status] || 0,
-    ...(selectedMonth && statusComparison.selectedMonth ? { selectedMonth: status === "TotalOrders" ? calculateTotal(statusComparison.selectedMonth) : statusComparison.selectedMonth[status] || 0 } : {}),
-    ...(selectedYear && statusComparison.selectedYear ? { selectedYear: status === "TotalOrders" ? calculateTotal(statusComparison.selectedYear) : statusComparison.selectedYear[status] || 0 } : {}),
-    ...(selectedYear && statusComparison.currentYear ? { currentYear: status === "TotalOrders" ? calculateTotal(statusComparison.currentYear) : statusComparison.currentYear[status] || 0 } : {}),
+  const chartData = statuses.map((status) => ({
+    status:
+      status === "TotalOrders"
+        ? "Total Orders"
+        : status.replace(/([A-Z])/g, " $1").trim(),
+    currentMonth:
+      status === "TotalOrders"
+        ? calculateTotal(statusComparison.currentMonth)
+        : statusComparison.currentMonth?.[status] || 0,
+    previousMonth:
+      status === "TotalOrders"
+        ? calculateTotal(statusComparison.previousMonth)
+        : statusComparison.previousMonth?.[status] || 0,
+    ...(selectedMonth && statusComparison.selectedMonth
+      ? {
+          selectedMonth:
+            status === "TotalOrders"
+              ? calculateTotal(statusComparison.selectedMonth)
+              : statusComparison.selectedMonth[status] || 0,
+        }
+      : {}),
+    ...(selectedYear && statusComparison.selectedYear
+      ? {
+          selectedYear:
+            status === "TotalOrders"
+              ? calculateTotal(statusComparison.selectedYear)
+              : statusComparison.selectedYear[status] || 0,
+        }
+      : {}),
+    ...(selectedYear && statusComparison.currentYear
+      ? {
+          currentYear:
+            status === "TotalOrders"
+              ? calculateTotal(statusComparison.currentYear)
+              : statusComparison.currentYear[status] || 0,
+        }
+      : {}),
   }));
 
   const generateMonthOptions = () => {
@@ -557,8 +929,13 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+      const value = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+      const label = date.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
       options.push({ value, label });
     }
     return options;
@@ -587,90 +964,152 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Details</h3>
+        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+          Order Details
+        </h3>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.today || 0}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Today's Order Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {orderCounts.today || 0}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's Order Amount</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.today || 0).toFixed(2)}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Today's Order Amount
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                ${(amountTotals.today || 0).toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Order Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.currentMonth || 0}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Month Order Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {orderCounts.currentMonth || 0}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month Order Amount</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.currentMonth || 0).toFixed(2)}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Month Order Amount
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                ${(amountTotals.currentMonth || 0).toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year Order Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.currentYear || 0}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Year Order Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {orderCounts.currentYear || 0}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Year Order Amount</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.currentYear || 0).toFixed(2)}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Year Order Amount
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                ${(amountTotals.currentYear || 0).toFixed(2)}
+              </span>
             </div>
             {selectedMonth && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Order Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.selectedMonth || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Month Order Count
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {orderCounts.selectedMonth || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month Order Amount</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedMonth || 0).toFixed(2)}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Month Order Amount
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    ${(amountTotals.selectedMonth || 0).toFixed(2)}
+                  </span>
                 </div>
               </>
             )}
             {selectedYear && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Order Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{orderCounts.selectedYear || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Year Order Count
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {orderCounts.selectedYear || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year Order Amount</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(amountTotals.selectedYear || 0).toFixed(2)}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Year Order Amount
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    ${(amountTotals.selectedYear || 0).toFixed(2)}
+                  </span>
                 </div>
               </>
             )}
           </div>
           {comparisonText && (
-  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
-    <div className="flex items-start gap-2">
-      <div className="flex-shrink-0">
-        {comparisonMeta.direction === "increased" ? (
-          <ArrowUpIcon className="w-5 h-5 text-green-500" />
-        ) : (
-          <ArrowDownIcon className="w-5 h-5 text-red-500" />
-        )}
-      </div>
-      <div>
-        <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Order Comparison</h5>
-        <p className="text-xs text-gray-600 dark:text-gray-300">
-          {comparisonMeta.direction === "increased" ? (
-            <span>
-              Total orders <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
-              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
-            </span>
-          ) : (
-            <span>
-              Total orders <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
-              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
-            </span>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0">
+                  {comparisonMeta.direction === "increased" ? (
+                    <ArrowUpIcon className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <ArrowDownIcon className="w-5 h-5 text-red-500" />
+                  )}
+                </div>
+                <div>
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Order Comparison
+                  </h5>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    {comparisonMeta.direction === "increased" ? (
+                      <span>
+                        Total orders{" "}
+                        <span className="font-bold text-green-600 dark:text-green-400">
+                          increased
+                        </span>{" "}
+                        by{" "}
+                        <span className="font-bold">
+                          {comparisonMeta.percentage}%
+                        </span>{" "}
+                        ({comparisonMeta.difference}).
+                      </span>
+                    ) : (
+                      <span>
+                        Total orders{" "}
+                        <span className="font-bold text-red-600 dark:text-red-400">
+                          decreased
+                        </span>{" "}
+                        by{" "}
+                        <span className="font-bold">
+                          {comparisonMeta.percentage}%
+                        </span>{" "}
+                        ({comparisonMeta.difference}).
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    {comparisonText}
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText}</p>
-      </div>
-    </div>
-  </div>
-)}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Order Status Comparison</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Order Status Comparison
+            </h4>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <select
                 className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
@@ -682,7 +1121,9 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
               >
                 <option value="">Select Month to Compare</option>
                 {generateMonthOptions().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
               <select
@@ -695,39 +1136,83 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
               >
                 <option value="">Select Year to Compare</option>
                 {generateYearOptions().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
-                <XAxis dataKey="status" stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
-                <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={theme === "dark" ? "#4B5563" : "#E5E7EB"}
+                />
+                <XAxis
+                  dataKey="status"
+                  stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis
+                  stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
+                  tick={{ fontSize: 12 }}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                    color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                    fontSize: '12px',
+                    backgroundColor: theme === "dark" ? "#1F2937" : "#FFFFFF",
+                    border: `1px solid ${
+                      theme === "dark" ? "#4B5563" : "#E5E7EB"
+                    }`,
+                    color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                    fontSize: "12px",
                   }}
                 />
-                <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="currentMonth" stroke={lineColors.currentMonth} name="Current Month" />
-                <Line type="monotone" dataKey="previousMonth" stroke={lineColors.previousMonth} name="Previous Month" />
+                <Legend
+                  wrapperStyle={{
+                    color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                    fontSize: "12px",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="currentMonth"
+                  stroke={lineColors.currentMonth}
+                  name="Current Month"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="previousMonth"
+                  stroke={lineColors.previousMonth}
+                  name="Previous Month"
+                />
                 {selectedMonth && (
-                  <Line type="monotone" dataKey="selectedMonth" stroke={lineColors.selectedMonth} name="Selected Month" />
+                  <Line
+                    type="monotone"
+                    dataKey="selectedMonth"
+                    stroke={lineColors.selectedMonth}
+                    name="Selected Month"
+                  />
                 )}
                 {selectedYear && (
                   <>
-                    <Line type="monotone" dataKey="selectedYear" stroke={lineColors.selectedYear} name="Selected Year" />
-                    <Line type="monotone" dataKey="currentYear" stroke={lineColors.currentYear} name="Current Year" />
+                    <Line
+                      type="monotone"
+                      dataKey="selectedYear"
+                      stroke={lineColors.selectedYear}
+                      name="Selected Year"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="currentYear"
+                      stroke={lineColors.currentYear}
+                      name="Current Year"
+                    />
                   </>
                 )}
               </LineChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {statuses.map(status => (
+              {statuses.map((status) => (
                 <div
                   key={status}
                   className={`p-2 rounded-lg text-center ${statusColors[status]}`}
@@ -738,7 +1223,9 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
                       : status.replace(/([A-Z])/g, " $1").trim()}
                   </span>
                   <div className="text-md font-bold">
-                    {status === "TotalOrders" ? calculateTotal(statusComparison.currentMonth) : statusComparison.currentMonth?.[status] || 0}
+                    {status === "TotalOrders"
+                      ? calculateTotal(statusComparison.currentMonth)
+                      : statusComparison.currentMonth?.[status] || 0}
                   </div>
                 </div>
               ))}
@@ -758,24 +1245,39 @@ const OrderDetailsModal = ({ isOpen, onClose, statusComparison: initialStatusCom
   );
 };
 
-
-
-const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals: initialPoSentCountsAndTotals }) => {
+const PoSentDetailsModal = ({
+  isOpen,
+  onClose,
+  poSentCountsAndTotals: initialPoSentCountsAndTotals,
+}) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState(initialPoSentCountsAndTotals || { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
+  const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState(
+    initialPoSentCountsAndTotals || {
+      today: { count: 0, totalAmount: 0 },
+      currentMonth: { count: 0, totalAmount: 0 },
+    }
+  );
   const [comparisonText, setComparisonText] = useState("");
-  const [comparisonMeta, setComparisonMeta] = useState({ direction: "", percentage: 0, difference: 0 });
+  const [comparisonMeta, setComparisonMeta] = useState({
+    direction: "",
+    percentage: 0,
+    difference: 0,
+  });
 
-  console.log("PoSentDetailsModal - poSentCountsAndTotals:", poSentCountsAndTotals);
+  console.log(
+    "PoSentDetailsModal - poSentCountsAndTotals:",
+    poSentCountsAndTotals
+  );
 
   const calculateComparison = (current, selected, period) => {
     const currentValue = current?.count || 0;
     const selectedValue = selected?.count || 0;
-    if (selectedValue === 0) return { direction: "", percentage: 0, difference: 0, text: "" };
+    if (selectedValue === 0)
+      return { direction: "", percentage: 0, difference: 0, text: "" };
     const difference = currentValue - selectedValue;
     const percentage = ((difference / selectedValue) * 100).toFixed(2);
     const direction = difference >= 0 ? "increased" : "decreased";
@@ -785,7 +1287,9 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals: initialPoS
       direction,
       percentage: Math.abs(percentage),
       difference: absDifference,
-      text: `PO sent count ${direction} by ${Math.abs(percentage)}% (${absDifference}) compared to selected ${period}. Selected ${period} PO sent count=${selectedValue}, ${comparePeriod} PO sent count=${currentValue}`,
+      text: `PO sent count ${direction} by ${Math.abs(
+        percentage
+      )}% (${absDifference}) compared to selected ${period}. Selected ${period} PO sent count=${selectedValue}, ${comparePeriod} PO sent count=${currentValue}`,
     };
   };
   useEffect(() => {
@@ -795,19 +1299,26 @@ const PoSentDetailsModal = ({ isOpen, onClose, poSentCountsAndTotals: initialPoS
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
-        const res = await fetch(`http://localhost:3000/Admin/getPoSentCountsAndTotals${queryString}`, { credentials: "include" });
+        const res = await fetch(
+          `http://localhost:3000/Admin/getPoSentCountsAndTotals${queryString}`,
+          { credentials: "include" }
+        );
         if (!res.ok) throw new Error("Failed to fetch PO sent data");
         const data = await res.json();
         setPoSentCountsAndTotals(data);
 
         // Calculate comparison text
         const comparison = selectedMonth
-  ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
-  : selectedYear
-  ? calculateComparison(data.currentMonth, data.selectedYear, "year")
-  : { direction: "", percentage: 0, difference: 0, text: "" };
-setComparisonText(comparison.text);
-setComparisonMeta({ direction: comparison.direction, percentage: comparison.percentage, difference: comparison.difference });
+          ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
+          : selectedYear
+          ? calculateComparison(data.currentMonth, data.selectedYear, "year")
+          : { direction: "", percentage: 0, difference: 0, text: "" };
+        setComparisonText(comparison.text);
+        setComparisonMeta({
+          direction: comparison.direction,
+          percentage: comparison.percentage,
+          difference: comparison.difference,
+        });
       } catch (error) {
         console.error("Error fetching PO sent data:", error);
       }
@@ -821,8 +1332,13 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+      const value = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+      const label = date.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
       options.push({ value, label });
     }
     return options;
@@ -851,80 +1367,141 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">PO Sent Details</h3>
+        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+          PO Sent Details
+        </h3>
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's PO Sent Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.today?.count || 0}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Today's PO Sent Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {poSentCountsAndTotals.today?.count || 0}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Today's PO Sent Total</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Today's PO Sent Total
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                ${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month PO Sent Count</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.currentMonth?.count || 0}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Month PO Sent Count
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {poSentCountsAndTotals.currentMonth?.count || 0}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">Current Month PO Sent Total</span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.currentMonth?.totalAmount || 0).toFixed(2)}</span>
+              <span className="text-gray-600 dark:text-gray-300 text-xs">
+                Current Month PO Sent Total
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                $
+                {(poSentCountsAndTotals.currentMonth?.totalAmount || 0).toFixed(
+                  2
+                )}
+              </span>
             </div>
             {selectedMonth && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month PO Sent Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.selectedMonth?.count || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Month PO Sent Count
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.selectedMonth?.count || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Month PO Sent Total</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.selectedMonth?.totalAmount || 0).toFixed(2)}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Month PO Sent Total
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    $
+                    {(
+                      poSentCountsAndTotals.selectedMonth?.totalAmount || 0
+                    ).toFixed(2)}
+                  </span>
                 </div>
               </>
             )}
             {selectedYear && (
               <>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year PO Sent Count</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{poSentCountsAndTotals.selectedYear?.count || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Year PO Sent Count
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.selectedYear?.count || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">Selected Year PO Sent Total</span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${(poSentCountsAndTotals.selectedYear?.totalAmount || 0).toFixed(2)}</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">
+                    Selected Year PO Sent Total
+                  </span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    $
+                    {(
+                      poSentCountsAndTotals.selectedYear?.totalAmount || 0
+                    ).toFixed(2)}
+                  </span>
                 </div>
               </>
             )}
           </div>
           {comparisonText && (
-  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
-    <div className="flex items-start gap-2">
-      <div className="flex-shrink-0">
-        {comparisonMeta.direction === "increased" ? (
-          <ArrowUpIcon className="w-5 h-5 text-green-500" />
-        ) : (
-          <ArrowDownIcon className="w-5 h-5 text-red-500" />
-        )}
-      </div>
-      <div>
-        <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">PO Sent Comparison</h5>
-        <p className="text-xs text-gray-600 dark:text-gray-300">
-          {comparisonMeta.direction === "increased" ? (
-            <span>
-              PO sent count <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
-              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
-            </span>
-          ) : (
-            <span>
-              PO sent count <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
-              <span className="font-bold">{comparisonMeta.percentage}%</span> ({comparisonMeta.difference}).
-            </span>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0">
+                  {comparisonMeta.direction === "increased" ? (
+                    <ArrowUpIcon className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <ArrowDownIcon className="w-5 h-5 text-red-500" />
+                  )}
+                </div>
+                <div>
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    PO Sent Comparison
+                  </h5>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    {comparisonMeta.direction === "increased" ? (
+                      <span>
+                        PO sent count{" "}
+                        <span className="font-bold text-green-600 dark:text-green-400">
+                          increased
+                        </span>{" "}
+                        by{" "}
+                        <span className="font-bold">
+                          {comparisonMeta.percentage}%
+                        </span>{" "}
+                        ({comparisonMeta.difference}).
+                      </span>
+                    ) : (
+                      <span>
+                        PO sent count{" "}
+                        <span className="font-bold text-red-600 dark:text-red-400">
+                          decreased
+                        </span>{" "}
+                        by{" "}
+                        <span className="font-bold">
+                          {comparisonMeta.percentage}%
+                        </span>{" "}
+                        ({comparisonMeta.difference}).
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    {comparisonText}
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText}</p>
-      </div>
-    </div>
-  </div>
-)}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <select
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
@@ -936,7 +1513,9 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
             >
               <option value="">Select Month to Compare</option>
               {generateMonthOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </select>
             <select
@@ -949,7 +1528,9 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
             >
               <option value="">Select Year to Compare</option>
               {generateYearOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </select>
           </div>
@@ -967,22 +1548,36 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
   );
 };
 
-const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics: initialDeliveredMetrics }) => {
+const DeliveredDetailsModal = ({
+  isOpen,
+  onClose,
+  deliveredMetrics: initialDeliveredMetrics,
+}) => {
   if (!isOpen) return null;
 
   const { theme } = useTheme();
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [deliveredMetrics, setDeliveredMetrics] = useState(initialDeliveredMetrics || { today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
+  const [deliveredMetrics, setDeliveredMetrics] = useState(
+    initialDeliveredMetrics || {
+      today: { count: 0, revenue: 0, profit: 0 },
+      currentMonth: { count: 0, revenue: 0, profit: 0 },
+    }
+  );
   const [comparisonText, setComparisonText] = useState("");
-  const [comparisonMeta, setComparisonMeta] = useState({ direction: "", percentage: 0, difference: 0 });
+  const [comparisonMeta, setComparisonMeta] = useState({
+    direction: "",
+    percentage: 0,
+    difference: 0,
+  });
 
   console.log("DeliveredDetailsModal - deliveredMetrics:", deliveredMetrics);
 
   const calculateComparison = (current, selected, period) => {
     const currentValue = current?.profit || 0;
     const selectedValue = selected?.profit || 0;
-    if (selectedValue === 0) return { direction: "", percentage: 0, difference: 0, text: "" };
+    if (selectedValue === 0)
+      return { direction: "", percentage: 0, difference: 0, text: "" };
     const difference = currentValue - selectedValue;
     const percentage = ((difference / selectedValue) * 100).toFixed(2);
     const direction = difference >= 0 ? "increased" : "decreased";
@@ -992,7 +1587,13 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics: initialDeliv
       direction,
       percentage: Math.abs(percentage),
       difference: absDifference,
-      text: `Profit ${direction} by ${Math.abs(percentage)}% ($${absDifference.toFixed(2)}) compared to selected ${period}. Selected ${period} profit=$${selectedValue.toFixed(2)}, ${comparePeriod} profit=$${currentValue.toFixed(2)}`,
+      text: `Profit ${direction} by ${Math.abs(
+        percentage
+      )}% ($${absDifference.toFixed(
+        2
+      )}) compared to selected ${period}. Selected ${period} profit=$${selectedValue.toFixed(
+        2
+      )}, ${comparePeriod} profit=$${currentValue.toFixed(2)}`,
     };
   };
 
@@ -1003,19 +1604,26 @@ const DeliveredDetailsModal = ({ isOpen, onClose, deliveredMetrics: initialDeliv
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
-        const res = await fetch(`http://localhost:3000/Admin/getDeliveredMetrics${queryString}`, { credentials: "include" });
+        const res = await fetch(
+          `http://localhost:3000/Admin/getDeliveredMetrics${queryString}`,
+          { credentials: "include" }
+        );
         if (!res.ok) throw new Error("Failed to fetch delivered metrics");
         const data = await res.json();
         setDeliveredMetrics(data);
 
         // Calculate comparison text
         const comparison = selectedMonth
-  ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
-  : selectedYear
-  ? calculateComparison(data.currentMonth, data.selectedYear, "year")
-  : { direction: "", percentage: 0, difference: 0, text: "" };
-setComparisonText(comparison.text);
-setComparisonMeta({ direction: comparison.direction, percentage: comparison.percentage, difference: comparison.difference });
+          ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
+          : selectedYear
+          ? calculateComparison(data.currentMonth, data.selectedYear, "year")
+          : { direction: "", percentage: 0, difference: 0, text: "" };
+        setComparisonText(comparison.text);
+        setComparisonMeta({
+          direction: comparison.direction,
+          percentage: comparison.percentage,
+          difference: comparison.difference,
+        });
       } catch (error) {
         console.error("Error fetching delivered metrics:", error);
       }
@@ -1029,8 +1637,13 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = date.toLocaleString("default", { month: "long", year: "numeric" });
+      const value = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+      const label = date.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
       options.push({ value, label });
     }
     return options;
@@ -1047,17 +1660,33 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
   };
 
   const periods = [
-    { name: 'Today', data: deliveredMetrics.today },
-    { name: 'Current Month', data: deliveredMetrics.currentMonth },
-    ...(selectedMonth ? [{ name: 'Selected Month', data: deliveredMetrics.selectedMonth }] : []),
-    ...(selectedYear ? [{ name: 'Selected Year', data: deliveredMetrics.selectedYear }] : []),
+    { name: "Today", data: deliveredMetrics.today },
+    { name: "Current Month", data: deliveredMetrics.currentMonth },
+    ...(selectedMonth
+      ? [{ name: "Selected Month", data: deliveredMetrics.selectedMonth }]
+      : []),
+    ...(selectedYear
+      ? [{ name: "Selected Year", data: deliveredMetrics.selectedYear }]
+      : []),
   ];
 
-  const COLORS = ['#00C49F', '#FF8042'];
+  const COLORS = ["#00C49F", "#FF8042"];
 
   const renderActiveShape = (props) => {
     const RADIAN = Math.PI / 180;
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const {
+      cx,
+      cy,
+      midAngle,
+      innerRadius,
+      outerRadius,
+      startAngle,
+      endAngle,
+      fill,
+      payload,
+      percent,
+      value,
+    } = props;
     const sin = Math.sin(-RADIAN * midAngle);
     const cos = Math.cos(-RADIAN * midAngle);
     const sx = cx + (outerRadius + 10) * cos;
@@ -1066,11 +1695,18 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
     const my = cy + (outerRadius + 30) * sin;
     const ex = mx + (cos >= 0 ? 1 : -1) * 22;
     const ey = my;
-    const textAnchor = cos >= 0 ? 'start' : 'end';
+    const textAnchor = cos >= 0 ? "start" : "end";
 
     return (
       <g>
-        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} fontSize={16}>
+        <text
+          x={cx}
+          y={cy}
+          dy={8}
+          textAnchor="middle"
+          fill={fill}
+          fontSize={16}
+        >
           {payload.name}
         </text>
         <Sector
@@ -1091,10 +1727,25 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
           outerRadius={outerRadius + 10}
           fill={fill}
         />
-        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+        <path
+          d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+          stroke={fill}
+          fill="none"
+        />
         <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333">{`$${value.toFixed(2)}`}</text>
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999">
+        <text
+          x={ex + (cos >= 0 ? 1 : -1) * 12}
+          y={ey}
+          textAnchor={textAnchor}
+          fill="#333"
+        >{`$${value.toFixed(2)}`}</text>
+        <text
+          x={ex + (cos >= 0 ? 1 : -1) * 12}
+          y={ey}
+          dy={18}
+          textAnchor={textAnchor}
+          fill="#999"
+        >
           {`(Rate ${(percent * 100).toFixed(2)}%)`}
         </text>
       </g>
@@ -1123,8 +1774,18 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             onClick={onClose}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -1140,7 +1801,9 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
             >
               <option value="">Select Month to Compare</option>
               {generateMonthOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </select>
             <select
@@ -1153,71 +1816,110 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
             >
               <option value="">Select Year to Compare</option>
               {generateYearOptions().map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </select>
           </div>
           {comparisonText && (
-  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
-    <div className="flex items-start gap-2">
-      <div className="flex-shrink-0">
-        {comparisonMeta.direction === "increased" ? (
-          <ArrowUpIcon className="w-5 h-5 text-green-500" />
-        ) : (
-          <ArrowDownIcon className="w-5 h-5 text-red-500" />
-        )}
-      </div>
-      <div>
-        <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Profit Comparison</h5>
-        <p className="text-xs text-gray-600 dark:text-gray-300">
-          {comparisonMeta.direction === "increased" ? (
-            <span>
-              Profit <span className="font-bold text-green-600 dark:text-green-400">increased</span> by{" "}
-              <span className="font-bold">{comparisonMeta.percentage}%</span> (${comparisonMeta.difference.toFixed(2)}).
-            </span>
-          ) : (
-            <span>
-              Profit <span className="font-bold text-red-600 dark:text-red-400">decreased</span> by{" "}
-              <span className="font-bold">{comparisonMeta.percentage}%</span> (${comparisonMeta.difference.toFixed(2)}).
-            </span>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0">
+                  {comparisonMeta.direction === "increased" ? (
+                    <ArrowUpIcon className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <ArrowDownIcon className="w-5 h-5 text-red-500" />
+                  )}
+                </div>
+                <div>
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Profit Comparison
+                  </h5>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    {comparisonMeta.direction === "increased" ? (
+                      <span>
+                        Profit{" "}
+                        <span className="font-bold text-green-600 dark:text-green-400">
+                          increased
+                        </span>{" "}
+                        by{" "}
+                        <span className="font-bold">
+                          {comparisonMeta.percentage}%
+                        </span>{" "}
+                        (${comparisonMeta.difference.toFixed(2)}).
+                      </span>
+                    ) : (
+                      <span>
+                        Profit{" "}
+                        <span className="font-bold text-red-600 dark:text-red-400">
+                          decreased
+                        </span>{" "}
+                        by{" "}
+                        <span className="font-bold">
+                          {comparisonMeta.percentage}%
+                        </span>{" "}
+                        (${comparisonMeta.difference.toFixed(2)}).
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    {comparisonText}
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{comparisonText}</p>
-      </div>
-    </div>
-  </div>
-)}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {periods.map((period, index) => (
-              <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <div
+                key={index}
+                className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4"
+              >
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-green-500" />
                   {period.name}
                 </h4>
                 <div className="text-xs text-gray-600 dark:text-gray-300">
-                  Count: <span className="font-bold text-blue-600 dark:text-blue-400">{period.data?.count || 0}</span>
+                  Count:{" "}
+                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                    {period.data?.count || 0}
+                  </span>
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-300">
-                  Revenue: <span className="font-bold text-green-600 dark:text-green-400">${(period.data?.revenue || 0).toFixed(2)}</span>
+                  Revenue:{" "}
+                  <span className="font-bold text-green-600 dark:text-green-400">
+                    ${(period.data?.revenue || 0).toFixed(2)}
+                  </span>
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-300">
-                  Profit: <span className="font-bold text-purple-600 dark:text-purple-400">${(period.data?.profit || 0).toFixed(2)}</span>
+                  Profit:{" "}
+                  <span className="font-bold text-purple-600 dark:text-purple-400">
+                    ${(period.data?.profit || 0).toFixed(2)}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Revenue vs Profit Comparison</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Revenue vs Profit Comparison
+            </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {periods.map((period, index) => {
                 const pieData = [
-                  { name: 'Revenue', value: period.data?.revenue || 0 },
-                  { name: 'Profit', value: period.data?.profit || 0 },
+                  { name: "Revenue", value: period.data?.revenue || 0 },
+                  { name: "Profit", value: period.data?.profit || 0 },
                 ];
 
                 return (
-                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">{period.name}</h5>
+                  <div
+                    key={index}
+                    className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4"
+                  >
+                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">
+                      {period.name}
+                    </h5>
                     <ResponsiveContainer width="100%" height={250}>
                       <PieChart>
                         <Pie
@@ -1232,7 +1934,10 @@ setComparisonMeta({ direction: comparison.direction, percentage: comparison.perc
                           dataKey="value"
                         >
                           {pieData.map((entry, i) => (
-                            <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                            <Cell
+                              key={`cell-${i}`}
+                              fill={COLORS[i % COLORS.length]}
+                            />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -1272,16 +1977,39 @@ const Dashboard = () => {
   const [confirmUserName, setConfirmUserName] = useState("");
   const [isAccessLoading, setIsAccessLoading] = useState(false);
   const [showLeadDetailsModal, setShowLeadDetailsModal] = useState(false);
-  const [leadCreationCounts, setLeadCreationCounts] = useState({ createdByUser: 0, assignedAutomatically: 0 });
-  const [statusComparison, setStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
+  const [leadCreationCounts, setLeadCreationCounts] = useState({
+    createdByUser: 0,
+    assignedAutomatically: 0,
+  });
+  const [statusComparison, setStatusComparison] = useState({
+    currentMonth: {},
+    previousMonth: {},
+  });
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
-  const [orderStatusComparison, setOrderStatusComparison] = useState({ currentMonth: {}, previousMonth: {} });
-  const [orderAmountTotals, setOrderAmountTotals] = useState({ today: 0, currentMonth: 0 });
-  const [orderCounts, setOrderCounts] = useState({ today: 0, currentMonth: 0, currentYear: 0 });
-  const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState({ today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
+  const [orderStatusComparison, setOrderStatusComparison] = useState({
+    currentMonth: {},
+    previousMonth: {},
+  });
+  const [orderAmountTotals, setOrderAmountTotals] = useState({
+    today: 0,
+    currentMonth: 0,
+  });
+  const [orderCounts, setOrderCounts] = useState({
+    today: 0,
+    currentMonth: 0,
+    currentYear: 0,
+  });
+  const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState({
+    today: { count: 0, totalAmount: 0 },
+    currentMonth: { count: 0, totalAmount: 0 },
+  });
   const [showPoSentDetailsModal, setShowPoSentDetailsModal] = useState(false);
-  const [deliveredMetrics, setDeliveredMetrics] = useState({ today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
-  const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] = useState(false);
+  const [deliveredMetrics, setDeliveredMetrics] = useState({
+    today: { count: 0, revenue: 0, profit: 0 },
+    currentMonth: { count: 0, revenue: 0, profit: 0 },
+  });
+  const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] =
+    useState(false);
   const [totalOrders, setTotalOrders] = useState(0);
 
   const statusIcons = {
@@ -1359,10 +2087,19 @@ const Dashboard = () => {
     return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
   };
 
-  const chartData = statuses.map(status => ({
-    status: status === "TotalOrders" ? "Total Orders" : status.replace(/([A-Z])/g, " $1").trim(),
-    currentMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.currentMonth) : orderStatusComparison.currentMonth?.[status] || 0,
-    previousMonth: status === "TotalOrders" ? calculateTotal(orderStatusComparison.previousMonth) : orderStatusComparison.previousMonth?.[status] || 0,
+  const chartData = statuses.map((status) => ({
+    status:
+      status === "TotalOrders"
+        ? "Total Orders"
+        : status.replace(/([A-Z])/g, " $1").trim(),
+    currentMonth:
+      status === "TotalOrders"
+        ? calculateTotal(orderStatusComparison.currentMonth)
+        : orderStatusComparison.currentMonth?.[status] || 0,
+    previousMonth:
+      status === "TotalOrders"
+        ? calculateTotal(orderStatusComparison.previousMonth)
+        : orderStatusComparison.previousMonth?.[status] || 0,
   }));
 
   const getStatusCount = (status) => {
@@ -1416,52 +2153,98 @@ const Dashboard = () => {
           poSentCountsAndTotalsRes,
           deliveredMetricsRes,
         ] = await Promise.all([
-          fetch("http://localhost:3000/Admin/getleadcount", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getcountbystatus", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getallorders", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getmyteam", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getLeadCreationCounts", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getLeadCountsAndConversions", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getOrderStatusComparison", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getOrderAmountTotals", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getOrderCounts", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getPoSentCountsAndTotals", { credentials: "include" }),
-          fetch("http://localhost:3000/Admin/getDeliveredMetrics", { credentials: "include" }),
+          fetch("http://localhost:3000/Admin/getleadcount", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getcountbystatus", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getallorders", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getmyteam", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getLeadCreationCounts", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getLeadCountsAndConversions", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getOrderStatusComparison", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getOrderAmountTotals", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getOrderCounts", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getPoSentCountsAndTotals", {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3000/Admin/getDeliveredMetrics", {
+            credentials: "include",
+          }),
         ]);
-  
+
         const errors = [];
-        if (!leadRes.ok) errors.push(`Failed to fetch lead count: ${leadRes.status}`);
-        if (!statusRes.ok) errors.push(`Failed to fetch status counts: ${statusRes.status}`);
-        if (!ordersRes.ok) errors.push(`Failed to fetch orders: ${ordersRes.status}`);
-        if (!usersRes.ok) errors.push(`Failed to fetch team users: ${usersRes.status}`);
-        if (!creationCountsRes.ok) errors.push(`Failed to fetch lead creation counts: ${creationCountsRes.status}`);
-        if (!leadCountsAndConversionsRes.ok) errors.push(`Failed to fetch lead counts and conversions: ${leadCountsAndConversionsRes.status}`);
-        if (!orderStatusComparisonRes.ok) errors.push(`Failed to fetch order status comparison: ${orderStatusComparisonRes.status}`);
-        if (!orderAmountTotalsRes.ok) errors.push(`Failed to fetch order amount totals: ${orderAmountTotalsRes.status}`);
-        if (!orderCountsRes.ok) errors.push(`Failed to fetch order counts: ${orderCountsRes.status}`);
-        if (!poSentCountsAndTotalsRes.ok) errors.push(`Failed to fetch PO sent counts and totals: ${poSentCountsAndTotalsRes.status}`);
-        if (!deliveredMetricsRes.ok) errors.push(`Failed to fetch delivered metrics: ${deliveredMetricsRes.status}`);
-  
+        if (!leadRes.ok)
+          errors.push(`Failed to fetch lead count: ${leadRes.status}`);
+        if (!statusRes.ok)
+          errors.push(`Failed to fetch status counts: ${statusRes.status}`);
+        if (!ordersRes.ok)
+          errors.push(`Failed to fetch orders: ${ordersRes.status}`);
+        if (!usersRes.ok)
+          errors.push(`Failed to fetch team users: ${usersRes.status}`);
+        if (!creationCountsRes.ok)
+          errors.push(
+            `Failed to fetch lead creation counts: ${creationCountsRes.status}`
+          );
+        if (!leadCountsAndConversionsRes.ok)
+          errors.push(
+            `Failed to fetch lead counts and conversions: ${leadCountsAndConversionsRes.status}`
+          );
+        if (!orderStatusComparisonRes.ok)
+          errors.push(
+            `Failed to fetch order status comparison: ${orderStatusComparisonRes.status}`
+          );
+        if (!orderAmountTotalsRes.ok)
+          errors.push(
+            `Failed to fetch order amount totals: ${orderAmountTotalsRes.status}`
+          );
+        if (!orderCountsRes.ok)
+          errors.push(`Failed to fetch order counts: ${orderCountsRes.status}`);
+        if (!poSentCountsAndTotalsRes.ok)
+          errors.push(
+            `Failed to fetch PO sent counts and totals: ${poSentCountsAndTotalsRes.status}`
+          );
+        if (!deliveredMetricsRes.ok)
+          errors.push(
+            `Failed to fetch delivered metrics: ${deliveredMetricsRes.status}`
+          );
+
         if (errors.length) {
           console.error("Fetch errors:", errors);
-          errors.forEach(error => toast.error(error));
+          errors.forEach((error) => toast.error(error));
           return;
         }
-  
+
         const leadData = await leadRes.json();
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
         const usersData = await usersRes.json();
         const creationCountsData = await creationCountsRes.json();
-        const leadCountsAndConversionsData = await leadCountsAndConversionsRes.json();
+        const leadCountsAndConversionsData =
+          await leadCountsAndConversionsRes.json();
         const orderStatusComparisonData = await orderStatusComparisonRes.json();
         const orderAmountTotalsData = await orderAmountTotalsRes.json();
         const orderCountsData = await orderCountsRes.json();
         const poSentCountsAndTotalsData = await poSentCountsAndTotalsRes.json();
         const deliveredMetricsData = await deliveredMetricsRes.json();
-  
+
         console.log("Order Status Comparison Data:", orderStatusComparisonData);
-  
+
         setTotalClients(leadData.leadcount || 0);
         setCountbystatus(statusData || []);
         setOrders(ordersData || []);
@@ -1476,11 +2259,30 @@ const Dashboard = () => {
           createdByUser: creationCountsData.createdByUser || 0,
           assignedAutomatically: creationCountsData.assignedAutomatically || 0,
         });
-        setStatusComparison(leadCountsAndConversionsData.statusComparison || { currentMonth: {}, previousMonth: {} });
-        setOrderStatusComparison(orderStatusComparisonData || { currentMonth: {}, previousMonth: {} });
-        setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0 });
-        setPoSentCountsAndTotals(poSentCountsAndTotalsData || { today: { count: 0, totalAmount: 0 }, currentMonth: { count: 0, totalAmount: 0 } });
-        setDeliveredMetrics(deliveredMetricsData || { today: { count: 0, revenue: 0, profit: 0 }, currentMonth: { count: 0, revenue: 0, profit: 0 } });
+        setStatusComparison(
+          leadCountsAndConversionsData.statusComparison || {
+            currentMonth: {},
+            previousMonth: {},
+          }
+        );
+        setOrderStatusComparison(
+          orderStatusComparisonData || { currentMonth: {}, previousMonth: {} }
+        );
+        setOrderAmountTotals(
+          orderAmountTotalsData || { today: 0, currentMonth: 0 }
+        );
+        setPoSentCountsAndTotals(
+          poSentCountsAndTotalsData || {
+            today: { count: 0, totalAmount: 0 },
+            currentMonth: { count: 0, totalAmount: 0 },
+          }
+        );
+        setDeliveredMetrics(
+          deliveredMetricsData || {
+            today: { count: 0, revenue: 0, profit: 0 },
+            currentMonth: { count: 0, revenue: 0, profit: 0 },
+          }
+        );
       } catch (error) {
         console.error("Fetch data error:", error);
         toast.error(`Error fetching dashboard data: ${error.message}`);
@@ -1488,7 +2290,7 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, []);
 
@@ -1595,15 +2397,12 @@ const Dashboard = () => {
       } else if (action === "Grant Access" || action === "Revoke Access") {
         setIsAccessLoading(true);
         const newAccess = action === "Grant Access";
-        const res = await fetch(
-          `http://localhost:3000/User/${userId}/access`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ access: newAccess }),
-          }
-        );
+        const res = await fetch(`http://localhost:3000/User/${userId}/access`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ access: newAccess }),
+        });
 
         const data = await res.json();
         if (res.status === 403) {
@@ -1619,7 +2418,11 @@ const Dashboard = () => {
           return;
         }
         if (!res.ok) {
-          toast.error(`Failed to ${newAccess ? "grant" : "revoke"} access: ${data.message || "Unknown error"}`);
+          toast.error(
+            `Failed to ${newAccess ? "grant" : "revoke"} access: ${
+              data.message || "Unknown error"
+            }`
+          );
           return;
         }
 
@@ -1628,7 +2431,9 @@ const Dashboard = () => {
             user._id === userId ? { ...user, Access: newAccess } : user
           )
         );
-        toast.success(`Access ${newAccess ? "granted" : "revoked"} successfully`);
+        toast.success(
+          `Access ${newAccess ? "granted" : "revoked"} successfully`
+        );
       }
     } catch (error) {
       console.error(`Error performing action ${action}:`, error);
@@ -1649,9 +2454,12 @@ const Dashboard = () => {
   const currentOrders = orderStatusComparison.currentMonth?.TotalOrders || 0;
   const previousOrders = orderStatusComparison.previousMonth?.TotalOrders || 0;
   const orderDifference = Math.abs(currentOrders - previousOrders);
-  const percentageChange = previousOrders > 0
-    ? ((currentOrders - previousOrders) / previousOrders * 100).toFixed(2)
-    : currentOrders > 0 ? 100 : 0;
+  const percentageChange =
+    previousOrders > 0
+      ? (((currentOrders - previousOrders) / previousOrders) * 100).toFixed(2)
+      : currentOrders > 0
+      ? 100
+      : 0;
 
   if (loading) {
     return (
@@ -1672,28 +2480,69 @@ const Dashboard = () => {
           Admin Dashboard
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
-        {[
-  { title: 'Ordered', value: totalOrders, onClick: () => setShowOrderDetailsModal(true), icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
-  { title: 'Quoted', value: getStatusCount('Quoted'), onClick: null, icon: <DollarSign className="w-5 h-5 text-yellow-500" /> },
-  { title: 'Total Clients', value: totalClients, onClick: () => setShowLeadDetailsModal(true), icon: <Users className="w-5 h-5 text-blue-500" /> },
-  { title: "Today's Total Amount", value: `$${orderAmountTotals.today.toFixed(2)}`, onClick: null, icon: <DollarSign className="w-5 h-5 text-green-500" /> },
-  { title: "Today's PO Sent", value: poSentCountsAndTotals.today?.count || 0, onClick: () => setShowPoSentDetailsModal(true), icon: <Send className="w-5 h-5 text-orange-500" /> },
-  { title: "Today's PO Sent Total", value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`, onClick: () => setShowPoSentDetailsModal(true), icon: <DollarSign className="w-5 h-5 text-purple-500" /> },
-  { title: "Today's Delivered", value: deliveredMetrics.today?.count || 0, onClick: () => setShowDeliveredDetailsModal(true), icon: <Truck className="w-5 h-5 text-lime-500" /> },
-].map(({ title, value, onClick, icon }, index) => (
-  <motion.div
-    key={index}
-    className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
-    onClick={onClick}
-    initial={{ opacity: 0, y: 50 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay: index * 0.1 }}
-  >
-    <div className="mb-2">{icon}</div>
-    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">{title}</h3>
-    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{value}</span>
-  </motion.div>
-))}
+          {[
+            {
+              title: "Ordered",
+              value: totalOrders,
+              onClick: () => setShowOrderDetailsModal(true),
+              icon: <CheckCircle className="w-5 h-5 text-green-500" />,
+            },
+            {
+              title: "Quoted",
+              value: getStatusCount("Quoted"),
+              onClick: null,
+              icon: <DollarSign className="w-5 h-5 text-yellow-500" />,
+            },
+            {
+              title: "Total Clients",
+              value: totalClients,
+              onClick: () => setShowLeadDetailsModal(true),
+              icon: <Users className="w-5 h-5 text-blue-500" />,
+            },
+            {
+              title: "Today's Total Amount",
+              value: `$${orderAmountTotals.today.toFixed(2)}`,
+              onClick: null,
+              icon: <DollarSign className="w-5 h-5 text-green-500" />,
+            },
+            {
+              title: "Today's PO Sent",
+              value: poSentCountsAndTotals.today?.count || 0,
+              onClick: () => setShowPoSentDetailsModal(true),
+              icon: <Send className="w-5 h-5 text-orange-500" />,
+            },
+            {
+              title: "Today's PO Sent Total",
+              value: `$${(
+                poSentCountsAndTotals.today?.totalAmount || 0
+              ).toFixed(2)}`,
+              onClick: () => setShowPoSentDetailsModal(true),
+              icon: <DollarSign className="w-5 h-5 text-purple-500" />,
+            },
+            {
+              title: "Today's Delivered",
+              value: deliveredMetrics.today?.count || 0,
+              onClick: () => setShowDeliveredDetailsModal(true),
+              icon: <Truck className="w-5 h-5 text-lime-500" />,
+            },
+          ].map(({ title, value, onClick, icon }, index) => (
+            <motion.div
+              key={index}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
+              onClick={onClick}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <div className="mb-2">{icon}</div>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
+                {title}
+              </h3>
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                {value}
+              </span>
+            </motion.div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1710,27 +2559,40 @@ const Dashboard = () => {
             <div className="space-y-3">
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={theme === "dark" ? "#4B5563" : "#E5E7EB"}
+                  />
                   <XAxis
                     dataKey="status"
-                    stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'}
+                    stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
                     tick={{ fontSize: 12 }}
                     angle={-45}
                     textAnchor="end"
                     height={60}
                   />
-                  <YAxis stroke={theme === 'dark' ? '#D1D5DB' : '#4B5563'} tick={{ fontSize: 12 }} />
+                  <YAxis
+                    stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
+                    tick={{ fontSize: 12 }}
+                  />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-                      border: `1px solid ${theme === 'dark' ? '#4B5563' : '#E5E7EB'}`,
-                      color: theme === 'dark' ? '#D1D5DB' : '#1F2937',
-                      fontSize: '12px',
-                      borderRadius: '8px',
-                      padding: '10px',
+                      backgroundColor: theme === "dark" ? "#1F2937" : "#FFFFFF",
+                      border: `1px solid ${
+                        theme === "dark" ? "#4B5563" : "#E5E7EB"
+                      }`,
+                      color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                      fontSize: "12px",
+                      borderRadius: "8px",
+                      padding: "10px",
                     }}
                   />
-                  <Legend wrapperStyle={{ color: theme === 'dark' ? '#D1D5DB' : '#1F2937', fontSize: '12px' }} />
+                  <Legend
+                    wrapperStyle={{
+                      color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                      fontSize: "12px",
+                    }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="currentMonth"
@@ -1751,9 +2613,11 @@ const Dashboard = () => {
               </ResponsiveContainer>
               <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                 <p>
-                  Number of orders {currentOrders > previousOrders ? 'increased' : 'decreased'} by{' '}
-                  {Math.abs(percentageChange)}% ({orderDifference}) compared to previous month. Previous
-                  month orders: {previousOrders}, Current month orders: {currentOrders}
+                  Number of orders{" "}
+                  {currentOrders > previousOrders ? "increased" : "decreased"}{" "}
+                  by {Math.abs(percentageChange)}% ({orderDifference}) compared
+                  to previous month. Previous month orders: {previousOrders},
+                  Current month orders: {currentOrders}
                 </p>
               </div>
             </div>
@@ -1790,20 +2654,30 @@ const Dashboard = () => {
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-sm">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
-                      <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
-                      <p className="text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                        {user.name}
+                      </p>
+                      <p className="text-gray-600 dark:text-gray-300">
+                        {user.email}
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-400 capitalize">
+                        {user.role}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {statusIcons[user.status] || (
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">Unknown</span>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">
+                        Unknown
+                      </span>
                     )}
                     <div className="relative">
                       <button
                         className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
                         onClick={() =>
-                          setDropdownOpen(dropdownOpen === user._id ? null : user._id)
+                          setDropdownOpen(
+                            dropdownOpen === user._id ? null : user._id
+                          )
                         }
                       >
                         <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
@@ -1812,34 +2686,52 @@ const Dashboard = () => {
                         <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10 overflow-hidden">
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => showConfirmation(user.isPaused ? 'Resume' : 'Pause', user._id, user.name)}
+                            onClick={() =>
+                              showConfirmation(
+                                user.isPaused ? "Resume" : "Pause",
+                                user._id,
+                                user.name
+                              )
+                            }
                           >
-                            {user.isPaused ? 'Resume' : 'Pause'}
+                            {user.isPaused ? "Resume" : "Pause"}
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction('Reassign Leads', user._id)}
+                            onClick={() =>
+                              handleUserAction("Reassign Leads", user._id)
+                            }
                           >
                             Reassign Leads
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction('Change Role', user._id)}
+                            onClick={() =>
+                              handleUserAction("Change Role", user._id)
+                            }
                           >
                             Change Role
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => handleUserAction('Password', user._id)}
+                            onClick={() =>
+                              handleUserAction("Password", user._id)
+                            }
                           >
                             Reset Password
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => showConfirmation(user.Access ? 'Revoke Access' : 'Grant Access', user._id, user.name)}
+                            onClick={() =>
+                              showConfirmation(
+                                user.Access ? "Revoke Access" : "Grant Access",
+                                user._id,
+                                user.name
+                              )
+                            }
                             disabled={isAccessLoading}
                           >
-                            {user.Access ? 'Revoke Access' : 'Grant Access'}
+                            {user.Access ? "Revoke Access" : "Grant Access"}
                           </button>
                         </div>
                       )}
@@ -1865,26 +2757,34 @@ const Dashboard = () => {
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 50, opacity: 0 }}
               >
-                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Add New Member</h3>
+                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                  Add New Member
+                </h3>
                 <div className="space-y-3">
                   <input
                     type="text"
                     placeholder="Name"
                     className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                     value={newMember.name}
-                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewMember({ ...newMember, name: e.target.value })
+                    }
                   />
                   <input
                     type="email"
                     placeholder="Email"
                     className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                     value={newMember.email}
-                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                    onChange={(e) =>
+                      setNewMember({ ...newMember, email: e.target.value })
+                    }
                   />
                   <select
                     className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                     value={newMember.role}
-                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                    onChange={(e) =>
+                      setNewMember({ ...newMember, role: e.target.value })
+                    }
                   >
                     <option value="">Select Role</option>
                     <option value="admin">Admin</option>
@@ -1921,7 +2821,9 @@ const Dashboard = () => {
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 50, opacity: 0 }}
               >
-                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Reset Password</h3>
+                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                  Reset Password
+                </h3>
                 <input
                   type="password"
                   placeholder="New Password"
@@ -1943,26 +2845,26 @@ const Dashboard = () => {
                         const res = await fetch(
                           `http://localhost:3000/User/Resetpassword/${selectedUserId}`,
                           {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
                             body: JSON.stringify({ password: passwordInput }),
                           }
                         );
                         if (res.status === 403) {
-                          toast.error('Access denied, contact admin');
+                          toast.error("Access denied, contact admin");
                           return;
                         }
                         if (!res.ok) {
-                          toast.error('Failed to reset password');
+                          toast.error("Failed to reset password");
                           return;
                         }
-                        toast.success('Password reset successfully');
+                        toast.success("Password reset successfully");
                         setShowPasswordModal(false);
-                        setPasswordInput('');
+                        setPasswordInput("");
                       } catch (error) {
-                        console.error('Reset password error:', error);
-                        toast.error('Error resetting password');
+                        console.error("Reset password error:", error);
+                        toast.error("Error resetting password");
                       }
                     }}
                   >
@@ -1985,7 +2887,9 @@ const Dashboard = () => {
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 50, opacity: 0 }}
               >
-                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Change Role</h3>
+                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                  Change Role
+                </h3>
                 <select
                   className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
                   value={selectedRole}
@@ -2006,38 +2910,40 @@ const Dashboard = () => {
                     className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
                     onClick={async () => {
                       if (selectedRole === currentRole) {
-                        toast.info('Selected role is the same as current role');
+                        toast.info("Selected role is the same as current role");
                         return;
                       }
                       try {
                         const res = await fetch(
                           `http://localhost:3000/User/Changerole/${selectedUserId}`,
                           {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
                             body: JSON.stringify({ role: selectedRole }),
                           }
                         );
                         if (res.status === 403) {
-                          toast.error('Access denied, contact admin');
+                          toast.error("Access denied, contact admin");
                           return;
                         }
                         if (!res.ok) {
-                          toast.error('Failed to change role');
+                          toast.error("Failed to change role");
                           return;
                         }
                         setTeamUsers((prevUsers) =>
                           prevUsers.map((user) =>
-                            user._id === selectedUserId ? { ...user, role: selectedRole } : user
+                            user._id === selectedUserId
+                              ? { ...user, role: selectedRole }
+                              : user
                           )
                         );
-                        toast.success('Role changed successfully');
+                        toast.success("Role changed successfully");
                         setShowRoleModal(false);
-                        setSelectedRole('');
+                        setSelectedRole("");
                       } catch (error) {
-                        console.error('Change role error:', error);
-                        toast.error('Error changing role');
+                        console.error("Change role error:", error);
+                        toast.error("Error changing role");
                       }
                     }}
                   >

@@ -2,11 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { confirmAlert } from "react-confirm-alert";
-import "react-confirm-alert/src/react-confirm-alert.css";
 import { useTheme } from "../context/ThemeContext";
 import { debounce } from "lodash";
-import LoadingOverlay from "./LoadingOverlay"; // Import the reusable LoadingOverlay
+import LoadingOverlay from "./LoadingOverlay";
+import ConfirmationModal from "./ConfirmationModal";
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();
@@ -26,7 +25,16 @@ const LeadTableHeader = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [loadingSalesPersons, setLoadingSalesPersons] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false); // State for action loading
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("Confirm");
+  const [secondaryConfirmText, setSecondaryConfirmText] = useState("");
+  const [secondaryConfirmAction, setSecondaryConfirmAction] = useState(null);
+  const [confirmOverrideClass, setConfirmOverrideClass] = useState("");
+  const [secondaryOverrideClass, setSecondaryOverrideClass] = useState("");
 
   const statusTextColors = {
     Quoted: "text-yellow-600 dark:text-yellow-400",
@@ -137,28 +145,55 @@ const LeadTableHeader = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [user?.role]);
 
-  const showConfirmationModal = (leadId, newStatus) => {
-    confirmAlert({
-      title: "Confirm Status Change",
-      message:
-        "Status will be changed to 'Ordered'. Do you want to go to the Order Page?",
-      buttons: [
-        {
-          label: "Yes, go to Order Page",
-          onClick: () => updateStatus(leadId, newStatus, true),
-          className:
-            "text-white bg-green-600 px-4 py-2 rounded hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600",
-        },
-        {
-          label: "No, just change status",
-          onClick: () => updateStatus(leadId, newStatus, false),
-          className:
-            "text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
-        },
-      ],
-      closeOnClickOutside: true,
-      overlayClassName: theme === 'dark' ? 'dark-overlay' : '',
+  const showOrderedConfirmation = (leadId, newStatus) => {
+    setEditingLeadId(null);
+    setConfirmTitle("Confirm Status Change");
+    setConfirmMessage("Status will be changed to 'Ordered'. Do you want to go to the Order Page?");
+    setConfirmText("Yes, go to Order Page");
+    setConfirmAction(() => () => {
+      updateStatus(leadId, newStatus, true);
+      setShowConfirmModal(false);
     });
+    setConfirmOverrideClass("!bg-green-600 !dark:bg-green-500 !hover:bg-green-700 !dark:hover:bg-green-600 !focus:ring-green-500");
+    setSecondaryConfirmText("No, just change status");
+    setSecondaryConfirmAction(() => () => {
+      updateStatus(leadId, newStatus, false);
+      setShowConfirmModal(false);
+    });
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
+  };
+
+  const showStatusConfirmation = (leadId, newStatus) => {
+    setEditingLeadId(null);
+    setConfirmTitle("Confirm Status Change");
+    setConfirmMessage(`Are you sure you want to change the status to '${newStatus}'?`);
+    setConfirmText("Change Status");
+    setConfirmAction(() => () => {
+      updateStatus(leadId, newStatus, false);
+      setShowConfirmModal(false);
+    });
+    setConfirmOverrideClass("");
+    setSecondaryConfirmText("");
+    setSecondaryConfirmAction(null);
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
+  };
+
+  const showReassignConfirmation = (leadId, salesPersonId, salesPersonName) => {
+    setEditingAssignedId(null);
+    setConfirmTitle("Confirm Lead Reassignment");
+    setConfirmMessage(`Are you sure you want to reassign this lead to ${salesPersonName}?`);
+    setConfirmText("Reassign Lead");
+    setConfirmAction(() => () => {
+      reassignLead(leadId, salesPersonId, salesPersonName);
+      setShowConfirmModal(false);
+    });
+    setConfirmOverrideClass("");
+    setSecondaryConfirmText("");
+    setSecondaryConfirmAction(null);
+    setSecondaryOverrideClass("");
+    setShowConfirmModal(true);
   };
 
   const updateStatus = async (leadId, newStatus, goToOrderPage = false) => {
@@ -383,7 +418,7 @@ const LeadTableHeader = () => {
                       {editingLeadId === lead._id && (
                         <div
                           ref={dropdownRef}
-                          className="absolute right-0 md:left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
+                          className="absolute left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
                         >
                           {Object.keys(statusTextColors)
                             .filter((key) => key !== "default")
@@ -397,11 +432,8 @@ const LeadTableHeader = () => {
                                   e.stopPropagation();
                                   if (!actionLoading) {
                                     status === "Ordered"
-                                      ? showConfirmationModal(
-                                          lead._id,
-                                          status
-                                        )
-                                      : updateStatus(lead._id, status);
+                                      ? showOrderedConfirmation(lead._id, status)
+                                      : showStatusConfirmation(lead._id, status);
                                   }
                                 }}
                               >
@@ -422,7 +454,7 @@ const LeadTableHeader = () => {
                         {editingAssignedId === lead._id && (
                           <div
                             ref={assignedDropdownRef}
-                            className="absolute right-0 md:left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
+                            className="absolute left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
                           >
                             {salesPersons.map((salesPerson) => (
                               <div
@@ -430,7 +462,7 @@ const LeadTableHeader = () => {
                                 className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
                                 onClick={() =>
                                   !actionLoading &&
-                                  reassignLead(
+                                  showReassignConfirmation(
                                     lead._id,
                                     salesPerson._id,
                                     salesPerson.name
@@ -503,6 +535,30 @@ const LeadTableHeader = () => {
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmAction}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText="Cancel"
+        secondaryText={secondaryConfirmText}
+        secondaryOnClick={secondaryConfirmAction}
+        confirmButtonProps={{
+          disabled: actionLoading,
+          className: `${confirmOverrideClass} ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+        }}
+        cancelButtonProps={{
+          disabled: actionLoading,
+          className: `${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+        }}
+        secondaryButtonProps={{
+          disabled: actionLoading,
+          className: `${secondaryOverrideClass} ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+        }}
+      />
     </div>
   );
 };
