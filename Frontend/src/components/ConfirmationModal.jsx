@@ -1,49 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import Modal from 'react-modal';
+import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext'; // Import useTheme to support dark/light mode
 
-// Bind modal to app element for accessibility
-Modal.setAppElement('#root');
-
-const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmButtonProps = {}, cancelButtonProps = {}, secondaryText, secondaryOnClick, secondaryButtonProps = {} }) => {
+const ConfirmationModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  message, 
+  confirmText = 'Confirm', 
+  cancelText = 'Cancel', 
+  confirmButtonProps = {}, 
+  cancelButtonProps = {}, 
+  secondaryText, 
+  secondaryOnClick, 
+  secondaryButtonProps = {} 
+}) => {
+  const { theme } = useTheme(); // Get current theme
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      // Trigger animation when modal opens
-      setTimeout(() => setIsAnimating(true), 10); // Small delay to ensure transition
+      setTimeout(() => setIsAnimating(true), 10); // Trigger animation
     } else {
-      // Reset animation when modal closes
-      setIsAnimating(false);
+      setIsAnimating(false); // Reset animation
     }
   }, [isOpen]);
 
+  if (!isOpen) return null;
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onRequestClose={onClose}
-      className="fixed inset-0 flex items-center justify-center z-[1000] pointer-events-none"
-      overlayClassName={`fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0'}`}
-      contentLabel={title}
-      onAfterOpen={() => setIsAnimating(true)}
-      onAfterClose={() => setIsAnimating(false)}
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isAnimating ? 1 : 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
     >
-      <div
-        className={`bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md pointer-events-auto transform transition-all duration-300 ease-in-out ${
-          isAnimating && isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+      <motion.div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: isAnimating ? 0 : -50, opacity: isAnimating ? 1 : 0 }}
+        exit={{ y: 50, opacity: 0 }}
+        transition={{ duration: 0.3 }}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-md font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+          <button 
+            onClick={onClose} 
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          >
             <X size={20} />
           </button>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{message}</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">{message}</p>
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className={`px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 rounded-lg border border-red-200 dark:border-red-600 hover:border-red-300 dark:hover:border-red-500 transition-colors duration-200 ${cancelButtonProps.className || ''}`}
+            className={`px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ${cancelButtonProps.className || ''}`}
             {...cancelButtonProps}
           >
             {cancelText}
@@ -51,7 +66,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
           {secondaryText && (
             <button
               onClick={secondaryOnClick}
-              className={`px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 ${secondaryButtonProps.className || ''}`}
+              className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${secondaryButtonProps.className || ''}`}
               {...secondaryButtonProps}
             >
               {secondaryText}
@@ -59,14 +74,14 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
           )}
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200 ${confirmButtonProps.className || ''}`}
+            className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${confirmButtonProps.className || ''}`}
             {...confirmButtonProps}
           >
             {confirmText}
           </button>
         </div>
-      </div>
-    </Modal>
+      </motion.div>
+    </motion.div>
   );
 };
 

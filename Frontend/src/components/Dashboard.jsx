@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Trash2,
   Plus,
@@ -19,6 +19,7 @@ import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from 'react-dom';
 import {
   LineChart,
   Line,
@@ -33,56 +34,13 @@ import {
   Cell,
   Sector,
 } from "recharts";
-import FullPageLoader from "./utilities/FullPageLoader";
 import { useTheme } from "../context/ThemeContext";
 import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/solid";
+import LoadingOverlay from "./LoadingOverlay";
+import ConfirmationModal from "./ConfirmationModal";
 
-const ConfirmationModal = ({
-  isOpen,
-  onConfirm,
-  onCancel,
-  action,
-  userName,
-}) => {
-  if (!isOpen) return null;
 
-  return (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
-      >
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-          Confirm {action}
-        </h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm">
-          Are you sure you want to {action.toLowerCase()} for {userName}?
-        </p>
-        <div className="flex justify-end gap-2">
-          <button
-            className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
-            onClick={onConfirm}
-          >
-            Confirm
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
+  
 
 const LeadDetailsModal = ({
   isOpen,
@@ -94,6 +52,7 @@ const LeadDetailsModal = ({
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [statusComparison, setStatusComparison] = useState(
@@ -220,6 +179,7 @@ const LeadDetailsModal = ({
 
   useEffect(() => {
     const fetchComparisonData = async () => {
+      setIsLoading(true); // Set loading to true
       try {
         const query = [];
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
@@ -278,7 +238,7 @@ const LeadDetailsModal = ({
             },
           }),
         });
-
+  
         // Calculate comparison text
         let totalLeadsText = {
           direction: "",
@@ -327,9 +287,11 @@ const LeadDetailsModal = ({
         });
       } catch (error) {
         console.error("Error fetching lead counts and conversions:", error);
+      } finally {
+        setIsLoading(false); // Set loading to false
       }
     };
-
+  
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
@@ -390,21 +352,23 @@ const LeadDetailsModal = ({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <motion.div
+      className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 50, opacity: 0 }}
     >
-      <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
-      >
+      <LoadingOverlay isLoading={isLoading} />
+      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
           Lead Details
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-3"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">
@@ -701,10 +665,10 @@ const LeadDetailsModal = ({
             >
               Close
             </button>
-          </div>
-        </div>
-      </motion.div>
+            </div>
+      </div>
     </motion.div>
+  </motion.div>
   );
 };
 
@@ -717,6 +681,7 @@ const OrderDetailsModal = ({
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [statusComparison, setStatusComparison] = useState(
@@ -827,6 +792,7 @@ const OrderDetailsModal = ({
 
   useEffect(() => {
     const fetchComparisonData = async () => {
+      setIsLoading(true); // Set loading to true
       try {
         const query = [];
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
@@ -856,7 +822,7 @@ const OrderDetailsModal = ({
         setStatusComparison(statusData);
         setAmountTotals(amountData);
         setOrderCounts(countsData);
-
+  
         // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(
@@ -879,12 +845,13 @@ const OrderDetailsModal = ({
         });
       } catch (error) {
         console.error("Error fetching order data:", error);
+      } finally {
+        setIsLoading(false); // Set loading to false
       }
     };
-
+  
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
-
   const chartData = statuses.map((status) => ({
     status:
       status === "TotalOrders"
@@ -952,22 +919,24 @@ const OrderDetailsModal = ({
   };
 
   return (
+<motion.div
+    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
     <motion.div
-      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 50, opacity: 0 }}
     >
-      <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
-      >
+      <LoadingOverlay isLoading={isLoading} />
+      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
           Order Details
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-3"></div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">
@@ -1238,10 +1207,10 @@ const OrderDetailsModal = ({
             >
               Close
             </button>
-          </div>
-        </div>
-      </motion.div>
+            </div>
+      </div>
     </motion.div>
+  </motion.div>
   );
 };
 
@@ -1253,6 +1222,7 @@ const PoSentDetailsModal = ({
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState(
@@ -1294,6 +1264,7 @@ const PoSentDetailsModal = ({
   };
   useEffect(() => {
     const fetchComparisonData = async () => {
+      setIsLoading(true); // Set loading to true
       try {
         const query = [];
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
@@ -1306,7 +1277,7 @@ const PoSentDetailsModal = ({
         if (!res.ok) throw new Error("Failed to fetch PO sent data");
         const data = await res.json();
         setPoSentCountsAndTotals(data);
-
+  
         // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
@@ -1321,9 +1292,11 @@ const PoSentDetailsModal = ({
         });
       } catch (error) {
         console.error("Error fetching PO sent data:", error);
+      } finally {
+        setIsLoading(false); // Set loading to false
       }
     };
-
+  
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
@@ -1356,21 +1329,23 @@ const PoSentDetailsModal = ({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <motion.div
+      className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 50, opacity: 0 }}
     >
-      <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
-      >
+      <LoadingOverlay isLoading={isLoading} />
+      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
           PO Sent Details
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-3"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">
@@ -1541,10 +1516,10 @@ const PoSentDetailsModal = ({
             >
               Close
             </button>
-          </div>
-        </div>
-      </motion.div>
+            </div>
+      </div>
     </motion.div>
+  </motion.div>
   );
 };
 
@@ -1556,6 +1531,7 @@ const DeliveredDetailsModal = ({
   if (!isOpen) return null;
 
   const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [deliveredMetrics, setDeliveredMetrics] = useState(
@@ -1599,6 +1575,7 @@ const DeliveredDetailsModal = ({
 
   useEffect(() => {
     const fetchComparisonData = async () => {
+      setIsLoading(true); // Set loading to true
       try {
         const query = [];
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
@@ -1611,7 +1588,7 @@ const DeliveredDetailsModal = ({
         if (!res.ok) throw new Error("Failed to fetch delivered metrics");
         const data = await res.json();
         setDeliveredMetrics(data);
-
+  
         // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
@@ -1626,9 +1603,11 @@ const DeliveredDetailsModal = ({
         });
       } catch (error) {
         console.error("Error fetching delivered metrics:", error);
+      } finally {
+        setIsLoading(false); // Set loading to false
       }
     };
-
+  
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
@@ -1754,17 +1733,19 @@ const DeliveredDetailsModal = ({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 px-4 py-6 sm:px-8"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 px-4 py-6 sm:px-8"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <motion.div
+      className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300"
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.95, opacity: 0 }}
     >
-      <motion.div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300"
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-      >
+      <LoadingOverlay isLoading={isLoading} />
+      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-500" />
@@ -1788,6 +1769,7 @@ const DeliveredDetailsModal = ({
               />
             </svg>
           </button>
+        </div>
         </div>
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
@@ -1957,11 +1939,13 @@ const DeliveredDetailsModal = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const [actionLoading, setActionLoading] = useState(false);
   const [totalClients, setTotalClients] = useState(0);
   const [countbystatus, setCountbystatus] = useState([]);
   const [orders, setOrders] = useState([]);
   const [teamUsers, setTeamUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAnimationReady, setIsAnimationReady] = useState(false); // New state for animation control
   const [showModal, setShowModal] = useState(false);
   const [newMember, setNewMember] = useState({ name: "", email: "", role: "" });
   const [dropdownOpen, setDropdownOpen] = useState(null);
@@ -2008,9 +1992,9 @@ const Dashboard = () => {
     today: { count: 0, revenue: 0, profit: 0 },
     currentMonth: { count: 0, revenue: 0, profit: 0 },
   });
-  const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] =
-    useState(false);
+  const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] = useState(false);
   const [totalOrders, setTotalOrders] = useState(0);
+  const buttonRefs = useRef({});
 
   const statusIcons = {
     Available: (
@@ -2106,6 +2090,17 @@ const Dashboard = () => {
     const statusObj = countbystatus.find((item) => item._id === status);
     return statusObj ? statusObj.count : 0;
   };
+
+  useEffect(() => {
+    // Delay animation until loading is complete
+    if (!loading) {
+      const timer = setTimeout(() => {
+        setIsAnimationReady(true);
+      }, 100); // Small delay to ensure loading overlay is gone
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
 
   useEffect(() => {
     const verifyRole = async () => {
@@ -2294,11 +2289,103 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  const handleAddUserWithConfirmation = () => {
+    if (!newMember.name || !newMember.email || !newMember.role) {
+      toast.error("All fields are required");
+      return;
+    }
+    setShowConfirmModal(true);
+    setConfirmAction("Create User");
+    setConfirmUserName(newMember.name);
+  };
+
+  const handleConfirmAction = async () => {
+    setActionLoading(true); // Set loading to true
+    try {
+      if (confirmAction === "Create User") {
+        await handleAddUser();
+      } else if (confirmAction === "Reassign Leads") {
+        const res = await fetch(
+          `http://localhost:3000/User/Reassign/${confirmUserId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }
+        );
+  
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.message || "Failed to reassign leads");
+          return;
+        }
+  
+        toast.success(data.message);
+      } else if (confirmAction === "Password") {
+        const res = await fetch(
+          `http://localhost:3000/User/Resetpassword/${selectedUserId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ newpassword: passwordInput }),
+          }
+        );
+  
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.message || "Failed to reset password");
+          return;
+        }
+  
+        toast.success(data.message || "Password reset successfully");
+        setShowPasswordModal(false); // Close the password modal
+        setPasswordInput(""); // Clear the password input
+      } else if (confirmAction === "Change Role") {
+        // Handle role change
+        const res = await fetch(
+          `http://localhost:3000/User/Changerole/${selectedUserId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ newrole: selectedRole }),
+          }
+        );
+  
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.message || "Failed to change role");
+          return;
+        }
+  
+        // Update the teamUsers state with the new role
+        setTeamUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === selectedUserId ? { ...user, role: selectedRole } : user
+          )
+        );
+        toast.success(data.message || "Role changed successfully");
+        setShowRoleModal(false); // Close the role modal
+        setSelectedRole(""); // Clear the selected role
+      } else {
+        await handleUserAction(confirmAction, confirmUserId);
+      }
+    } catch (error) {
+      console.error(`Error performing action ${confirmAction}:`, error);
+      toast.error(`Failed to perform action: ${confirmAction}`);
+    } finally {
+      setShowConfirmModal(false); // Close the confirmation modal
+      setActionLoading(false); // Set loading to false
+    }
+  };
+
   const handleAddUser = async () => {
     if (!newMember.name || !newMember.email || !newMember.role) {
       toast.error("All fields are required");
       return;
     }
+    setActionLoading(true); // Set loading to true
     try {
       const res = await fetch("http://localhost:3000/Auth/Createuser", {
         method: "POST",
@@ -2326,11 +2413,13 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Add user error:", error);
       toast.error("Error adding user");
+    } finally {
+      setActionLoading(false); // Set loading to false
     }
   };
 
   const handleUserAction = async (action, userId) => {
-    console.log(`Performing action: ${action} for userId: ${userId}`);
+    setActionLoading(true); // Set loading to true
     try {
       if (action === "Pause" || action === "Resume") {
         const status = action === "Pause";
@@ -2343,7 +2432,7 @@ const Dashboard = () => {
             body: JSON.stringify({ status }),
           }
         );
-
+  
         if (res.status === 403) {
           toast.error("Access denied, contact admin");
           return;
@@ -2360,7 +2449,7 @@ const Dashboard = () => {
           toast.error("Failed to change status");
           return;
         }
-
+  
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === userId ? { ...user, isPaused: status } : user
@@ -2368,22 +2457,11 @@ const Dashboard = () => {
         );
         toast.success(`User ${action.toLowerCase()}d successfully`);
       } else if (action === "Reassign Leads") {
-        const res = await fetch(
-          `http://localhost:3000/User/Reassign/${userId}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-          }
-        );
-
-        const data = await res.json();
-        if (!res.ok) {
-          toast.error(data.message || "Failed to reassign leads");
-          return;
+        // Trigger confirmation modal instead of directly reassigning
+        const user = teamUsers.find((user) => user._id === userId);
+        if (user) {
+          showConfirmation("Reassign Leads", userId, user.name);
         }
-
-        toast.success(data.message);
       } else if (action === "Change Role") {
         const user = teamUsers.find((user) => user._id === userId);
         if (user) {
@@ -2403,7 +2481,7 @@ const Dashboard = () => {
           credentials: "include",
           body: JSON.stringify({ access: newAccess }),
         });
-
+  
         const data = await res.json();
         if (res.status === 403) {
           toast.error("Access denied, admin access required");
@@ -2425,7 +2503,7 @@ const Dashboard = () => {
           );
           return;
         }
-
+  
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === userId ? { ...user, Access: newAccess } : user
@@ -2439,6 +2517,7 @@ const Dashboard = () => {
       console.error(`Error performing action ${action}:`, error);
       toast.error(`Failed to perform action: ${action}`);
     } finally {
+      setActionLoading(false); // Set loading to false
       setIsAccessLoading(false);
     }
   };
@@ -2461,89 +2540,79 @@ const Dashboard = () => {
       ? 100
       : 0;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
-        <FullPageLoader
-          size="w-10 h-10"
-          color="text-blue-500 dark:text-blue-400"
-          fill="fill-blue-300 dark:fill-blue-600"
-        />
-      </div>
-    );
-  }
+  
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 p-4 md:p-8">
-      <div className="container mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-center flex items-center justify-center gap-2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
-          <TrendingUp className="w-8 h-8 text-blue-500 animate-pulse" />
-          Admin Dashboard
-        </h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
-          {[
-            {
-              title: "Ordered",
-              value: totalOrders,
-              onClick: () => setShowOrderDetailsModal(true),
-              icon: <CheckCircle className="w-5 h-5 text-green-500" />,
-            },
-            {
-              title: "Quoted",
-              value: getStatusCount("Quoted"),
-              onClick: null,
-              icon: <DollarSign className="w-5 h-5 text-yellow-500" />,
-            },
-            {
-              title: "Total Clients",
-              value: totalClients,
-              onClick: () => setShowLeadDetailsModal(true),
-              icon: <Users className="w-5 h-5 text-blue-500" />,
-            },
-            {
-              title: "Today's Total Amount",
-              value: `$${orderAmountTotals.today.toFixed(2)}`,
-              onClick: null,
-              icon: <DollarSign className="w-5 h-5 text-green-500" />,
-            },
-            {
-              title: "Today's PO Sent",
-              value: poSentCountsAndTotals.today?.count || 0,
-              onClick: () => setShowPoSentDetailsModal(true),
-              icon: <Send className="w-5 h-5 text-orange-500" />,
-            },
-            {
-              title: "Today's PO Sent Total",
-              value: `$${(
-                poSentCountsAndTotals.today?.totalAmount || 0
-              ).toFixed(2)}`,
-              onClick: () => setShowPoSentDetailsModal(true),
-              icon: <DollarSign className="w-5 h-5 text-purple-500" />,
-            },
-            {
-              title: "Today's Delivered",
-              value: deliveredMetrics.today?.count || 0,
-              onClick: () => setShowDeliveredDetailsModal(true),
-              icon: <Truck className="w-5 h-5 text-lime-500" />,
-            },
-          ].map(({ title, value, onClick, icon }, index) => (
-            <motion.div
-              key={index}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
-              onClick={onClick}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <div className="mb-2">{icon}</div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
-                {title}
-              </h3>
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {value}
-              </span>
-            </motion.div>
-          ))}
-        </div>
+    <div className="relative w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 p-4 md:p-8">
+      <LoadingOverlay isLoading={loading} />
+      <div className={`${loading ? "blur-[1px] pointer-events-none" : ""}`}>
+        <div className="container mx-auto">
+          <h1 className="text-3xl font-bold mb-8 text-center flex items-center justify-center gap-2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+            <TrendingUp className="w-8 h-8 text-blue-500 animate-pulse" />
+            Admin Dashboard
+          </h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
+            {[
+              {
+                title: "Ordered",
+                value: totalOrders,
+                onClick: () => setShowOrderDetailsModal(true),
+                icon: <CheckCircle className="w-5 h-5 text-green-500" />,
+              },
+              {
+                title: "Quoted",
+                value: getStatusCount("Quoted"),
+                onClick: null,
+                icon: <DollarSign className="w-5 h-5 text-yellow-500" />,
+              },
+              {
+                title: "Total Clients",
+                value: totalClients,
+                onClick: () => setShowLeadDetailsModal(true),
+                icon: <Users className="w-5 h-5 text-blue-500" />,
+              },
+              {
+                title: "Today's Total Amount",
+                value: `$${orderAmountTotals.today.toFixed(2)}`,
+                onClick: null,
+                icon: <DollarSign className="w-5 h-5 text-green-500" />,
+              },
+              {
+                title: "Today's PO Sent",
+                value: poSentCountsAndTotals.today?.count || 0,
+                onClick: () => setShowPoSentDetailsModal(true),
+                icon: <Send className="w-5 h-5 text-orange-500" />,
+              },
+              {
+                title: "Today's PO Sent Total",
+                value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`,
+                onClick: () => setShowPoSentDetailsModal(true),
+                icon: <DollarSign className="w-5 h-5 text-purple-500" />,
+              },
+              {
+                title: "Today's Delivered",
+                value: deliveredMetrics.today?.count || 0,
+                onClick: () => setShowDeliveredDetailsModal(true),
+                icon: <Truck className="w-5 h-5 text-lime-500" />,
+              },
+            ].map(({ title, value, onClick, icon }, index) => (
+              <motion.div
+                key={index}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
+                onClick={onClick}
+                initial={{ opacity: 0, y: isAnimationReady ? 50 : 0 }} // Start off-screen only if animation is ready
+                animate={{ opacity: isAnimationReady ? 1 : 0, y: isAnimationReady ? 0 : 0 }} // Animate only if ready
+                transition={{ duration: 0.5, delay: isAnimationReady ? index * 0.1 : 0 }} // Delay animation based on index
+              >
+                <div className="mb-2">{icon}</div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
+                  {title}
+                </h3>
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                  {value}
+                </span>
+              </motion.div>
+            ))}
+          </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <motion.div
@@ -2578,9 +2647,7 @@ const Dashboard = () => {
                   <Tooltip
                     contentStyle={{
                       backgroundColor: theme === "dark" ? "#1F2937" : "#FFFFFF",
-                      border: `1px solid ${
-                        theme === "dark" ? "#4B5563" : "#E5E7EB"
-                      }`,
+                      border: `1px solid ${theme === "dark" ? "#4B5563" : "#E5E7EB"}`,
                       color: theme === "dark" ? "#D1D5DB" : "#1F2937",
                       fontSize: "12px",
                       borderRadius: "8px",
@@ -2624,372 +2691,343 @@ const Dashboard = () => {
           </motion.div>
 
           <motion.div
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 relative"
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <Users className="w-5 h-5 text-purple-500" />
-              Team Management
-            </h3>
-            <div className="flex justify-end mb-4">
-              <button
-                className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                onClick={() => setShowModal(true)}
-              >
-                <Plus className="w-4 h-4" />
-                Add New Member
-              </button>
-            </div>
-            <div className="space-y-3 overflow-y-auto max-h-96">
-              {teamUsers.map((user) => (
-                <motion.div
-                  key={user._id}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors transform hover:scale-105"
-                  transition={{ duration: 0.3 }}
+            <LoadingOverlay isLoading={loading || actionLoading} />
+            <div className={`${loading || actionLoading ? "blur-[1px]" : ""}`}>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-500" />
+                Team Management
+              </h3>
+              <div className="flex justify-end mb-4">
+                <button
+                  className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                  onClick={() => setShowModal(true)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
-                      {user.name.charAt(0).toUpperCase()}
+                  <Plus className="w-4 h-4" />
+                  Add New Member
+                </button>
+              </div>
+              <div className="space-y-3 overflow-y-auto max-h-96">
+                {teamUsers.map((user) => (
+                  <motion.div
+                    key={user._id}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="text-sm">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {user.name}
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          {user.email}
+                        </p>
+                        <p className="text-gray-500 dark:text-gray-400 capitalize">
+                          {user.role}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-sm">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {user.name}
-                      </p>
-                      <p className="text-gray-600 dark:text-gray-300">
-                        {user.email}
-                      </p>
-                      <p className="text-gray-500 dark:text-gray-400 capitalize">
-                        {user.role}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {statusIcons[user.status] || (
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">
-                        Unknown
-                      </span>
-                    )}
-                    <div className="relative">
-                      <button
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
-                        onClick={() =>
-                          setDropdownOpen(
-                            dropdownOpen === user._id ? null : user._id
-                          )
-                        }
-                      >
-                        <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                      </button>
-                      {dropdownOpen === user._id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10 overflow-hidden">
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() =>
-                              showConfirmation(
-                                user.isPaused ? "Resume" : "Pause",
-                                user._id,
-                                user.name
-                              )
-                            }
-                          >
-                            {user.isPaused ? "Resume" : "Pause"}
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() =>
-                              handleUserAction("Reassign Leads", user._id)
-                            }
-                          >
-                            Reassign Leads
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() =>
-                              handleUserAction("Change Role", user._id)
-                            }
-                          >
-                            Change Role
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() =>
-                              handleUserAction("Password", user._id)
-                            }
-                          >
-                            Reset Password
-                          </button>
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() =>
-                              showConfirmation(
-                                user.Access ? "Revoke Access" : "Grant Access",
-                                user._id,
-                                user.name
-                              )
-                            }
-                            disabled={isAccessLoading}
-                          >
-                            {user.Access ? "Revoke Access" : "Grant Access"}
-                          </button>
-                        </div>
+                    <div className="flex items-center gap-2">
+                      {statusIcons[user.status] || (
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">
+                          Unknown
+                        </span>
                       )}
+                      <div className="relative">
+                        <button
+                          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                          onClick={() =>
+                            setDropdownOpen(
+                              dropdownOpen === user._id ? null : user._id
+                            )
+                          }
+                        >
+                          <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                        </button>
+                        {dropdownOpen === user._id && (
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] min-w-max">
+                            <button
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() =>
+                                showConfirmation(
+                                  user.isPaused ? "Resume" : "Pause",
+                                  user._id,
+                                  user.name
+                                )
+                              }
+                            >
+                              {user.isPaused ? "Resume" : "Pause"}
+                            </button>
+                            <button
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() =>
+                                handleUserAction("Reassign Leads", user._id)
+                              }
+                            >
+                              Reassign Leads
+                            </button>
+                            <button
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() =>
+                                handleUserAction("Change Role", user._id)
+                              }
+                            >
+                              Change Role
+                            </button>
+                            <button
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() =>
+                                handleUserAction("Password", user._id)
+                              }
+                            >
+                              Reset Password
+                            </button>
+                            <button
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() =>
+                                showConfirmation(
+                                  user.Access ? "Revoke Access" : "Grant Access",
+                                  user._id,
+                                  user.name
+                                )
+                              }
+                              disabled={actionLoading}
+                            >
+                              {user.Access ? "Revoke Access" : "Grant Access"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </motion.div>
         </div>
 
         <AnimatePresence>
-          {showModal && (
-            <motion.div
-              className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+        {showModal && (
+  <motion.div
+    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <motion.div
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 50, opacity: 0 }}
+    >
+      <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+        Add New Member
+      </h3>
+      <div className="space-y-3">
+        <input
+          type="text"
+          placeholder="Name"
+          className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+          value={newMember.name}
+          onChange={(e) =>
+            setNewMember({ ...newMember, name: e.target.value })
+          }
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+          value={newMember.email}
+          onChange={(e) =>
+            setNewMember({ ...newMember, email: e.target.value })
+          }
+        />
+        <select
+          className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+          value={newMember.role}
+          onChange={(e) =>
+            setNewMember({ ...newMember, role: e.target.value })
+          }
+        >
+          <option value="">Select Role</option>
+          <option value="admin">Admin</option>
+          <option value="sales">Sales</option>
+          <option value="customer_relations">Customer Relations</option>
+          <option value="procurement">Procurement</option>
+        </select>
+        <div className="flex justify-end gap-2">
+          <button
+            className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => setShowModal(false)}
+          >
+            Cancel
+          </button>
+          <button
+            className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
+              actionLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            onClick={handleAddUserWithConfirmation}
+            disabled={actionLoading}
+          >
+            {actionLoading ? "Adding..." : "Add"}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  </motion.div>
+)}
+            {showPasswordModal && (
               <motion.div
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 50, opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
               >
-                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-                  Add New Member
-                </h3>
-                <div className="space-y-3">
+                <motion.div
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+                  initial={{ y: -50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 50, opacity: 0 }}
+                >
+                  <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                    Reset Password
+                  </h3>
                   <input
-                    type="text"
-                    placeholder="Name"
+                    type="password"
+                    placeholder="New Password"
                     className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                    value={newMember.name}
-                    onChange={(e) =>
-                      setNewMember({ ...newMember, name: e.target.value })
-                    }
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
                   />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                    value={newMember.email}
-                    onChange={(e) =>
-                      setNewMember({ ...newMember, email: e.target.value })
-                    }
-                  />
-                  <select
-                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                    value={newMember.role}
-                    onChange={(e) =>
-                      setNewMember({ ...newMember, role: e.target.value })
-                    }
-                  >
-                    <option value="">Select Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="user">User</option>
-                  </select>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-2 mt-3">
                     <button
                       className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => setShowModal(false)}
+                      onClick={() => setShowPasswordModal(false)}
                     >
                       Cancel
                     </button>
                     <button
                       className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
-                      onClick={handleAddUser}
+                      onClick={() => {
+                        setShowConfirmModal(true);
+                        setConfirmAction("Password");
+                        setConfirmUserName(
+                          teamUsers.find((user) => user._id === selectedUserId)?.name || "User"
+                        );
+                      }}
                     >
-                      Add
+                      Reset
                     </button>
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-          {showPasswordModal && (
-            <motion.div
-              className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 50, opacity: 0 }}
-              >
-                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-                  Reset Password
-                </h3>
-                <input
-                  type="password"
-                  placeholder="New Password"
-                  className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                />
-                <div className="flex justify-end gap-2 mt-3">
-                  <button
-                    className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => setShowPasswordModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(
-                          `http://localhost:3000/User/Resetpassword/${selectedUserId}`,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            credentials: "include",
-                            body: JSON.stringify({ password: passwordInput }),
-                          }
-                        );
-                        if (res.status === 403) {
-                          toast.error("Access denied, contact admin");
-                          return;
-                        }
-                        if (!res.ok) {
-                          toast.error("Failed to reset password");
-                          return;
-                        }
-                        toast.success("Password reset successfully");
-                        setShowPasswordModal(false);
-                        setPasswordInput("");
-                      } catch (error) {
-                        console.error("Reset password error:", error);
-                        toast.error("Error resetting password");
-                      }
-                    }}
-                  >
-                    Reset
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-          {showRoleModal && (
-            <motion.div
-              className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 50, opacity: 0 }}
-              >
-                <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-                  Change Role
-                </h3>
-                <select
-                  className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                >
-                  <option value="">Select New Role</option>
-                  <option value="admin">Admin</option>
-                  <option value="user">User</option>
-                </select>
-                <div className="flex justify-end gap-2 mt-3">
-                  <button
-                    className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => setShowRoleModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700"
-                    onClick={async () => {
-                      if (selectedRole === currentRole) {
-                        toast.info("Selected role is the same as current role");
-                        return;
-                      }
-                      try {
-                        const res = await fetch(
-                          `http://localhost:3000/User/Changerole/${selectedUserId}`,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            credentials: "include",
-                            body: JSON.stringify({ role: selectedRole }),
-                          }
-                        );
-                        if (res.status === 403) {
-                          toast.error("Access denied, contact admin");
-                          return;
-                        }
-                        if (!res.ok) {
-                          toast.error("Failed to change role");
-                          return;
-                        }
-                        setTeamUsers((prevUsers) =>
-                          prevUsers.map((user) =>
-                            user._id === selectedUserId
-                              ? { ...user, role: selectedRole }
-                              : user
-                          )
-                        );
-                        toast.success("Role changed successfully");
-                        setShowRoleModal(false);
-                        setSelectedRole("");
-                      } catch (error) {
-                        console.error("Change role error:", error);
-                        toast.error("Error changing role");
-                      }
-                    }}
-                  >
-                    Change
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-          <ConfirmationModal
-            isOpen={showConfirmModal}
-            onConfirm={() => {
-              handleUserAction(confirmAction, confirmUserId);
-              setShowConfirmModal(false);
-            }}
-            onCancel={() => setShowConfirmModal(false)}
-            action={confirmAction}
-            userName={confirmUserName}
-          />
-          <LeadDetailsModal
-            isOpen={showLeadDetailsModal}
-            onClose={() => setShowLeadDetailsModal(false)}
-            createdByUser={leadCreationCounts.createdByUser}
-            assignedAutomatically={leadCreationCounts.assignedAutomatically}
-            statusComparison={statusComparison}
-          />
-          <OrderDetailsModal
-            isOpen={showOrderDetailsModal}
-            onClose={() => setShowOrderDetailsModal(false)}
-            statusComparison={orderStatusComparison}
-            amountTotals={orderAmountTotals}
-          />
-          <PoSentDetailsModal
-            isOpen={showPoSentDetailsModal}
-            onClose={() => setShowPoSentDetailsModal(false)}
-            poSentCountsAndTotals={poSentCountsAndTotals}
-          />
-          <DeliveredDetailsModal
-            isOpen={showDeliveredDetailsModal}
-            onClose={() => setShowDeliveredDetailsModal(false)}
-            deliveredMetrics={deliveredMetrics}
-          />
-        </AnimatePresence>
+            )}
+            {showRoleModal && (
+  <motion.div
+    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <motion.div
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 50, opacity: 0 }}
+    >
+      <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+        Change Role
+      </h3>
+      <select
+        className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+        value={selectedRole}
+        onChange={(e) => setSelectedRole(e.target.value)}
+      >
+        <option value="">Select New Role</option>
+        <option value="admin">Admin</option>
+        <option value="sales">Sales</option>
+        <option value="customer_relations">Customer Relations</option>
+        <option value="procurement">Procurement</option>
+      </select>
+      <div className="flex justify-end gap-2 mt-3">
+        <button
+          className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+          onClick={() => setShowRoleModal(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
+            actionLoading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={() => {
+            if (!selectedRole) {
+              toast.error("Please select a role");
+              return;
+            }
+            if (selectedRole === currentRole) {
+              toast.info("Selected role is the same as current role");
+              return;
+            }
+            setShowConfirmModal(true);
+            setConfirmAction("Change Role");
+            setConfirmUserName(
+              teamUsers.find((user) => user._id === selectedUserId)?.name || "User"
+            );
+          }}
+          disabled={actionLoading}
+        >
+          {actionLoading ? "Changing..." : "Change"}
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+)}
+            <ConfirmationModal
+              isOpen={showConfirmModal}
+              onClose={() => setShowConfirmModal(false)}
+              onConfirm={handleConfirmAction}
+              title={`Confirm ${confirmAction}`}
+              message={`Are you sure you want to ${confirmAction.toLowerCase()} for ${confirmUserName}?`}
+              confirmText="Confirm"
+              cancelText="Cancel"
+            />
+            <LeadDetailsModal
+              isOpen={showLeadDetailsModal}
+              onClose={() => setShowLeadDetailsModal(false)}
+              createdByUser={leadCreationCounts.createdByUser}
+              assignedAutomatically={leadCreationCounts.assignedAutomatically}
+              statusComparison={statusComparison}
+            />
+            <OrderDetailsModal
+              isOpen={showOrderDetailsModal}
+              onClose={() => setShowOrderDetailsModal(false)}
+              statusComparison={orderStatusComparison}
+              amountTotals={orderAmountTotals}
+            />
+            <PoSentDetailsModal
+              isOpen={showPoSentDetailsModal}
+              onClose={() => setShowPoSentDetailsModal(false)}
+              poSentCountsAndTotals={poSentCountsAndTotals}
+            />
+            <DeliveredDetailsModal
+              isOpen={showDeliveredDetailsModal}
+              onClose={() => setShowDeliveredDetailsModal(false)}
+              deliveredMetrics={deliveredMetrics}
+            />
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
 };
+
 
 export default Dashboard;

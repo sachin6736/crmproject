@@ -39,17 +39,20 @@ export const signup = async(req,res,next)=>{
     }
 } /// previuos signup logic when user was manully signing up
 
-export const createuser = async(req,res,next)=>{
-
+export const createuser = async (req, res, next) => {
   console.log("createuser working");
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: "Access denied Admins only." });
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Admins only." });
     }
-    const {name , email , role} = req.body;
-    const existing = await User.findOne({email: email});
-    if(existing){
-      return res.status(409).json({message:"user already exists"})
+    const { name, email, role } = req.body;
+    const allowedRoles = ["admin", "sales", "customer_relations", "procurement"];
+    if (!name || !email || !role || !allowedRoles.includes(role)) {
+      return res.status(400).json({ message: "Name, email, and valid role are required." });
+    }
+    const existing = await User.findOne({ email: email });
+    if (existing) {
+      return res.status(409).json({ message: "User with email already exists." });
     }
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
     const plainPassword = `equivise${randomDigits}`;
@@ -63,37 +66,32 @@ export const createuser = async(req,res,next)=>{
     });
     await newUser.save();
 
-  //   const subject = 'Your Equivise CRM Account Details';
-  //   const emailcontent = `
-  //   <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  //   <h2 style="color: #4A90E2;">Welcome to Equivise CRM 🚀</h2>
+    const subject = "Your Equivise CRM Account Details";
+    const emailcontent = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #4A90E2;">Welcome to Equivise CRM 🚀</h2>
+        <p>Hi <strong>${name}</strong>,</p>
+        <p>Your account has been successfully created in the Equivise CRM system.</p>
+        <p>Here are your login details:</p>
+        <ul style="list-style: none; padding-left: 0;">
+          <li><strong>Login Email:</strong> ${email}</li>
+          <li><strong>Password:</strong> <span style="color: #d6336c;">${plainPassword}</span></li>
+        </ul>
+        <p>Need help? Feel free to reach out to our support team.</p>
+        <br/>
+        <p style="color: #888;">– The Equivise Team</p>
+        <p style="font-size: 0.9em;">This is an automated message. Please do not reply directly to this email.</p>
+      </div>
+    `;
 
-  //   <p>Hi <strong>${name}</strong>,</p>
-
-  //   <p>Your account has been successfully created in the Equivise CRM system.</p>
-
-  //   <p>Here are your login details:</p>
-    
-  //   <ul style="list-style: none; padding-left: 0;">
-  //     <li><strong>Login Email:</strong> ${email}</li>
-  //     <li><strong>Password:</strong> <span style="color: #d6336c;">${plainPassword}</span></li>
-  //   </ul>
-
-  //   <p>Need help? Feel free to reach out to our support team.</p>
-
-  //   <br/>
-  //   <p style="color: #888;">– The Equivise Team</p>
-  //   <p style="font-size: 0.9em;">This is an automated message. Please do not reply directly to this email.</p>
-  // </div>
-  //   `;
-
-  //   await sendEmail(email, subject, emailcontent);
+    await sendEmail(email, subject, emailcontent);
+    console.log(`User created: ${email} with role ${role}`);
     res.status(201).json(newUser);
   } catch (error) {
-    console.log('Create user error:', error);  
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Create user error:", error);
+    res.status(500).json({ message: "Internal server error." });
   }
-}
+};
 
 export const login = async (req, res, next) => {
   try {

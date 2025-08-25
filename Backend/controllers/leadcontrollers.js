@@ -573,9 +573,21 @@ export const editlead = async (req, res, next) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
+    // Check if there are any actual changes
+    const hasChanges = Object.keys(filteredFields).some(
+      (field) => filteredFields[field] !== (existingLead[field] || "")
+    );
+
+    if (!hasChanges) {
+      return res.status(200).json(existingLead); // Return existing lead without updating
+    }
+
     const changes = [];
     for (const field of allowedFields) {
-      if (filteredFields[field] !== undefined && filteredFields[field] !== existingLead[field]) {
+      if (
+        filteredFields[field] !== undefined &&
+        filteredFields[field] !== (existingLead[field] || "")
+      ) {
         changes.push(
           `${field} changed from "${existingLead[field] || "N/A"}" to "${filteredFields[field]}"`
         );
@@ -623,19 +635,32 @@ export const updatecost = async (req, res, next) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
+    // Check if there are any changes
+    const hasChanges =
+      (partCost !== undefined && parseFloat(partCost) !== (lead.partCost || 0)) ||
+      (shippingCost !== undefined && parseFloat(shippingCost) !== (lead.shippingCost || 0)) ||
+      (grossProfit !== undefined && parseFloat(grossProfit) !== (lead.grossProfit || 0)) ||
+      (warranty !== undefined && warranty !== (lead.warranty || "0 months")) ||
+      (totalCost !== undefined && parseFloat(totalCost) !== (lead.totalCost || 0));
+
+    if (!hasChanges) {
+      return res.status(200).json(lead); // Return existing lead without updating
+    }
+
+    // Update fields only if provided and different
     lead.partCost = partCost !== undefined ? parseFloat(partCost) : lead.partCost;
     lead.shippingCost = shippingCost !== undefined ? parseFloat(shippingCost) : lead.shippingCost;
     lead.grossProfit = grossProfit !== undefined ? parseFloat(grossProfit) : lead.grossProfit;
     lead.warranty = warranty || lead.warranty;
     lead.totalCost = totalCost !== undefined ? parseFloat(totalCost) : lead.totalCost;
-    
+
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     lead.notes.push({
       text: `Costs updated by ${userIdentity}. Total:$${lead.totalCost}, Warranty:${lead.warranty}`,
       addedBy: userIdentity,
       createdAt: new Date(),
     });
-    
+
     await lead.save();
     res.status(200).json(lead);
   } catch (error) {

@@ -78,6 +78,7 @@ const Lead = () => {
   const [showDateNoteModal, setShowDateNoteModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [dateNote, setDateNote] = useState("");
+  const [profitRatio, setProfitRatio] = useState(null);
 
   useEffect(() => {
     if (singleLead && singleLead.notes) {
@@ -96,7 +97,7 @@ const Lead = () => {
         if (!response.ok) throw new Error("Failed to fetch lead");
         const data = await response.json();
         setSingleLead(data);
-        setSelectedDates(data.importantDates.map(d => d.date) || []);
+        setSelectedDates(data.importantDates.map((d) => d.date) || []);
         setEditForm({
           clientName: data.clientName || "",
           phoneNumber: data.phoneNumber || "",
@@ -135,10 +136,21 @@ const Lead = () => {
     const part = parseFloat(partCost) || 0;
     const shipping = parseFloat(shippingCost) || 0;
     const gp = parseFloat(grossProfit) || 0;
-    
+
     const total = part + shipping + gp;
     setTotalCost(total > 0 ? total.toFixed(2) : "");
   }, [partCost, shippingCost, grossProfit]);
+
+  useEffect(() => {
+    const gp = parseFloat(grossProfit) || 0;
+    const total = parseFloat(totalCost) || 0;
+    if (total > 0) {
+      const ratio = (gp / total) * 100;
+      setProfitRatio(ratio.toFixed(2));
+    } else {
+      setProfitRatio(null);
+    }
+  }, [grossProfit, totalCost]);
 
   const areCostsValid = () => {
     const part = parseFloat(partCost);
@@ -274,11 +286,10 @@ const Lead = () => {
 
   const handleDateClick = async (date) => {
     if (actionLoading) return;
-    const dateStr = formatLocalDate(date); // Use local date formatting
+    const dateStr = formatLocalDate(date);
     const isDateSelected = selectedDates.includes(dateStr);
-    
+
     if (isDateSelected) {
-      // Show confirmation for deleting the date
       setConfirmTitle("Confirm Date Removal");
       setConfirmMessage(`Are you sure you want to remove the date ${dateStr}?`);
       setConfirmText("Remove Date");
@@ -292,7 +303,6 @@ const Lead = () => {
       setSecondaryOverrideClass("");
       setShowConfirmModal(true);
     } else {
-      // Show modal to add note for the new date
       setSelectedDate(dateStr);
       setDateNote("");
       setShowDateNoteModal(true);
@@ -317,7 +327,7 @@ const Lead = () => {
         toast.success("Date and note added successfully");
         const updatedLead = await response.json();
         setSingleLead(updatedLead.lead);
-        setSelectedDates(updatedLead.lead.importantDates.map(d => d.date));
+        setSelectedDates(updatedLead.lead.importantDates.map((d) => d.date));
         setShowDateNoteModal(false);
         setDateNote("");
       } else {
@@ -348,7 +358,7 @@ const Lead = () => {
         toast.success("Date removed successfully");
         const updatedLead = await response.json();
         setSingleLead(updatedLead.lead);
-        setSelectedDates(updatedLead.lead.importantDates.map(d => d.date));
+        setSelectedDates(updatedLead.lead.importantDates.map((d) => d.date));
       } else {
         toast.error("Failed to remove date");
       }
@@ -397,6 +407,16 @@ const Lead = () => {
   };
 
   const handleEditLead = async () => {
+    const hasChanges = Object.keys(editForm).some(
+      (key) => editForm[key] !== (singleLead[key] || "")
+    );
+
+    if (!hasChanges) {
+      toast.info("No changes made to the lead");
+      setIsEditingLead(false);
+      return;
+    }
+
     setActionLoading(true);
     try {
       const response = await fetch(
@@ -448,6 +468,19 @@ const Lead = () => {
       return;
     }
 
+    const hasChanges =
+      parseFloat(partCost) !== (parseFloat(singleLead?.partCost) || 0) ||
+      parseFloat(shippingCost) !== (parseFloat(singleLead?.shippingCost) || 0) ||
+      parseFloat(grossProfit) !== (parseFloat(singleLead?.grossProfit) || 0) ||
+      warranty !== (singleLead?.warranty || "0 months") ||
+      parseFloat(totalCost) !== (parseFloat(singleLead?.totalCost) || 0);
+
+    if (!hasChanges) {
+      toast.info("No changes made to the costs");
+      setShowNotes(true);
+      return;
+    }
+
     setIsSubmitting(true);
     setActionLoading(true);
     try {
@@ -489,7 +522,7 @@ const Lead = () => {
       toast.error("Please add and submit quote details before sending a quotation.");
       return;
     }
-
+  
     setIsSendingQuote(true);
     setActionLoading(true);
     try {
@@ -501,11 +534,10 @@ const Lead = () => {
           credentials: "include",
         }
       );
-
+  
       const data = await response.json();
       if (response.ok) {
         toast.success(data.message);
-        await updateStatus(id, "Quoted", false);
       } else {
         toast.error(data.message || "Failed to send quotation");
       }
@@ -557,11 +589,28 @@ const Lead = () => {
 
         {/* Active Status Row */}
         <div className="flex justify-center items-center bg-white dark:bg-gray-800 rounded-full shadow-md p-2 mb-4 w-full h-14 space-x-2 overflow-x-auto z-[900]">
-          <div className="flex gap-4 px-2">
+          <div className="flex gap-4 px-2 items-center">
+            {profitRatio !== null && (
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium ${
+                  parseFloat(profitRatio) < 30
+                    ? "bg-red-500 text-white"
+                    : "bg-green-500 text-white"
+                }`}
+              >
+                {profitRatio}%
+              </div>
+            )}
+            <div className="w-4" />
             {statusOptions.map((status, index) => (
               <button
                 key={index}
-                onClick={() => !actionLoading && (status === "Ordered" ? showOrderedConfirmation(singleLead?._id, status) : showStatusConfirmation(singleLead?._id, status))}
+                onClick={() =>
+                  !actionLoading &&
+                  (status === "Ordered"
+                    ? showOrderedConfirmation(singleLead?._id, status)
+                    : showStatusConfirmation(singleLead?._id, status))
+                }
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
                   singleLead?.status === status
                     ? "bg-blue-600 dark:bg-blue-500 text-white"
@@ -783,17 +832,20 @@ const Lead = () => {
                         className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                         disabled={actionLoading}
                       >
-                        {["0 months", "3 months", "6 months", "12 months", "24 months"].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
+                        {["0 months", "3 months", "6 months", "12 months", "24 months"].map(
+                          (option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          )
+                        )}
                       </select>
                     ) : (
                       <input
                         type={item.type}
                         value={item.value}
                         onChange={(e) => item.setter(e.target.value)}
+                        onWheel={(e) => e.target.blur()}
                         className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                         placeholder="0.00"
                         step="0.01"
@@ -857,15 +909,15 @@ const Lead = () => {
           secondaryOnClick={secondaryConfirmAction}
           confirmButtonProps={{
             disabled: actionLoading,
-            className: `${confirmOverrideClass} ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+            className: `${confirmOverrideClass} ${actionLoading ? "opacity-50 cursor-not-allowed" : ""}`,
           }}
           cancelButtonProps={{
             disabled: actionLoading,
-            className: `${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+            className: `${actionLoading ? "opacity-50 cursor-not-allowed" : ""}`,
           }}
           secondaryButtonProps={{
             disabled: actionLoading,
-            className: `${secondaryOverrideClass} ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+            className: `${secondaryOverrideClass} ${actionLoading ? "opacity-50 cursor-not-allowed" : ""}`,
           }}
         />
 
@@ -907,4 +959,4 @@ const Lead = () => {
   );
 };
 
-export default Lead;  
+export default Lead;

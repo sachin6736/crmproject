@@ -4,31 +4,34 @@ import bcrypt from 'bcrypt';
 import Notification from '../models/notificationSchema.js';
 import { io } from '../socket.js'
 
-export const resetpassword = async(req,res,next)=>{
-    try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: "Access denied. Admins only." });
-          }
-        const {id} = req.params
-        const {newpassword}= req.body;
-        if (!newpassword) {
-            return res.status(400).json({ message: "New password is required." });
-          }
-        const user = await User.findById(id)
-        console.log("user",user)
-        if(!user){
-            return res.status(404).json({message: "user not found"})
-        }
-        console.log("new",newpassword)
-        const hashedPassword = await bcrypt.hash(newpassword,10);
-        user.password = hashedPassword;
-        await user.save();
-        res.status(200).json({ message: "Password reset successfully." });
-    } catch (error) {
-        console.log("Password reset error:", error);
-        res.status(500).json({ message: "Something went wrong." });
+export const resetpassword = async (req, res, next) => {
+  console.log("Reset password request received for user ID:", req.params.id);
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Admins only." });
     }
-} ///resetting password by admin
+    const { id } = req.params;
+    const { newpassword } = req.body;
+    if (!newpassword) {
+      return res.status(400).json({ message: "New password is required." });
+    }
+    if (newpassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long." });
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const hashedPassword = await bcrypt.hash(newpassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+    console.log("Password reset successfully for user ID:", id);
+    res.status(200).json({ message: "Password reset successfully." });
+  } catch (error) {
+    console.error("Password reset error:", error);
+    res.status(500).json({ message: "Something went wrong." });
+  }
+}; ///resetting password by admin
 
 export const pauseandresume = async(req,res,next)=>{
     console.log("pauser and resume working")
@@ -56,28 +59,33 @@ export const pauseandresume = async(req,res,next)=>{
 }//pausing and resuming user
 
 
-export const rolechange = async(req,res,next)=>{
-  console.log("rolechange working")
+export const rolechange = async (req, res, next) => {
+  console.log("rolechange working");
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
-    const {newrole} = req.body;
+    const { newrole } = req.body;
+    const allowedRoles = ["admin", "sales", "customer_relations", "procurement"];
+    if (!newrole || !allowedRoles.includes(newrole)) {
+      return res.status(400).json({ message: "Invalid role provided." });
+    }
     const user = await User.findById(req.params.id);
-          if (!user) {
-            return res.status(404).json({ message: "User not found." });
-          }
-          if (user.role === newrole ){
-            return res.status(204).json({ message: `User is  already this role}.` });
-          }
-          user.role = newrole;
-          await user.save();
-          res.status(200).json({ message: "user role changed" });      
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    if (user.role === newrole) {
+      return res.status(204).json({ message: "User is already this role." });
+    }
+    user.role = newrole;
+    await user.save();
+    console.log(`Role changed to ${newrole} for user ID: ${req.params.id}`);
+    res.status(200).json({ message: "User role changed successfully." });
   } catch (error) {
-    console.log("error occured when changing action",error)
-    res.status(500).json({message:"server error"})
+    console.error("Error occurred when changing role:", error);
+    res.status(500).json({ message: "Server error." });
   }
-}
+};
 
 export const reassign = async (req, res, next) => {
   console.log("Reassigning leads");
