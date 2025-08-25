@@ -102,14 +102,12 @@ export const login = async (req, res, next) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
-    // Update user status to "Available"
     const updatedUser = await User.findByIdAndUpdate(
       user._id,
       { status: "Available" },
       { new: true }
     ).select("name email role status");
 
-    // Log status change
     const statusLog = new StatusLog({
       userId: user._id,
       status: "Available",
@@ -117,20 +115,18 @@ export const login = async (req, res, next) => {
     });
     await statusLog.save();
 
-    // Create JWT
     const token = jwt.sign(
-      { id: user._id, name: user.name, role: user.role, status: "Available" , Access: user.Access },
+      { id: user._id, name: user.name, role: user.role, status: "Available", Access: user.Access },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // Send token in HttpOnly cookie
     res
       .cookie("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 14 minutes in milliseconds
+        sameSite: "Lax", // Changed from "strict" to "Lax"
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(200)
       .json({
