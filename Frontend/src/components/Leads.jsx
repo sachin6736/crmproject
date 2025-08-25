@@ -55,7 +55,7 @@ const LeadTableHeader = () => {
         const isAdmin = user?.role === "admin";
         const endpoint = isAdmin ? "/getleads" : "/getleadbyperson";
         const response = await fetch(
-          `${import.meta.env.vite_api_url}/Lead${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&status=${statusFilter}`,
+          `${import.meta.env.VITE_API_URL}/Lead${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&status=${statusFilter}`,
           { credentials: "include" }
         );
         if (!response.ok) throw new Error("Failed to fetch leads");
@@ -75,7 +75,7 @@ const LeadTableHeader = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`${import.meta.env.vite_api_url}/Auth/check`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/Auth/check`, {
           credentials: "include",
         });
         if (!response.ok) {
@@ -100,7 +100,7 @@ const LeadTableHeader = () => {
   useEffect(() => {
     const fetchSalesPersons = async () => {
       try {
-        const response = await fetch(`${import.meta.env.vite_api_url}/Admin/getmyteam`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/Admin/getmyteam`, {
           credentials: "include",
         });
         if (!response.ok) throw new Error("Failed to fetch salespersons");
@@ -200,7 +200,7 @@ const LeadTableHeader = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/editstatus/${leadId}`,
+        `${import.meta.env.VITE_API_URL}/Lead/editstatus/${leadId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -240,7 +240,7 @@ const LeadTableHeader = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/reassign/${leadId}`,
+        `${import.meta.env.VITE_API_URL}/Lead/reassign/${leadId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

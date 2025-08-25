@@ -184,7 +184,7 @@ const [litigationLoading, setLitigationLoading] = useState(false);
     setLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`,
+        `${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`,
         {
           credentials: "include",
         }
@@ -262,11 +262,11 @@ const [litigationLoading, setLitigationLoading] = useState(false);
       setLoading(true);
       try {
         const [userRes, orderRes, vendorsRes] = await Promise.all([
-          fetch(`${import.meta.env.vite_api_url}/User/me`, { credentials: "include" }),
-          fetch(`${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`, {
+          fetch(`${import.meta.env.VITE_API_URL}/User/me`, { credentials: "include" }),
+          fetch(`${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Order/vendor-simple`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Order/vendor-simple`, {
             credentials: "include",
           }),
         ]);
@@ -402,7 +402,7 @@ const [litigationLoading, setLitigationLoading] = useState(false);
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/vendor-simple`,
+        `${import.meta.env.VITE_API_URL}/Order/vendor-simple`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -437,7 +437,7 @@ const [litigationLoading, setLitigationLoading] = useState(false);
         rating: "",
       });
       const vendorsRes = await fetch(
-        `${import.meta.env.vite_api_url}/Order/vendor-simple`,
+        `${import.meta.env.VITE_API_URL}/Order/vendor-simple`,
         { credentials: "include" }
       );
       if (vendorsRes.ok) {
@@ -456,7 +456,7 @@ const [litigationLoading, setLitigationLoading] = useState(false);
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/orders/${orderId}/send-shipment-details`,
+        `${import.meta.env.VITE_API_URL}/Order/orders/${orderId}/send-shipment-details`,
         {
           method: "POST",
           headers: {
@@ -507,7 +507,7 @@ const handleProcurementFormChange = (e) => {
 const handleProcurementFormSubmit = async (e) => {
   e.preventDefault();
   try {
-    const response = await fetch(`${import.meta.env.vite_api_url}/LiteReplace/update-procurement/${orderId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/update-procurement/${orderId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -552,7 +552,7 @@ const closeProcurementModal = () => {
     if (choice === "Yes") {
       try {
         setLitigationLoading(true);
-        const response = await fetch(`${import.meta.env.vite_api_url}/Order/litigation/${orderId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/Order/litigation/${orderId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -584,7 +584,7 @@ const closeProcurementModal = () => {
     setActionLoading(true); // Add loading state
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${order._id}/vendor/${vendorId}/status`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${order._id}/vendor/${vendorId}/status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -610,7 +610,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${order._id}/vendor/${vendorId}/status`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${order._id}/vendor/${vendorId}/status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -647,7 +647,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${orderId}/vendor`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${orderId}/vendor`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -726,7 +726,7 @@ const closeProcurementModal = () => {
         mileage: parseInt(editVendorForm.mileage) || null,
       };
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${orderId}/vendor/${editingVendorId}`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${orderId}/vendor/${editingVendorId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -798,7 +798,7 @@ const closeProcurementModal = () => {
     try {
       const isConfirmed = confirmationAction === "confirm";
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${orderId}/vendor/${confirmationVendorId}/confirm`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${orderId}/vendor/${confirmationVendorId}/confirm`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -830,7 +830,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${orderId}/vendor/${vendorId}/confirm-payment`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${orderId}/vendor/${vendorId}/confirm-payment`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -862,7 +862,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/cancel-vendor`,
+        `${import.meta.env.VITE_API_URL}/Order/cancel-vendor`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -897,7 +897,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/previewpurchaseorder/${orderId}?vendorId=${vendorId}`,
+        `${import.meta.env.VITE_API_URL}/Order/previewpurchaseorder/${orderId}?vendorId=${vendorId}`,
         {
           method: "GET",
           credentials: "include",
@@ -933,7 +933,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${order._id}/vendor/${vendorId}/pictures-received`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${order._id}/vendor/${vendorId}/pictures-received`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -962,7 +962,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/order/${order._id}/vendor/${vendorId}/pictures-sent`,
+        `${import.meta.env.VITE_API_URL}/Order/order/${order._id}/vendor/${vendorId}/pictures-sent`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -998,7 +998,7 @@ const closeProcurementModal = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/${orderId}/notes`,
+        `${import.meta.env.VITE_API_URL}/Order/${orderId}/notes`,
         {
           method: "POST",
           headers: {
@@ -1015,7 +1015,7 @@ const closeProcurementModal = () => {
       setShowNotesModal(false);
       setNotesForm({ note: "" });
       const responseOrder = await fetch(
-        `${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`,
+        `${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`,
         {
           credentials: "include",
         }
@@ -1048,7 +1048,7 @@ const closeProcurementModal = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/${orderId}/procurementnotes`,
+        `${import.meta.env.VITE_API_URL}/Order/${orderId}/procurementnotes`,
         {
           method: "POST",
           headers: {
@@ -1065,7 +1065,7 @@ const closeProcurementModal = () => {
       setShowProcurementNotesModal(false);
       setProcurementNotesForm({ note: "" });
       const responseOrder = await fetch(
-        `${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`,
+        `${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`,
         {
           credentials: "include",
         }
@@ -1098,7 +1098,7 @@ const closeProcurementModal = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/updatecost/${order.leadId._id}`,
+        `${import.meta.env.VITE_API_URL}/Lead/updatecost/${order.leadId._id}`,
         {
           method: "POST",
           headers: {
@@ -1119,7 +1119,7 @@ const closeProcurementModal = () => {
       toast.success("Costs updated successfully");
       setShowCostModal(false);
       const responseOrder = await fetch(
-        `${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`,
+        `${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`,
         {
           credentials: "include",
         }
@@ -1163,7 +1163,7 @@ const closeProcurementModal = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/update/${orderId}`,
+        `${import.meta.env.VITE_API_URL}/Order/update/${orderId}`,
         {
           method: "PATCH",
           headers: {
@@ -1235,7 +1235,7 @@ const closeProcurementModal = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/updateShipment/${orderId}`,
+        `${import.meta.env.VITE_API_URL}/Order/updateShipment/${orderId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -1293,7 +1293,7 @@ const closeProcurementModal = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/orders/${orderId}/shipment-delivered`,
+        `${import.meta.env.VITE_API_URL}/Order/orders/${orderId}/shipment-delivered`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

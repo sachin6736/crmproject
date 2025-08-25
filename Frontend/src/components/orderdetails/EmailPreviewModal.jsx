@@ -15,7 +15,7 @@ const handleConfirm = async () => {
   setIsSending(true);
   try {
     const response = await fetch(
-      `${import.meta.env.vite_api_url}/Order/sendpurchaseorder/${orderId}?vendorId=${vendorId}`,
+      `${import.meta.env.VITE_API_URL}/Order/sendpurchaseorder/${orderId}?vendorId=${vendorId}`,
       {
         method: "POST",
         credentials: "include",

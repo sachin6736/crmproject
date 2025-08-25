@@ -109,7 +109,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
           toast.warn('Request taking longer than expected. Please check your network.');
         }, 10000);
 
-        const response = await fetch(`${import.meta.env.vite_api_url}/Sales/getLeadStatusComparison${queryString}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/Sales/getLeadStatusComparison${queryString}`, {
           method: 'GET',
           credentials: 'include',
           signal: controller.signal,
@@ -436,12 +436,12 @@ const OrderDetailsModal = ({ isOpen, onClose, onMonthChange, onYearChange, loadi
         }, 10000);
 
         const [statusResponse, amountResponse] = await Promise.all([
-          fetch(`${import.meta.env.vite_api_url}/Sales/getOrderStatusComparison${queryString}`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getOrderStatusComparison${queryString}`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`${import.meta.env.vite_api_url}/Sales/getOrderAmountTotals${queryString}`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getOrderAmountTotals${queryString}`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
@@ -753,32 +753,32 @@ const SalesDashboard = () => {
         }, 10000);
 
         const [leadsRes, ordersRes, statusComparisonRes, leadStatusComparisonRes, leadCreationCountsRes, orderAmountTotalsRes] = await Promise.all([
-          fetch(`${import.meta.env.vite_api_url}/Sales/getsingleleads`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getsingleleads`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`${import.meta.env.vite_api_url}/Sales/getsingleorders`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getsingleorders`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`${import.meta.env.vite_api_url}/Sales/getOrderStatusComparison`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getOrderStatusComparison`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`${import.meta.env.vite_api_url}/Sales/getLeadStatusComparison`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getLeadStatusComparison`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`${import.meta.env.vite_api_url}/Sales/getLeadCreationCounts`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getLeadCreationCounts`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
           }),
-          fetch(`${import.meta.env.vite_api_url}/Sales/getOrderAmountTotals`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Sales/getOrderAmountTotals`, {
             method: 'GET',
             credentials: 'include',
             signal: controller.signal,
@@ -854,7 +854,7 @@ const SalesDashboard = () => {
         toast.warn('Delete request taking longer than expected. Please check your network.');
       }, 10000);
 
-      const response = await fetch(`${import.meta.env.vite_api_url}/Order/delete/${orderId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Order/delete/${orderId}`, {
         method: 'DELETE',
         credentials: 'include',
         signal: controller.signal,

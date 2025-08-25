@@ -91,7 +91,7 @@ const Lead = () => {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `${import.meta.env.vite_api_url}/Lead/getleadbyid/${id}`,
+          `${import.meta.env.VITE_API_URL}/Lead/getleadbyid/${id}`,
           { credentials: "include" }
         );
         if (!response.ok) throw new Error("Failed to fetch lead");
@@ -259,7 +259,7 @@ const Lead = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/updateNotes/${id}`,
+        `${import.meta.env.VITE_API_URL}/Lead/updateNotes/${id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -314,7 +314,7 @@ const Lead = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/updateDates/${id}`,
+        `${import.meta.env.VITE_API_URL}/Lead/updateDates/${id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -346,7 +346,7 @@ const Lead = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/updateDates/${id}/${dateStr}`,
+        `${import.meta.env.VITE_API_URL}/Lead/updateDates/${id}/${dateStr}`,
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -374,7 +374,7 @@ const Lead = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/editstatus/${leadId}`,
+        `${import.meta.env.VITE_API_URL}/Lead/editstatus/${leadId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -386,7 +386,7 @@ const Lead = () => {
       if (response.ok) {
         toast.success("Status changed successfully");
         const leadResponse = await fetch(
-          `${import.meta.env.vite_api_url}/Lead/getleadbyid/${leadId}`,
+          `${import.meta.env.VITE_API_URL}/Lead/getleadbyid/${leadId}`,
           { credentials: "include" }
         );
         const updatedLead = await leadResponse.json();
@@ -420,7 +420,7 @@ const Lead = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/editlead/${id}`,
+        `${import.meta.env.VITE_API_URL}/Lead/editlead/${id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -485,7 +485,7 @@ const Lead = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/updatecost/${id}`,
+        `${import.meta.env.VITE_API_URL}/Lead/updatecost/${id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -527,7 +527,7 @@ const Lead = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Lead/leadquatation/${id}`,
+        `${import.meta.env.VITE_API_URL}/Lead/leadquatation/${id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

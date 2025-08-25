@@ -7,7 +7,7 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${import.meta.env.vite_api_url}/Auth/check`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/Auth/check`, {
           method: 'GET',
           credentials: 'include', // ✅ send cookies
         });

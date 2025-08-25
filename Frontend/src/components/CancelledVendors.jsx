@@ -63,7 +63,7 @@ const CancelledVendors = () => {
       try {
         setLoadingVendors(true);
         const response = await fetch(
-          `${import.meta.env.vite_api_url}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(search)}`,
+          `${import.meta.env.VITE_API_URL}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(search)}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
@@ -133,7 +133,7 @@ const CancelledVendors = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/cancelledvendor/${selectedVendorId}/notes`,
+        `${import.meta.env.VITE_API_URL}/Order/cancelledvendor/${selectedVendorId}/notes`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -180,7 +180,7 @@ const CancelledVendors = () => {
     try {
       setPaymentStatusError(null);
       const response = await fetch(
-        `${import.meta.env.vite_api_url}/Order/cancelledvendor/${vendorId}/paymentStatus`,
+        `${import.meta.env.VITE_API_URL}/Order/cancelledvendor/${vendorId}/paymentStatus`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -195,7 +195,7 @@ const CancelledVendors = () => {
       }
 
       const fetchResponse = await fetch(
-        `${import.meta.env.vite_api_url}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(search)}`,
+        `${import.meta.env.VITE_API_URL}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(search)}`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },

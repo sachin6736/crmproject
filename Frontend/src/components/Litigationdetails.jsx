@@ -42,7 +42,7 @@ const LitigationDetails = () => {
     const fetchOrderAndLitigation = async () => {
       setIsLoading(true);
       try {
-        const orderResponse = await fetch(`${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`, {
+        const orderResponse = await fetch(`${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`, {
           credentials: "include",
         });
         if (!orderResponse.ok) {
@@ -56,7 +56,7 @@ const LitigationDetails = () => {
         const orderData = await orderResponse.json();
         setOrder(orderData);
 
-        const litigationResponse = await fetch(`${import.meta.env.vite_api_url}/LiteReplace/litigation/${orderId}`, {
+        const litigationResponse = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/litigation/${orderId}`, {
           credentials: "include",
         });
         if (litigationResponse.ok) {
@@ -101,7 +101,7 @@ const LitigationDetails = () => {
   const handleSendRMA = async () => {
     setActionLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.vite_api_url}/LiteReplace/send-rma/${orderId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/send-rma/${orderId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +126,7 @@ const LitigationDetails = () => {
   const handleReplacement = async () => {
     setActionLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.vite_api_url}/LiteReplace/updateStatus/${orderId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/updateStatus/${orderId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -190,7 +190,7 @@ const LitigationDetails = () => {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.vite_api_url}/LiteReplace/update-litigation/${orderId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/update-litigation/${orderId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

@@ -186,7 +186,7 @@ const LeadDetailsModal = ({
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
         const res = await fetch(
-          `${import.meta.env.vite_api_url}/Admin/getLeadCountsAndConversions${queryString}`,
+          `${import.meta.env.VITE_API_URL}/Admin/getLeadCountsAndConversions${queryString}`,
           {
             credentials: "include",
           }
@@ -800,14 +800,14 @@ const OrderDetailsModal = ({
         const queryString = query.length ? `?${query.join("&")}` : "";
         const [statusRes, amountRes, countsRes] = await Promise.all([
           fetch(
-            `${import.meta.env.vite_api_url}/Admin/getOrderStatusComparison${queryString}`,
+            `${import.meta.env.VITE_API_URL}/Admin/getOrderStatusComparison${queryString}`,
             { credentials: "include" }
           ),
           fetch(
-            `${import.meta.env.vite_api_url}/Admin/getOrderAmountTotals${queryString}`,
+            `${import.meta.env.VITE_API_URL}/Admin/getOrderAmountTotals${queryString}`,
             { credentials: "include" }
           ),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getOrderCounts${queryString}`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderCounts${queryString}`, {
             credentials: "include",
           }),
         ]);
@@ -1271,7 +1271,7 @@ const PoSentDetailsModal = ({
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
         const res = await fetch(
-          `${import.meta.env.vite_api_url}/Admin/getPoSentCountsAndTotals${queryString}`,
+          `${import.meta.env.VITE_API_URL}/Admin/getPoSentCountsAndTotals${queryString}`,
           { credentials: "include" }
         );
         if (!res.ok) throw new Error("Failed to fetch PO sent data");
@@ -1582,7 +1582,7 @@ const DeliveredDetailsModal = ({
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
         const res = await fetch(
-          `${import.meta.env.vite_api_url}/Admin/getDeliveredMetrics${queryString}`,
+          `${import.meta.env.VITE_API_URL}/Admin/getDeliveredMetrics${queryString}`,
           { credentials: "include" }
         );
         if (!res.ok) throw new Error("Failed to fetch delivered metrics");
@@ -2105,7 +2105,7 @@ const Dashboard = () => {
   useEffect(() => {
     const verifyRole = async () => {
       try {
-        const res = await fetch(`${import.meta.env.vite_api_url}/Auth/check`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/Auth/check`, {
           method: "GET",
           credentials: "include",
         });
@@ -2148,37 +2148,37 @@ const Dashboard = () => {
           poSentCountsAndTotalsRes,
           deliveredMetricsRes,
         ] = await Promise.all([
-          fetch(`${import.meta.env.vite_api_url}/Admin/getleadcount`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getleadcount`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getcountbystatus`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getcountbystatus`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getallorders`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getallorders`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getmyteam`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getmyteam`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getLeadCreationCounts`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getLeadCreationCounts`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getLeadCountsAndConversions`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getLeadCountsAndConversions`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getOrderStatusComparison`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderStatusComparison`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getOrderAmountTotals`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderAmountTotals`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getOrderCounts`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderCounts`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getPoSentCountsAndTotals`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getPoSentCountsAndTotals`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.vite_api_url}/Admin/getDeliveredMetrics`, {
+          fetch(`${import.meta.env.VITE_API_URL}/Admin/getDeliveredMetrics`, {
             credentials: "include",
           }),
         ]);
@@ -2306,7 +2306,7 @@ const Dashboard = () => {
         await handleAddUser();
       } else if (confirmAction === "Reassign Leads") {
         const res = await fetch(
-          `${import.meta.env.vite_api_url}/User/Reassign/${confirmUserId}`,
+          `${import.meta.env.VITE_API_URL}/User/Reassign/${confirmUserId}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2323,7 +2323,7 @@ const Dashboard = () => {
         toast.success(data.message);
       } else if (confirmAction === "Password") {
         const res = await fetch(
-          `${import.meta.env.vite_api_url}/User/Resetpassword/${selectedUserId}`,
+          `${import.meta.env.VITE_API_URL}/User/Resetpassword/${selectedUserId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -2344,7 +2344,7 @@ const Dashboard = () => {
       } else if (confirmAction === "Change Role") {
         // Handle role change
         const res = await fetch(
-          `${import.meta.env.vite_api_url}/User/Changerole/${selectedUserId}`,
+          `${import.meta.env.VITE_API_URL}/User/Changerole/${selectedUserId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -2387,7 +2387,7 @@ const Dashboard = () => {
     }
     setActionLoading(true); // Set loading to true
     try {
-      const res = await fetch(`${import.meta.env.vite_api_url}/Auth/Createuser`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/Auth/Createuser`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -2424,7 +2424,7 @@ const Dashboard = () => {
       if (action === "Pause" || action === "Resume") {
         const status = action === "Pause";
         const res = await fetch(
-          `${import.meta.env.vite_api_url}/User/Pauseandresume/${userId}`,
+          `${import.meta.env.VITE_API_URL}/User/Pauseandresume/${userId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -2475,7 +2475,7 @@ const Dashboard = () => {
       } else if (action === "Grant Access" || action === "Revoke Access") {
         setIsAccessLoading(true);
         const newAccess = action === "Grant Access";
-        const res = await fetch(`${import.meta.env.vite_api_url}/User/${userId}/access`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/User/${userId}/access`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

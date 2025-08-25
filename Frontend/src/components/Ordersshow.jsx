@@ -63,7 +63,7 @@ const OrdersHistory = () => {
     const fetchUser = async () => {
       setLoadingUser(true);
       try {
-        const response = await fetch(`${import.meta.env.vite_api_url}/Auth/check`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/Auth/check`, {
           credentials: "include",
         });
         if (!response.ok) {
@@ -104,7 +104,7 @@ const OrdersHistory = () => {
         }
 
         const response = await fetch(
-          `${import.meta.env.vite_api_url}/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
+          `${import.meta.env.VITE_API_URL}/Order${endpoint}?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
             searchQuery
           )}&status=${encodeURIComponent(statusFilter)}`,
           { credentials: "include" }
