@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import LoadingOverlay from "./LoadingOverlay";
 import { useTheme } from "../context/ThemeContext";
+import ConfirmationModal from "./ConfirmationModal";
 
 const OrderForm = () => {
   const { id } = useParams(); // leadId
@@ -37,6 +38,12 @@ const OrderForm = () => {
   const [orderExists, setOrderExists] = useState(false);
   const [existingOrder, setExistingOrder] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("Confirm");
 
   useEffect(() => {
     const checkOrderAndFetchLead = async () => {
@@ -119,6 +126,19 @@ const OrderForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // Restrict numeric fields to digits only
+    if (
+      [
+        "cardNumber",
+        "cardMonth",
+        "cardYear",
+        "cvv",
+        "zip",
+        "shippingZip",
+      ].includes(name)
+    ) {
+      if (!/^\d*$/.test(value)) return; // Allow only digits
+    }
     if (name === "cardNumber" && value.length > 16) return;
     if (name === "cardMonth" && value.length > 2) return;
     if (name === "cardYear" && value.length > 4) return;
@@ -126,6 +146,7 @@ const OrderForm = () => {
     if (name === "zip" && value.length > 5) return;
     if (name === "shippingZip" && value.length > 5) return;
     setFormData({ ...formData, [name]: value });
+    setHasUnsavedChanges(true);
   };
 
   const handleSameAsBilling = (e) => {
@@ -140,6 +161,7 @@ const OrderForm = () => {
         shippingState: formData.state,
         shippingZip: formData.zip,
       });
+      setHasUnsavedChanges(true);
     }
   };
 
@@ -195,10 +217,56 @@ const OrderForm = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const showSubmitConfirmation = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setConfirmTitle("Confirm Order Submission");
+    setConfirmMessage("Are you sure you want to submit this order?");
+    setConfirmText("Submit Order");
+    setConfirmAction(() => async () => {
+      await handleSubmit();
+      setShowConfirmModal(false);
+    });
+    setShowConfirmModal(true);
+  };
 
+  const showUpdateConfirmation = (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setConfirmTitle("Confirm Order Update");
+    setConfirmMessage("Are you sure you want to update this order?");
+    setConfirmText("Update Order");
+    setConfirmAction(() => async () => {
+      await handleUpdate();
+      setShowConfirmModal(false);
+    });
+    setShowConfirmModal(true);
+  };
+
+  const showCancelConfirmation = () => {
+    setConfirmTitle("Confirm Cancel");
+    setConfirmMessage("Are you sure you want to discard your changes?");
+    setConfirmText("Discard Changes");
+    setConfirmAction(() => () => {
+      setIsEditing(false);
+      setHasUnsavedChanges(false);
+      setShowConfirmModal(false);
+    });
+    setShowConfirmModal(true);
+  };
+
+  const showBackConfirmation = () => {
+    setConfirmTitle("Confirm Navigation");
+    setConfirmMessage("You have unsaved changes. Are you sure you want to leave?");
+    setConfirmText("Leave");
+    setConfirmAction(() => () => {
+      navigate("/home/orders");
+      setShowConfirmModal(false);
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleSubmit = async () => {
     setActionLoading(true);
     try {
       const response = await fetch("http://localhost:3000/Order/create", {
@@ -209,6 +277,7 @@ const OrderForm = () => {
       });
       if (response.ok) {
         toast.success("Order submitted successfully");
+        setHasUnsavedChanges(false);
         navigate("/home/orders");
       } else {
         const errorData = await response.json();
@@ -222,10 +291,7 @@ const OrderForm = () => {
     }
   };
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
+  const handleUpdate = async () => {
     setActionLoading(true);
     try {
       const response = await fetch(
@@ -240,6 +306,7 @@ const OrderForm = () => {
       if (response.ok) {
         toast.success("Order updated successfully");
         setIsEditing(false);
+        setHasUnsavedChanges(false);
         const orderResponse = await fetch(
           `http://localhost:3000/Order/checkorderbylead/${id}`,
           { credentials: "include" }
@@ -454,7 +521,7 @@ const OrderForm = () => {
           </div>
         ) : (
           <form
-            onSubmit={isEditing ? handleUpdate : handleSubmit}
+            onSubmit={isEditing ? showUpdateConfirmation : showSubmitConfirmation}
             className="max-w-4xl mx-auto space-y-8 text-gray-900 dark:text-gray-100"
           >
             <h1 className="text-3xl font-bold">
@@ -704,7 +771,7 @@ const OrderForm = () => {
               {isEditing && (
                 <button
                   type="button"
-                  onClick={() => !isLoading && !actionLoading && setIsEditing(false)}
+                  onClick={() => !isLoading && !actionLoading && showCancelConfirmation()}
                   className="bg-gray-600 dark:bg-gray-500 text-white px-6 py-2 rounded-lg mt-4 hover:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading || actionLoading}
                 >
@@ -713,7 +780,7 @@ const OrderForm = () => {
               )}
               <button
                 type="button"
-                onClick={() => !isLoading && !actionLoading && navigate("/home/orders")}
+                onClick={() => !isLoading && !actionLoading && (hasUnsavedChanges ? showBackConfirmation() : navigate("/home/orders"))}
                 className="bg-gray-600 dark:bg-gray-500 text-white px-6 py-2 rounded-lg mt-4 hover:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading || actionLoading}
               >
@@ -722,6 +789,23 @@ const OrderForm = () => {
             </div>
           </form>
         )}
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={confirmAction}
+          title={confirmTitle}
+          message={confirmMessage}
+          confirmText={confirmText}
+          cancelText="Cancel"
+          confirmButtonProps={{
+            disabled: isLoading || actionLoading,
+            className: `${isLoading || actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+          }}
+          cancelButtonProps={{
+            disabled: isLoading || actionLoading,
+            className: `${isLoading || actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
+          }}
+        />
       </div>
     </div>
   );

@@ -3,7 +3,16 @@ import { toast } from "react-toastify";
 import EmailPreviewModal from "../components/orderdetails/EmailPreviewModal";
 import { exportToExcel } from "./utilities/exportToExcel";
 
-const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, hasVendor, setHasVendor }) => {
+const OrderActions = ({
+  user,
+  order,
+  orderId,
+  vendors,
+  setOrder,
+  setVendors,
+  hasVendor,
+  setHasVendor,
+}) => {
   const [showVendorForm, setShowVendorForm] = useState(false);
   const [vendorForm, setVendorForm] = useState({
     businessName: "",
@@ -20,12 +29,15 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   });
   const [isNewVendor, setIsNewVendor] = useState(false);
   const [showNotesForm, setShowNotesForm] = useState(false);
-  const [showProcurementNotesForm, setShowProcurementNotesForm] = useState(false);
+  const [showProcurementNotesForm, setShowProcurementNotesForm] =
+    useState(false);
   const [showCostForm, setShowCostForm] = useState(false);
   const [showEditOrderForm, setShowEditOrderForm] = useState(false);
   const [showShipmentForm, setShowShipmentForm] = useState(false);
   const [notesForm, setNotesForm] = useState({ note: "" });
-  const [procurementNotesForm, setProcurementNotesForm] = useState({ note: "" });
+  const [procurementNotesForm, setProcurementNotesForm] = useState({
+    note: "",
+  });
   const [costForm, setCostForm] = useState({
     partCost: order?.leadId?.partCost || "",
     shippingCost: order?.leadId?.shippingCost || "",
@@ -69,43 +81,85 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
     const partCost = parseFloat(costForm.partCost) || 0;
     const shippingCost = parseFloat(costForm.shippingCost) || 0;
     const grossProfit = parseFloat(costForm.grossProfit) || 0;
-    const calculatedTotalCost = (partCost + shippingCost + grossProfit).toFixed(2);
+    const calculatedTotalCost = (partCost + shippingCost + grossProfit).toFixed(
+      2
+    );
     setCostForm((prev) => ({ ...prev, totalCost: calculatedTotalCost }));
   }, [costForm.partCost, costForm.shippingCost, costForm.grossProfit]);
 
   // Handle click outside to close forms
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (vendorButtonRef.current && !vendorButtonRef.current.contains(event.target) && !event.target.closest(".vendor-form")) {
+      if (
+        vendorButtonRef.current &&
+        !vendorButtonRef.current.contains(event.target) &&
+        !event.target.closest(".vendor-form")
+      ) {
         closeVendorForm();
       }
-      if (notesButtonRef.current && !notesButtonRef.current.contains(event.target) && !event.target.closest(".notes-form")) {
+      if (
+        notesButtonRef.current &&
+        !notesButtonRef.current.contains(event.target) &&
+        !event.target.closest(".notes-form")
+      ) {
         closeNotesForm();
       }
-      if (procurementNotesButtonRef.current && !procurementNotesButtonRef.current.contains(event.target) && !event.target.closest(".procurement-notes-form")) {
+      if (
+        procurementNotesButtonRef.current &&
+        !procurementNotesButtonRef.current.contains(event.target) &&
+        !event.target.closest(".procurement-notes-form")
+      ) {
         closeProcurementNotesForm();
       }
-      if (costButtonRef.current && !costButtonRef.current.contains(event.target) && !event.target.closest(".cost-form")) {
+      if (
+        costButtonRef.current &&
+        !costButtonRef.current.contains(event.target) &&
+        !event.target.closest(".cost-form")
+      ) {
         closeCostForm();
       }
-      if (editOrderButtonRef.current && !editOrderButtonRef.current.contains(event.target) && !event.target.closest(".edit-order-form")) {
+      if (
+        editOrderButtonRef.current &&
+        !editOrderButtonRef.current.contains(event.target) &&
+        !event.target.closest(".edit-order-form")
+      ) {
         closeEditOrderForm();
       }
-      if (shipmentButtonRef.current && !shipmentButtonRef.current.contains(event.target) && !event.target.closest(".shipment-form")) {
+      if (
+        shipmentButtonRef.current &&
+        !shipmentButtonRef.current.contains(event.target) &&
+        !event.target.closest(".shipment-form")
+      ) {
         closeShipmentForm();
       }
     };
 
-    if (showVendorForm || showNotesForm || showProcurementNotesForm || showCostForm || showEditOrderForm || showShipmentForm) {
+    if (
+      showVendorForm ||
+      showNotesForm ||
+      showProcurementNotesForm ||
+      showCostForm ||
+      showEditOrderForm ||
+      showShipmentForm
+    ) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showVendorForm, showNotesForm, showProcurementNotesForm, showCostForm, showEditOrderForm, showShipmentForm]);
+  }, [
+    showVendorForm,
+    showNotesForm,
+    showProcurementNotesForm,
+    showCostForm,
+    showEditOrderForm,
+    showShipmentForm,
+  ]);
 
   const handleVendorFormChange = (e) => {
     const { name, value } = e.target;
     if (name === "businessName" && !isNewVendor) {
-      const selectedVendor = vendors.find((vendor) => vendor.businessName === value);
+      const selectedVendor = vendors.find(
+        (vendor) => vendor.businessName === value
+      );
       if (selectedVendor) {
         setVendorForm({
           businessName: selectedVendor.businessName || "",
@@ -131,14 +185,19 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   const handleVendorFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/${orderId}/vendor`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ...vendorForm, isNewVendor }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/${orderId}/vendor`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ ...vendorForm, isNewVendor }),
+        }
+      );
       if (!response.ok) throw new Error("Failed to submit vendor details");
-      toast.success("Vendor details submitted successfully and status changed to PO Pending");
+      toast.success(
+        "Vendor details submitted successfully and status changed to PO Pending"
+      );
       setShowVendorForm(false);
       setHasVendor(true);
       setVendorForm({
@@ -164,10 +223,13 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
 
   const handleSendPurchaseOrder = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/Order/preview-purchase-order/${orderId}`, {
-        method: "GET",
-        credentials: "include",
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/preview-purchase-order/${orderId}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
       if (!response.ok) throw new Error("Failed to fetch email preview");
       const data = await response.json();
       setEmailContent(data.htmlContent);
@@ -181,9 +243,12 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   const handlePurchaseOrderSent = async () => {
     setShowEmailPreview(false);
     try {
-      const response = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, {
-        credentials: "include",
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/orderbyid/${orderId}`,
+        {
+          credentials: "include",
+        }
+      );
       if (!response.ok) throw new Error("Failed to refresh order data");
       const updatedOrder = await response.json();
       setOrder(updatedOrder);
@@ -221,12 +286,15 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   const handleNotesFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/${orderId}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ note: notesForm.note }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/${orderId}/notes`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ note: notesForm.note }),
+        }
+      );
       if (!response.ok) throw new Error("Failed to submit note");
       toast.success("Note added successfully");
       setShowNotesForm(false);
@@ -241,12 +309,15 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   const handleProcurementNotesFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/${orderId}/procurementnotes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ note: procurementNotesForm.note }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/${orderId}/procurementnotes`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ note: procurementNotesForm.note }),
+        }
+      );
       if (!response.ok) throw new Error("Failed to submit procurement note");
       toast.success("Procurement note added successfully");
       setShowProcurementNotesForm(false);
@@ -261,17 +332,20 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   const handleCostFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Lead/updatecost/${order.leadId._id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          partCost: parseFloat(costForm.partCost) || 0,
-          shippingCost: parseFloat(costForm.shippingCost) || 0,
-          grossProfit: parseFloat(costForm.grossProfit) || 0,
-          totalCost: parseFloat(costForm.totalCost) || 0,
-        }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Lead/updatecost/${order.leadId._id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            partCost: parseFloat(costForm.partCost) || 0,
+            shippingCost: parseFloat(costForm.shippingCost) || 0,
+            grossProfit: parseFloat(costForm.grossProfit) || 0,
+            totalCost: parseFloat(costForm.totalCost) || 0,
+          }),
+        }
+      );
       if (!response.ok) throw new Error("Failed to update costs");
       toast.success("Costs updated successfully");
       setShowCostForm(false);
@@ -285,12 +359,15 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   const handleEditOrderFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/update/${orderId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(editOrderForm),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/update/${orderId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(editOrderForm),
+        }
+      );
       if (!response.ok) throw new Error("Failed to update order details");
       const data = await response.json();
       toast.success("Order details updated successfully");
@@ -321,18 +398,21 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   const handleShipmentFormSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/Order/${orderId}/shipment`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          weight: parseFloat(shipmentForm.weight) || 0,
-          height: parseFloat(shipmentForm.height) || 0,
-          width: parseFloat(shipmentForm.width) || 0,
-          carrierName: shipmentForm.carrierName,
-          trackingNumber: shipmentForm.trackingNumber,
-        }),
-      });
+      const response = await fetch(
+        `http://localhost:3000/Order/${orderId}/shipment`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            weight: parseFloat(shipmentForm.weight) || 0,
+            height: parseFloat(shipmentForm.height) || 0,
+            width: parseFloat(shipmentForm.width) || 0,
+            carrierName: shipmentForm.carrierName,
+            trackingNumber: shipmentForm.trackingNumber,
+          }),
+        }
+      );
       if (!response.ok) throw new Error("Failed to update shipment details");
       toast.success("Shipment details updated successfully");
       setShowShipmentForm(false);
@@ -359,49 +439,143 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
       { Field: "Zip", Value: order.zip || "N/A" },
       { Field: "Shipping Address", Value: order.shippingAddress || "N/A" },
       { Field: "Shipping City", Value: order.shippingCity || "N/A" },
-      { Field: "Shipping State", Value: order.shippingState?.toUpperCase() || "N/A" },
+      {
+        Field: "Shipping State",
+        Value: order.shippingState?.toUpperCase() || "N/A",
+      },
       { Field: "Shipping Zip", Value: order.shippingZip || "N/A" },
       { Field: "Make", Value: order.make || "N/A" },
       { Field: "Model", Value: order.model || "N/A" },
       { Field: "Year", Value: order.year || "N/A" },
       { Field: "Trim", Value: order.leadId?.trim || "N/A" },
       { Field: "Part Requested", Value: order.leadId?.partRequested || "N/A" },
-      { Field: "Part Cost", Value: order.leadId?.partCost ? `$${order.leadId.partCost.toFixed(2)}` : "N/A" },
-      { Field: "Shipping Cost", Value: order.leadId?.shippingCost ? `$${order.leadId.shippingCost.toFixed(2)}` : "N/A" },
-      { Field: "Gross Profit", Value: order.leadId?.grossProfit ? `$${order.leadId.grossProfit.toFixed(2)}` : "N/A" },
-      { Field: "Total Cost", Value: order.leadId?.totalCost ? `$${order.leadId.totalCost.toFixed(2)}` : "N/A" },
-      { Field: "Amount", Value: order.amount ? `$${order.amount.toFixed(2)}` : "N/A" },
+      {
+        Field: "Part Cost",
+        Value: order.leadId?.partCost
+          ? `$${order.leadId.partCost.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Shipping Cost",
+        Value: order.leadId?.shippingCost
+          ? `$${order.leadId.shippingCost.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Gross Profit",
+        Value: order.leadId?.grossProfit
+          ? `$${order.leadId.grossProfit.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Total Cost",
+        Value: order.leadId?.totalCost
+          ? `$${order.leadId.totalCost.toFixed(2)}`
+          : "N/A",
+      },
+      {
+        Field: "Amount",
+        Value: order.amount ? `$${order.amount.toFixed(2)}` : "N/A",
+      },
       { Field: "Order Status", Value: order.status || "N/A" },
       { Field: "Lead Status", Value: order.leadId?.status || "N/A" },
-      { Field: "Sales Person", Value: order.salesPerson?.name || order.salesPerson?._id || "N/A" },
-      { Field: "Order Created At", Value: order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A" },
-      { Field: "Lead Created At", Value: order.leadId?.createdAt ? new Date(order.leadId.createdAt).toLocaleString() : "N/A" },
+      {
+        Field: "Sales Person",
+        Value: order.salesPerson?.name || order.salesPerson?._id || "N/A",
+      },
+      {
+        Field: "Order Created At",
+        Value: order.createdAt
+          ? new Date(order.createdAt).toLocaleString()
+          : "N/A",
+      },
+      {
+        Field: "Lead Created At",
+        Value: order.leadId?.createdAt
+          ? new Date(order.leadId.createdAt).toLocaleString()
+          : "N/A",
+      },
       ...(order.vendors?.length > 0
         ? order.vendors.flatMap((vendor, index) => [
-            { Field: `Vendor ${index + 1} Business Name`, Value: vendor.businessName || "N/A" },
-            { Field: `Vendor ${index + 1} Agent Name`, Value: vendor.agentName || "N/A" },
-            { Field: `Vendor ${index + 1} Phone Number`, Value: vendor.phoneNumber || "N/A" },
-            { Field: `Vendor ${index + 1} Email`, Value: vendor.email || "N/A" },
-            { Field: `Vendor ${index + 1} Cost Price`, Value: vendor.costPrice ? `$${vendor.costPrice.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Shipping Cost`, Value: vendor.shippingCost ? `$${vendor.shippingCost.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Core Price`, Value: vendor.corePrice ? `$${vendor.corePrice.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Total Cost`, Value: vendor.totalCost ? `$${vendor.totalCost.toFixed(2)}` : "N/A" },
-            { Field: `Vendor ${index + 1} Rating`, Value: vendor.rating || "N/A" },
-            { Field: `Vendor ${index + 1} Warranty`, Value: vendor.warranty || "N/A" },
-            { Field: `Vendor ${index + 1} Mileage`, Value: vendor.mileage || "N/A" },
-            { Field: `Vendor ${index + 1} Created At`, Value: vendor.createdAt ? new Date(vendor.createdAt).toLocaleString() : "N/A" },
+            {
+              Field: `Vendor ${index + 1} Business Name`,
+              Value: vendor.businessName || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Agent Name`,
+              Value: vendor.agentName || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Phone Number`,
+              Value: vendor.phoneNumber || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Email`,
+              Value: vendor.email || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Cost Price`,
+              Value: vendor.costPrice
+                ? `$${vendor.costPrice.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Shipping Cost`,
+              Value: vendor.shippingCost
+                ? `$${vendor.shippingCost.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Core Price`,
+              Value: vendor.corePrice
+                ? `$${vendor.corePrice.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Total Cost`,
+              Value: vendor.totalCost
+                ? `$${vendor.totalCost.toFixed(2)}`
+                : "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Rating`,
+              Value: vendor.rating || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Warranty`,
+              Value: vendor.warranty || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Mileage`,
+              Value: vendor.mileage || "N/A",
+            },
+            {
+              Field: `Vendor ${index + 1} Created At`,
+              Value: vendor.createdAt
+                ? new Date(vendor.createdAt).toLocaleString()
+                : "N/A",
+            },
           ])
         : [{ Field: "Vendor", Value: "No vendor details available" }]),
       ...(user?.role === "admin"
         ? [
             { Field: "Card Number", Value: order.cardNumber || "N/A" },
-            { Field: "Card Expiry", Value: order.cardMonth && order.cardYear ? `${order.cardMonth}/${order.cardYear}` : "N/A" },
+            {
+              Field: "Card Expiry",
+              Value:
+                order.cardMonth && order.cardYear
+                  ? `${order.cardMonth}/${order.cardYear}`
+                  : "N/A",
+            },
             { Field: "Card CVV", Value: order.cvv || "N/A" },
           ]
         : []),
     ];
     try {
-      exportToExcel(formattedOrder, `order_${order.order_id || "details"}.xlsx`);
+      exportToExcel(
+        formattedOrder,
+        `order_${order.order_id || "details"}.xlsx`
+      );
       toast.success("Order exported to Excel successfully");
     } catch (error) {
       toast.error("Error exporting order to Excel");
@@ -410,7 +584,10 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
   };
 
   const refreshOrder = async () => {
-    const response = await fetch(`http://localhost:3000/Order/orderbyid/${orderId}`, { credentials: "include" });
+    const response = await fetch(
+      `http://localhost:3000/Order/orderbyid/${orderId}`,
+      { credentials: "include" }
+    );
     if (response.ok) {
       const data = await response.json();
       setOrder(data);
@@ -448,7 +625,10 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
 
   const refreshOrderAndVendors = async () => {
     await refreshOrder();
-    const responseVendors = await fetch("http://localhost:3000/Order/getallvendors", { credentials: "include" });
+    const responseVendors = await fetch(
+      "http://localhost:3000/Order/getallvendors",
+      { credentials: "include" }
+    );
     if (responseVendors.ok) {
       const data = await responseVendors.json();
       setVendors(data);
@@ -599,7 +779,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
 
       {showVendorForm && (
         <div className="vendor-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
-          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">Add Vendor Details</h3>
+          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+            Add Vendor Details
+          </h3>
           <form onSubmit={handleVendorFormSubmit} className="space-y-4">
             <div className="flex gap-4 mb-4">
               <label className="flex items-center">
@@ -625,7 +807,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
             </div>
             {!isNewVendor ? (
               <div>
-                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Select Vendor</label>
+                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                  Select Vendor
+                </label>
                 <select
                   name="businessName"
                   value={vendorForm.businessName}
@@ -635,7 +819,10 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
                 >
                   <option value="">Select a vendor</option>
                   {vendors.map((vendor, index) => (
-                    <option key={vendor._id || index} value={vendor.businessName}>
+                    <option
+                      key={vendor._id || index}
+                      value={vendor.businessName}
+                    >
                       {vendor.businessName}
                     </option>
                   ))}
@@ -643,7 +830,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               </div>
             ) : (
               <div>
-                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Business Name</label>
+                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                  Business Name
+                </label>
                 <input
                   type="text"
                   name="businessName"
@@ -655,7 +844,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               </div>
             )}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Phone Number</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Phone Number
+              </label>
               <input
                 type="tel"
                 name="phoneNumber"
@@ -666,7 +857,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Email</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
@@ -677,7 +870,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Agent Name</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Agent Name
+              </label>
               <input
                 type="text"
                 name="agentName"
@@ -688,7 +883,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Cost Price</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Cost Price
+              </label>
               <input
                 type="number"
                 name="costPrice"
@@ -700,7 +897,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Shipping Cost</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Shipping Cost
+              </label>
               <input
                 type="number"
                 name="shippingCost"
@@ -712,7 +911,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Core Price</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Core Price
+              </label>
               <input
                 type="number"
                 name="corePrice"
@@ -724,7 +925,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Total Cost</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Total Cost
+              </label>
               <input
                 type="number"
                 name="totalCost"
@@ -736,7 +939,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Rating</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Rating
+              </label>
               <input
                 type="number"
                 name="rating"
@@ -750,7 +955,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Warranty</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Warranty
+              </label>
               <input
                 type="text"
                 name="warranty"
@@ -761,7 +968,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Mileage</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Mileage
+              </label>
               <input
                 type="number"
                 name="mileage"
@@ -792,10 +1001,14 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
       )}
       {showNotesForm && (
         <div className="notes-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
-          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">Add Note</h3>
+          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+            Add Note
+          </h3>
           <form onSubmit={handleNotesFormSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Note</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Note
+              </label>
               <textarea
                 name="note"
                 value={notesForm.note}
@@ -825,10 +1038,17 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
       )}
       {showProcurementNotesForm && (
         <div className="procurement-notes-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
-          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">Add Procurement Note</h3>
-          <form onSubmit={handleProcurementNotesFormSubmit} className="space-y-4">
+          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+            Add Procurement Note
+          </h3>
+          <form
+            onSubmit={handleProcurementNotesFormSubmit}
+            className="space-y-4"
+          >
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Procurement Note</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Procurement Note
+              </label>
               <textarea
                 name="note"
                 value={procurementNotesForm.note}
@@ -858,10 +1078,14 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
       )}
       {showCostForm && (
         <div className="cost-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
-          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">Edit Costs</h3>
+          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+            Edit Costs
+          </h3>
           <form onSubmit={handleCostFormSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Part Cost</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Part Cost
+              </label>
               <input
                 type="number"
                 name="partCost"
@@ -874,7 +1098,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Shipping Cost</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Shipping Cost
+              </label>
               <input
                 type="number"
                 name="shippingCost"
@@ -887,7 +1113,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Gross Profit</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Gross Profit
+              </label>
               <input
                 type="number"
                 name="grossProfit"
@@ -900,7 +1128,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Total Cost</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Total Cost
+              </label>
               <input
                 type="number"
                 name="totalCost"
@@ -931,10 +1161,14 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
       )}
       {showEditOrderForm && (
         <div className="edit-order-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
-          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">Edit Order Details</h3>
+          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+            Edit Order Details
+          </h3>
           <form onSubmit={handleEditOrderFormSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Client Name</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Client Name
+              </label>
               <input
                 type="text"
                 name="clientName"
@@ -945,7 +1179,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Phone</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Phone
+              </label>
               <input
                 type="tel"
                 name="phone"
@@ -956,7 +1192,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Email</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
@@ -967,7 +1205,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Billing Address</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Billing Address
+              </label>
               <input
                 type="text"
                 name="billingAddress"
@@ -978,7 +1218,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">City</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                City
+              </label>
               <input
                 type="text"
                 name="city"
@@ -989,7 +1231,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">State</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                State
+              </label>
               <input
                 type="text"
                 name="state"
@@ -1000,7 +1244,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Zip</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Zip
+              </label>
               <input
                 type="text"
                 name="zip"
@@ -1011,7 +1257,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Shipping Address</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Shipping Address
+              </label>
               <input
                 type="text"
                 name="shippingAddress"
@@ -1022,7 +1270,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Shipping City</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Shipping City
+              </label>
               <input
                 type="text"
                 name="shippingCity"
@@ -1033,7 +1283,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Shipping State</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Shipping State
+              </label>
               <input
                 type="text"
                 name="shippingState"
@@ -1044,7 +1296,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Shipping Zip</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Shipping Zip
+              </label>
               <input
                 type="text"
                 name="shippingZip"
@@ -1055,7 +1309,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Make</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Make
+              </label>
               <input
                 type="text"
                 name="make"
@@ -1066,7 +1322,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Model</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Model
+              </label>
               <input
                 type="text"
                 name="model"
@@ -1077,7 +1335,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Year</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Year
+              </label>
               <input
                 type="number"
                 name="year"
@@ -1109,10 +1369,14 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
       )}
       {showShipmentForm && (
         <div className="shipment-form absolute mt-3 w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 z-50">
-          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">Add Shipment Details</h3>
+          <h3 className="text-xl font-medium mb-4 text-gray-800 dark:text-gray-200">
+            Add Shipment Details
+          </h3>
           <form onSubmit={handleShipmentFormSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Weight (in pounds)</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Weight (in pounds)
+              </label>
               <input
                 type="number"
                 name="weight"
@@ -1125,7 +1389,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Height (in cm)</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Height (in cm)
+              </label>
               <input
                 type="number"
                 name="height"
@@ -1138,7 +1404,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Width (in cm)</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Width (in cm)
+              </label>
               <input
                 type="number"
                 name="width"
@@ -1151,7 +1419,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Carrier Name</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Carrier Name
+              </label>
               <input
                 type="text"
                 name="carrierName"
@@ -1162,7 +1432,9 @@ const OrderActions = ({ user, order, orderId, vendors, setOrder, setVendors, has
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">Tracking Number</label>
+              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Tracking Number
+              </label>
               <input
                 type="text"
                 name="trackingNumber"

@@ -32,7 +32,12 @@ const leadSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now },
     },
   ],
-  importantDates: [{ type: String }],
+  importantDates: [
+    {
+      date: { type: String, required: true },
+      note: { type: String, default: "" },
+    },
+  ],
   partCost: { type: Number, default: 0 },
   shippingCost: { type: Number, default: 0 },
   grossProfit: { type: Number, default: 0 },

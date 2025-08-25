@@ -9,7 +9,7 @@ import { io } from '../socket.js'
 const ADMIN_EMAIL = "sachinpradeepan27@gmail.com";
 
 //========================================= creating leads
-export const createleads =  async (req, res, next) => {
+export const createleads = async (req, res, next) => {
   console.log("Lead creation working");
   const errors = validationResult(req);
   console.log("errors:", errors);
@@ -33,7 +33,6 @@ export const createleads =  async (req, res, next) => {
       const salesTeam = await User.find({
         role: "sales",
         isPaused: false,
-        //status: "Available",
       });
       console.log("salesteam", salesTeam);
       if (salesTeam.length === 0) {
@@ -93,7 +92,7 @@ export const createleads =  async (req, res, next) => {
         recipient: salesNotification.recipient,
         message: salesNotification.message,
         type: salesNotification.type,
-        lead: { _id: salesNotification.lead.toString() }, // Send lead as object
+        lead: { _id: salesNotification.lead.toString() },
         createdAt: salesNotification.createdAt.toISOString(),
         isRead: salesNotification.isRead,
       });
@@ -104,7 +103,7 @@ export const createleads =  async (req, res, next) => {
           recipient: admin._id,
           message: `New lead: ${clientName} - ${partRequested} to ${salesPerson.name}`,
           type: 'new_lead',
-          lead: { _id: newLead._id.toString() }, // Send lead as object
+          lead: { _id: newLead._id.toString() },
           createdAt: now.toISOString(),
           isRead: false,
         });
@@ -130,11 +129,8 @@ export const createleads =  async (req, res, next) => {
           </div>
       `;
 
-      // Send Email to Admin
       await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
-      res
-        .status(201)
-        .json({ message: "Lead created successfully and notifications sent" });
+      res.status(201).json({ message: "Lead created successfully and notifications sent" });
     } catch (error) {
       console.log("An error occurred", error);
       res.status(500).json({ message: "Error creating lead" });
@@ -142,7 +138,7 @@ export const createleads =  async (req, res, next) => {
   }
 };
 
-//================================================================= //manual creation of leads
+//================================================================= manual creation of leads
 export const createLeadBySalesperson = async (req, res, next) => { 
   console.log("Salesperson creating a lead");
   const errors = validationResult(req);
@@ -165,13 +161,11 @@ export const createLeadBySalesperson = async (req, res, next) => {
 
     const salesPersonId = req.user.id;  
 
-    // Fetch salesperson details
     const salesperson = await User.findById(salesPersonId);
     if (!salesperson) {
       return res.status(404).json({ message: 'Salesperson not found' });
     }
 
-    // Create the new lead
     const newLead = new Lead({
       clientName,
       phoneNumber,
@@ -187,7 +181,6 @@ export const createLeadBySalesperson = async (req, res, next) => {
     });
     await newLead.save();
 
-    // Create salesperson notification
     const salesNotification = new Notification({
       recipient: salesPersonId,
       message: `You created a new lead: ${clientName} - ${partRequested}`,
@@ -196,7 +189,6 @@ export const createLeadBySalesperson = async (req, res, next) => {
     });
     await salesNotification.save();
 
-    // Notify all admins
     const admins = await User.find({ role: 'admin' });
     const adminNotifications = admins.map(admin => ({
       recipient: admin._id,
@@ -205,13 +197,13 @@ export const createLeadBySalesperson = async (req, res, next) => {
       lead: newLead._id,
     }));
     await Notification.insertMany(adminNotifications);
-    // Emit socket events
+
     io.to(salesPersonId.toString()).emit('newNotification', {
       _id: salesNotification._id,
       recipient: salesNotification.recipient,
       message: salesNotification.message,
       type: salesNotification.type,
-      lead: { _id: salesNotification.lead.toString() }, // Send lead as object
+      lead: { _id: salesNotification.lead.toString() },
       createdAt: salesNotification.createdAt.toISOString(),
       isRead: salesNotification.isRead,
     });
@@ -222,12 +214,12 @@ export const createLeadBySalesperson = async (req, res, next) => {
         recipient: admin._id,
         message: `New lead created by ${salesperson.name}: ${clientName} - ${partRequested}`,
         type: 'new_lead',
-        lead: { _id: newLead._id.toString() }, // Send lead as object
+        lead: { _id: newLead._id.toString() },
         createdAt: now.toISOString(),
         isRead: false,
       });
     });
-    // Send email to admin
+
     const emailContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
         <h2 style="color: #333;">New Quotation Request</h2>
@@ -254,30 +246,27 @@ export const createLeadBySalesperson = async (req, res, next) => {
   }
 };
 
-
-//==============================================================getingleads
+//==============================================================getting leads
 export const getleads = async (req, res, next) => {
   console.log("getlist controller working");
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
-  const search = req.query.search?.trim() || ""; // Trim search input
+  const search = req.query.search?.trim() || "";
   const status = req.query.status || "";
 
   const query = {};
 
-  // Search logic (on clientName, email, phoneNumber, partRequested, zip)
   if (search) {
     const isNumericSearch = !isNaN(search) && search !== "";
     query.$or = [
       { clientName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
       { phoneNumber: { $regex: search, $options: "i" } },
-      { partRequested: { $regex: search, $options: "i" } }, // Added partRequested
-      ...(isNumericSearch ? [{ zip: search }] : []), // Exact match for zip if numeric
+      { partRequested: { $regex: search, $options: "i" } },
+      ...(isNumericSearch ? [{ zip: search }] : []),
     ];
   }
 
-  // Status filter logic
   if (status) {
     query.status = status;
   }
@@ -289,7 +278,7 @@ export const getleads = async (req, res, next) => {
       .limit(limit)
       .sort({ createdAt: -1 })
       .populate("salesPerson", "name")
-      .lean(); // Use lean for better performance
+      .lean();
     console.log("leads", leads);
     res.status(200).json({
       leads,
@@ -315,7 +304,7 @@ export const leadbyperson = async (req, res, next) => {
 
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
-  const search = req.query.search?.trim() || ""; // Trim search input
+  const search = req.query.search?.trim() || "";
   const status = req.query.status || "";
 
   const query = { salesPerson: userId };
@@ -326,8 +315,8 @@ export const leadbyperson = async (req, res, next) => {
       { clientName: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
       { phoneNumber: { $regex: search, $options: "i" } },
-      { partRequested: { $regex: search, $options: "i" } }, // Added partRequested
-      ...(isNumericSearch ? [{ zip: search }] : []), // Exact match for zip if numeric
+      { partRequested: { $regex: search, $options: "i" } },
+      ...(isNumericSearch ? [{ zip: search }] : []),
     ];
   }
 
@@ -341,7 +330,7 @@ export const leadbyperson = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 })
-      .lean(); // Use lean for better performance
+      .lean();
     res.status(200).json({
       leads,
       totalPages: Math.ceil(totalLeads / limit),
@@ -351,7 +340,7 @@ export const leadbyperson = async (req, res, next) => {
     console.error("Error fetching user-specific leads:", error);
     res.status(500).json({ message: "Error while fetching your leads." });
   }
-}; //getting individual leads by each person
+};
 
 //==============================================editing lead status
 export const editstatus = async (req, res, next) => {
@@ -366,23 +355,19 @@ export const editstatus = async (req, res, next) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    // Check if the new status is the same as the current status
     if (lead.status === status) {
       return res.status(400).json({
         message: `Status is already set to ${status}.`,
       });
     }
 
-    // Prevent changing status if current status is "Ordered"
     if (lead.status === "Ordered" && status !== "Ordered") {
       return res.status(400).json({
         message: "Cannot change status: Lead is already set to Ordered.",
       });
     }
 
-    // Check if status is being set to "Ordered"
     if (status === "Ordered") {
-      // Verify that partCost, shippingCost, grossProfit, and totalCost are set
       if (
         !lead.partCost ||
         !lead.shippingCost ||
@@ -398,7 +383,6 @@ export const editstatus = async (req, res, next) => {
 
     lead.status = status;
 
-    console.log("testing", req.user);
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     lead.notes.push({
       text: `changed to '${status}' by ${userIdentity}`,
@@ -413,6 +397,7 @@ export const editstatus = async (req, res, next) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 //======================================leadsbyid
 export const getLeadById = async (req, res, next) => {
   try {
@@ -420,7 +405,7 @@ export const getLeadById = async (req, res, next) => {
     console.log("id of single:", id);
 
     const lead = await Lead.findById(id);
-    console.log("Lead:",lead);
+    console.log("Lead:", lead);
     
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
@@ -432,7 +417,7 @@ export const getLeadById = async (req, res, next) => {
   }
 };
 
-////===================================================================
+//===================================================================
 
 export const createnotes = async (req, res, next) => {
   try {
@@ -474,7 +459,7 @@ export const deletenotes = async (req, res, next) => {
 
     const updatedLead = await Lead.findByIdAndUpdate(
       id,
-      { $pull: { notes: { _id: noteid } } }, // Remove note
+      { $pull: { notes: { _id: noteid } } },
       { new: true }
     );
 
@@ -496,26 +481,36 @@ export const adddate = async (req, res, next) => {
   console.log("Dates controller working");
   try {
     const id = req.params.id;
-    const { selectedDate } = req.body;
+    const { selectedDate, note } = req.body;
     const lead = await Lead.findById(id);
 
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
     }
 
+    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+
     if (req.method === "POST") {
-      if (!lead.importantDates.includes(selectedDate)) {
-        lead.importantDates.push(selectedDate);
+      const dateExists = lead.importantDates.some(d => d.date === selectedDate);
+      if (!dateExists) {
+        lead.importantDates.push({ date: selectedDate, note: note || "" });
+        lead.notes.push({
+          text: `Added important date ${selectedDate}${note ? ` with note: "${note}"` : ""} by ${userIdentity}`,
+          addedBy: userIdentity,
+          createdAt: new Date(),
+        });
+      } else {
+        return res.status(400).json({ message: "Date already exists" });
       }
     }
 
     await lead.save();
-    res.status(200).json({ message: "Date updated successfully", lead });
+    res.status(200).json({ message: "Date and note updated successfully", lead });
   } catch (error) {
     console.error("Error updating date:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
-}; ///adding date
+};
 
 export const deleteDate = async (req, res, next) => {
   console.log("Deleting date...");
@@ -527,7 +522,16 @@ export const deleteDate = async (req, res, next) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    lead.importantDates = lead.importantDates.filter((d) => d !== date);
+    const dateObj = lead.importantDates.find(d => d.date === date);
+    const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+
+    lead.importantDates = lead.importantDates.filter(d => d.date !== date);
+    lead.notes.push({
+      text: `Removed important date ${date}${dateObj?.note ? ` with note: "${dateObj.note}"` : ""} by ${userIdentity}`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
+
     await lead.save();
 
     res.status(200).json({ message: "Date removed successfully", lead });
@@ -535,17 +539,16 @@ export const deleteDate = async (req, res, next) => {
     console.error("Error deleting date:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
-}; ///removing date
+};
+
+// ... (other controllers remain unchanged)
 
 export const editlead = async (req, res, next) => {
   try {
     const leadId = req.params.id;
     const updatedFields = req.body;
-    const user = req.user; 
-    console.log("user",user)
-    // Assuming req.user is set by authentication middleware
+    const user = req.user;
 
-    // Define the fields that are allowed to be updated
     const allowedFields = [
       "clientName",
       "phoneNumber",
@@ -558,7 +561,6 @@ export const editlead = async (req, res, next) => {
       "trim",
     ];
 
-    // Filter updatedFields to only include allowed fields
     const filteredFields = {};
     allowedFields.forEach((field) => {
       if (updatedFields[field] !== undefined) {
@@ -566,23 +568,32 @@ export const editlead = async (req, res, next) => {
       }
     });
 
-    // Fetch the existing lead to compare changes
     const existingLead = await Lead.findById(leadId);
     if (!existingLead) {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    // Generate a note summarizing the changes
+    // Check if there are any actual changes
+    const hasChanges = Object.keys(filteredFields).some(
+      (field) => filteredFields[field] !== (existingLead[field] || "")
+    );
+
+    if (!hasChanges) {
+      return res.status(200).json(existingLead); // Return existing lead without updating
+    }
+
     const changes = [];
     for (const field of allowedFields) {
-      if (filteredFields[field] !== undefined && filteredFields[field] !== existingLead[field]) {
+      if (
+        filteredFields[field] !== undefined &&
+        filteredFields[field] !== (existingLead[field] || "")
+      ) {
         changes.push(
           `${field} changed from "${existingLead[field] || "N/A"}" to "${filteredFields[field]}"`
         );
       }
     }
 
-    // Create a new note if there are changes
     let noteUpdate = {};
     if (changes.length > 0) {
       const noteText = `Lead updated by ${user.name || user.email || "Unknown User"}: ${changes.join("; ")}`;
@@ -597,7 +608,6 @@ export const editlead = async (req, res, next) => {
       };
     }
 
-    // Update the lead with filtered fields and append the note (if any)
     const updatedLead = await Lead.findByIdAndUpdate(
       leadId,
       { $set: filteredFields, ...noteUpdate },
@@ -614,6 +624,7 @@ export const editlead = async (req, res, next) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 export const updatecost = async (req, res, next) => {
   const { id } = req.params;
   const { partCost, shippingCost, grossProfit, warranty, totalCost } = req.body;
@@ -624,20 +635,32 @@ export const updatecost = async (req, res, next) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    // Update cost fields
+    // Check if there are any changes
+    const hasChanges =
+      (partCost !== undefined && parseFloat(partCost) !== (lead.partCost || 0)) ||
+      (shippingCost !== undefined && parseFloat(shippingCost) !== (lead.shippingCost || 0)) ||
+      (grossProfit !== undefined && parseFloat(grossProfit) !== (lead.grossProfit || 0)) ||
+      (warranty !== undefined && warranty !== (lead.warranty || "0 months")) ||
+      (totalCost !== undefined && parseFloat(totalCost) !== (lead.totalCost || 0));
+
+    if (!hasChanges) {
+      return res.status(200).json(lead); // Return existing lead without updating
+    }
+
+    // Update fields only if provided and different
     lead.partCost = partCost !== undefined ? parseFloat(partCost) : lead.partCost;
     lead.shippingCost = shippingCost !== undefined ? parseFloat(shippingCost) : lead.shippingCost;
     lead.grossProfit = grossProfit !== undefined ? parseFloat(grossProfit) : lead.grossProfit;
-    lead.warranty = warranty || lead.warranty; // Warranty is now a string
+    lead.warranty = warranty || lead.warranty;
     lead.totalCost = totalCost !== undefined ? parseFloat(totalCost) : lead.totalCost;
-    
+
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
     lead.notes.push({
-      text: `Costs updated by ${userIdentity}.Total:$${lead.totalCost},Warranty:${lead.warranty}`,
+      text: `Costs updated by ${userIdentity}. Total:$${lead.totalCost}, Warranty:${lead.warranty}`,
       addedBy: userIdentity,
       createdAt: new Date(),
     });
-    
+
     await lead.save();
     res.status(200).json(lead);
   } catch (error) {
@@ -662,7 +685,7 @@ export const leadquatation = async (req, res) => {
     if (!lead.totalCost || lead.totalCost <= 0) {
       return res.status(400).json({ message: "Quotation cannot be sent without a valid total cost" });
     }
-    // Email content
+
     const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
       <div style="text-align: center;">
@@ -740,10 +763,8 @@ export const leadquatation = async (req, res) => {
   }
 };
 
-
-export const changeowner =  async (req, res) => {
+export const changeowner = async (req, res) => {
   try {
-    // Restrict to admins only
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
@@ -752,18 +773,15 @@ export const changeowner =  async (req, res) => {
     console.log("Lead ID:", id);
     console.log("Salesperson ID:", salesPersonId);
 
-    // Validate input
     if (!id || !salesPersonId) {
       return res.status(400).json({ message: "Lead ID and Salesperson ID are required." });
     }
 
-    // Find the lead
     const lead = await Lead.findById(id);
     if (!lead) {
       return res.status(404).json({ message: "Lead not found." });
     }
 
-    // Find and validate the salesperson
     const salesPerson = await User.findById(salesPersonId);
     if (!salesPerson) {
       return res.status(404).json({ message: "Salesperson not found." });
@@ -781,17 +799,14 @@ export const changeowner =  async (req, res) => {
       return res.status(400).json({ message: "Lead is already assigned to this salesperson." });
     }
 
-    // Fetch the admin who is reassigning
     const admin = await User.findById(req.user.id);
     if (!admin) {
       return res.status(404).json({ message: "Admin not found." });
     }
 
-    // Reassign the lead
     lead.salesPerson = salesPersonId;
     await lead.save();
 
-    // Create salesperson notification
     const salesNotification = new Notification({
       recipient: salesPersonId,
       message: `Lead  ${lead.clientName} has been assigned to you`,
@@ -800,7 +815,6 @@ export const changeowner =  async (req, res) => {
     });
     await salesNotification.save();
 
-    // Notify all admins
     const admins = await User.find({ role: 'admin' });
     const adminNotifications = admins.map(adminUser => ({
       recipient: adminUser._id,
@@ -810,7 +824,6 @@ export const changeowner =  async (req, res) => {
     }));
     await Notification.insertMany(adminNotifications);
 
-    // Emit socket events
     io.to(salesPersonId.toString()).emit('newNotification', {
       _id: salesNotification._id,
       recipient: salesNotification.recipient,
