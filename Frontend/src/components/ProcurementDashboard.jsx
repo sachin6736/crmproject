@@ -84,7 +84,7 @@ const ProcurementDashboard = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:3000/User/me", {
+        const res = await fetch(`${import.meta.env.vite_api_url}/User/me`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -115,21 +115,21 @@ const ProcurementDashboard = () => {
           deliveredMetricsRes,
         ] = await Promise.all([
           fetch(
-            `http://localhost:3000/Procurement/getProcurementOrders${queryString}`,
+            `${import.meta.env.vite_api_url}/Procurement/getProcurementOrders${queryString}`,
             {
               method: "GET",
               credentials: "include",
             }
           ),
           fetch(
-            `http://localhost:3000/Procurement/getProcurementOrderAmountTotals${queryString}`,
+            `${import.meta.env.vite_api_url}/Procurement/getProcurementOrderAmountTotals${queryString}`,
             {
               method: "GET",
               credentials: "include",
             }
           ),
           fetch(
-            `http://localhost:3000/Procurement/getProcurementDeliveredMetrics${queryString}`,
+            `${import.meta.env.vite_api_url}/Procurement/getProcurementDeliveredMetrics${queryString}`,
             {
               method: "GET",
               credentials: "include",
@@ -219,7 +219,7 @@ const ProcurementDashboard = () => {
         const queryString = `?${query.join("&")}`;
 
         const statusComparisonRes = await fetch(
-          `http://localhost:3000/Procurement/getProcurementOrderStatusComparison${queryString}`,
+          `${import.meta.env.vite_api_url}/Procurement/getProcurementOrderStatusComparison${queryString}`,
           {
             method: "GET",
             credentials: "include",
@@ -253,7 +253,7 @@ const ProcurementDashboard = () => {
   const handleDeleteOrder = async (orderId) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/delete/${orderId}`,
+        `${import.meta.env.vite_api_url}/Order/delete/${orderId}`,
         {
           method: "DELETE",
           credentials: "include",

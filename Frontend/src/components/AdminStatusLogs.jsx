@@ -29,7 +29,7 @@ const AdminStatusLogs = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch('http://localhost:3000/Auth/check', {
+        const response = await fetch(`${import.meta.env.vite_api_url}/Auth/check`, {
           credentials: 'include',
         });
         if (!response.ok) {
@@ -56,7 +56,7 @@ const AdminStatusLogs = () => {
 
     const fetchUsers = async () => {
       try {
-        const response = await fetch('http://localhost:3000/Sales/all', {
+        const response = await fetch(`${import.meta.env.vite_api_url}/Sales/all`, {
           credentials: 'include',
         });
         if (!response.ok) {
@@ -92,7 +92,7 @@ const AdminStatusLogs = () => {
     setLoadingDurations(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/Sales/status-logs/${selectedUserId}?date=${date}`,
+        `${import.meta.env.vite_api_url}/Sales/status-logs/${selectedUserId}?date=${date}`,
         { credentials: 'include' }
       );
       if (!response.ok) {

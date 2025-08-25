@@ -186,7 +186,7 @@ const OrderActions = ({
     e.preventDefault();
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/${orderId}/vendor`,
+        `${import.meta.env.vite_api_url}/Order/${orderId}/vendor`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -224,7 +224,7 @@ const OrderActions = ({
   const handleSendPurchaseOrder = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/preview-purchase-order/${orderId}`,
+        `${import.meta.env.vite_api_url}/Order/preview-purchase-order/${orderId}`,
         {
           method: "GET",
           credentials: "include",
@@ -244,7 +244,7 @@ const OrderActions = ({
     setShowEmailPreview(false);
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/orderbyid/${orderId}`,
+        `${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`,
         {
           credentials: "include",
         }
@@ -287,7 +287,7 @@ const OrderActions = ({
     e.preventDefault();
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/${orderId}/notes`,
+        `${import.meta.env.vite_api_url}/Order/${orderId}/notes`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -310,7 +310,7 @@ const OrderActions = ({
     e.preventDefault();
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/${orderId}/procurementnotes`,
+        `${import.meta.env.vite_api_url}/Order/${orderId}/procurementnotes`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -333,7 +333,7 @@ const OrderActions = ({
     e.preventDefault();
     try {
       const response = await fetch(
-        `http://localhost:3000/Lead/updatecost/${order.leadId._id}`,
+        `${import.meta.env.vite_api_url}/Lead/updatecost/${order.leadId._id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -360,7 +360,7 @@ const OrderActions = ({
     e.preventDefault();
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/update/${orderId}`,
+        `${import.meta.env.vite_api_url}/Order/update/${orderId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -399,7 +399,7 @@ const OrderActions = ({
     e.preventDefault();
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/${orderId}/shipment`,
+        `${import.meta.env.vite_api_url}/Order/${orderId}/shipment`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -585,7 +585,7 @@ const OrderActions = ({
 
   const refreshOrder = async () => {
     const response = await fetch(
-      `http://localhost:3000/Order/orderbyid/${orderId}`,
+      `${import.meta.env.vite_api_url}/Order/orderbyid/${orderId}`,
       { credentials: "include" }
     );
     if (response.ok) {
@@ -626,7 +626,7 @@ const OrderActions = ({
   const refreshOrderAndVendors = async () => {
     await refreshOrder();
     const responseVendors = await fetch(
-      "http://localhost:3000/Order/getallvendors",
+      `${import.meta.env.vite_api_url}/Order/getallvendors`,
       { credentials: "include" }
     );
     if (responseVendors.ok) {

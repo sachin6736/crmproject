@@ -87,7 +87,7 @@ function UserForm() {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/Lead/createnewlead', {
+      const response = await fetch(`${import.meta.env.vite_api_url}/Lead/createnewlead`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

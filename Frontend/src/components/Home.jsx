@@ -57,7 +57,7 @@ function Home() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('http://localhost:3000/User/me', {
+      const res = await fetch(`${import.meta.env.vite_api_url}/User/me`, {
         credentials: 'include',
       });
       if (!res.ok) {
@@ -77,7 +77,7 @@ function Home() {
   const fetchNotifications = async () => {
     if (!user?._id) return;
     try {
-      const res = await fetch(`http://localhost:3000/Notification/user/${user._id}`, {
+      const res = await fetch(`${import.meta.env.vite_api_url}/Notification/user/${user._id}`, {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to fetch notifications');
@@ -96,7 +96,7 @@ function Home() {
   useEffect(() => {
     if (user?._id) {
       fetchNotifications();
-      socketRef.current = io('http://localhost:3000', {
+      socketRef.current = io(`${import.meta.env.vite_api_url}`, {
         withCredentials: true,
       });
 
@@ -140,7 +140,7 @@ function Home() {
 
   const handleLogout = async () => {
     try {
-      const res = await fetch('http://localhost:3000/Auth/logout', {
+      const res = await fetch(`${import.meta.env.vite_api_url}/Auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -174,7 +174,7 @@ function Home() {
 
     try {
       const res = await fetch(
-        `http://localhost:3000/Sales/changestatus/${user._id}`,
+        `${import.meta.env.vite_api_url}/Sales/changestatus/${user._id}`,
         {
           method: 'POST',
           headers: {
@@ -208,7 +208,7 @@ function Home() {
 
   const markNotificationAsRead = async (notificationId) => {
     try {
-      const res = await fetch(`http://localhost:3000/Notification/${notificationId}/read`, {
+      const res = await fetch(`${import.meta.env.vite_api_url}/Notification/${notificationId}/read`, {
         method: 'PUT',
         credentials: 'include',
       });

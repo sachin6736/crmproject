@@ -50,7 +50,7 @@ const OrderForm = () => {
       setIsLoading(true);
       try {
         const orderResponse = await fetch(
-          `http://localhost:3000/Order/checkorderbylead/${id}`,
+          `${import.meta.env.vite_api_url}/Order/checkorderbylead/${id}`,
           { credentials: "include" }
         );
         if (orderResponse.ok) {
@@ -84,7 +84,7 @@ const OrderForm = () => {
         }
 
         const leadResponse = await fetch(
-          `http://localhost:3000/Lead/getleadbyid/${id}`,
+          `${import.meta.env.vite_api_url}/Lead/getleadbyid/${id}`,
           { credentials: "include" }
         );
         if (!leadResponse.ok) {
@@ -269,7 +269,7 @@ const OrderForm = () => {
   const handleSubmit = async () => {
     setActionLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/Order/create", {
+      const response = await fetch(`${import.meta.env.vite_api_url}/Order/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -295,7 +295,7 @@ const OrderForm = () => {
     setActionLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/Order/update/${existingOrder?._id}`,
+        `${import.meta.env.vite_api_url}/Order/update/${existingOrder?._id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -308,7 +308,7 @@ const OrderForm = () => {
         setIsEditing(false);
         setHasUnsavedChanges(false);
         const orderResponse = await fetch(
-          `http://localhost:3000/Order/checkorderbylead/${id}`,
+          `${import.meta.env.vite_api_url}/Order/checkorderbylead/${id}`,
           { credentials: "include" }
         );
         if (orderResponse.ok) {

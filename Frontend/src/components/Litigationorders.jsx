@@ -38,7 +38,7 @@ const LitigationOrders = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:3000/Auth/check", {
+        const response = await fetch(`${import.meta.env.vite_api_url}/Auth/check`, {
           credentials: "include",
         });
         if (!response.ok) {
@@ -66,7 +66,7 @@ const LitigationOrders = () => {
       setLoadingOrders(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/LiteReplace/getLitigation?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
+          `${import.meta.env.vite_api_url}/LiteReplace/getLitigation?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(
             searchQuery
           )}`,
           { credentials: "include" }

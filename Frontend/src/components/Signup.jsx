@@ -72,7 +72,7 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/Auth/signup', {
+      const response = await fetch(`${import.meta.env.vite_api_url}/Auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
