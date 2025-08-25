@@ -3,7 +3,7 @@ import { io, server, app } from './socket.js';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';  
+import cookieParser from 'cookie-parser';
 
 // Importing routes
 import leadroutes from './routes/leadroutes.js';
@@ -18,11 +18,19 @@ import notificationRoutes from './routes/notificationRoutes.js';
 
 dotenv.config();
 
-const FRONTEND_URL = 'http://localhost:5173';
+// Use environment variable for frontend URL, default to localhost for development
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // CORS Configuration
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    const allowedOrigins = [FRONTEND_URL, 'https://crmproject-tau.vercel.app'];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
@@ -33,7 +41,6 @@ app.use(cookieParser());
 // New webhook route for Zapier
 app.post('/webhook/lead', async (req, res) => {
   try {
-    // Assuming createleads is imported or available; adjust if needed
     const { createleads } = await import('./controllers/leadcontrollers.js');
     await createleads(req, res);
   } catch (error) {
@@ -69,11 +76,8 @@ io.on('connection', (socket) => {
 
 const port = process.env.PORT || 3000;
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+// MongoDB connection (remove deprecated options)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log('Error occurred', err));
 
