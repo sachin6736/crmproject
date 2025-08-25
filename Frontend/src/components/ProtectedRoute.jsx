@@ -7,21 +7,19 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://crmproject-mchb.onrender.com';
-        const res = await fetch(`${apiUrl}/Auth/check`, {
+        const res = await fetch(`${import.meta.env.vite_api_url}/Auth/check`, {
           method: 'GET',
           credentials: 'include', // ✅ send cookies
         });
 
         if (res.ok) {
-          const data = await res.json();
-          console.log("User:", data.user); // optional: see decoded user (id, role, etc.)
+           const data = await res.json();
+          // console.log("User:", data.user); // optional: see decoded user (id, role, etc.)
           setAuth(true);
         } else {
           setAuth(false);
         }
       } catch (err) {
-        console.error("Auth check error:", err);
         setAuth(false);
       }
     };
@@ -30,7 +28,7 @@ const ProtectedRoute = ({ children }) => {
   }, []);
 
   if (auth === null) return <div>Loading...</div>;
-  if (auth === false) return <Navigate to="/" />; // Assuming "/" is the login page
+  if (auth === false) return <Navigate to="/" />;
 
   return children;
 };
