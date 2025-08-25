@@ -3,7 +3,7 @@ import { io, server, app } from './socket.js';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';  
 
 // Importing routes
 import leadroutes from './routes/leadroutes.js';
