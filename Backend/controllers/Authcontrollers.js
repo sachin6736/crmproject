@@ -122,17 +122,17 @@ export const login = async (req, res, next) => {
     );
 
     res
-      .cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Lax", // Changed from "strict" to "Lax"
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      })
-      .status(200)
-      .json({
-        message: "Login successful",
-        user: { name: updatedUser.name, email: updatedUser.email, role: updatedUser.role, status: updatedUser.status },
-      });
+    .cookie("token", token, {
+      httpOnly: true,
+      secure: true, // Must be true for SameSite=None
+      sameSite: "none", // Allow cross-origin cookie sending
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
+    .status(200)
+    .json({
+      message: "Login successful",
+      user: { name: updatedUser.name, email: updatedUser.email, role: updatedUser.role, status: updatedUser.status },
+    });
   } catch (error) {
     console.log("Error", error);
     res.status(500).json({ message: "Error during login", error });
