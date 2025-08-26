@@ -64,12 +64,15 @@ function Home() {
         throw new Error(`HTTP error! Status: ${res.status}`);
       }
       const data = await res.json();
+      if (!data.user) {
+        throw new Error('No user data in response');
+      }
       console.log('Fetched user data:', data);
       setUser(data.user);
     } catch (err) {
       console.error('Error fetching user info:', err);
       toast.error('Failed to load user data');
-      setUser(null); // Clear user on error
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -146,11 +149,11 @@ function Home() {
         credentials: 'include',
       });
       if (res.ok) {
+        navigate('/', { replace: true }); // Navigate first
         setUser(null); // Clear user state
         setNotifications([]); // Clear notifications
         socketRef.current?.disconnect(); // Disconnect Socket.IO
         toast.success('Logged out successfully');
-        navigate('/', { replace: true }); // Replace history entry
       } else {
         console.error('Logout failed:', res.statusText);
         toast.error('Failed to log out');
@@ -256,10 +259,10 @@ function Home() {
       label: 'Home',
       icon: <HomeIcon className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
-        if (loading) return;
-        if (user?.role === 'admin') {
+        if (loading || !user) return;
+        if (user.role === 'admin') {
           navigate('/home/dashboard');
-        } else if (user?.role === 'procurement') {
+        } else if (user.role === 'procurement') {
           navigate('/home/procurementdashboard');
         } else {
           navigate('/home/salesdashboard');
@@ -471,7 +474,7 @@ function Home() {
                 type='button'
                 className='w-8 h-8 bg-white dark:bg-gray-700 text-[#066afe] dark:text-gray-100 rounded-full flex items-center justify-center'
               >
-                {statusOptions.find((opt) => opt.value === user?.status)?.icon || (
+                {user && statusOptions.find((opt) => opt.value === user.status)?.icon || (
                   <User className='w-5 h-5' />
                 )}
               </button>
@@ -489,28 +492,34 @@ function Home() {
                   }}
                 >
                   <div className='mb-2'>
-                    <label className='text-sm font-semibold block mb-1 text-gray-900 dark:text-gray-200'>
-                      {user.name}
-                    </label>
-                    <label className='text-sm font-semibold block mb-1 text-amber-500 dark:text-amber-500'>
-                      {user.role}
-                    </label>
-                    <div
-                      className='w-full border rounded px-2 py-1 text-sm flex items-center justify-between cursor-pointer bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
-                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                    >
-                      <div className='flex items-center space-x-2'>
-                        {statusOptions.find((opt) => opt.value === user?.status)?.icon || (
-                          <User className='w-4 h-4' />
-                        )}
-                        <span>
-                          {statusOptions.find((opt) => opt.value === user?.status)?.label ||
-                            'Unknown Status'}
-                        </span>
-                      </div>
-                      <span>{showStatusDropdown ? '▲' : '▼'}</span>
-                    </div>
-                    {showStatusDropdown && (
+                    {user ? (
+                      <>
+                        <label className='text-sm font-semibold block mb-1 text-gray-900 dark:text-gray-200'>
+                          {user.name}
+                        </label>
+                        <label className='text-sm font-semibold block mb-1 text-amber-500 dark:text-amber-500'>
+                          {user.role}
+                        </label>
+                        <div
+                          className='w-full border rounded px-2 py-1 text-sm flex items-center justify-between cursor-pointer bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
+                          onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                        >
+                          <div className='flex items-center space-x-2'>
+                            {statusOptions.find((opt) => opt.value === user.status)?.icon || (
+                              <User className='w-4 h-4' />
+                            )}
+                            <span>
+                              {statusOptions.find((opt) => opt.value === user.status)?.label ||
+                                'Unknown Status'}
+                            </span>
+                          </div>
+                          <span>{showStatusDropdown ? '▲' : '▼'}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <p className='text-sm text-gray-500 dark:text-gray-400'>Loading user...</p>
+                    )}
+                    {showStatusDropdown && user && (
                       <div className='mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg'>
                         {statusOptions.map((option) => (
                           <div
