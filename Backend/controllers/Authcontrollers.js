@@ -139,16 +139,30 @@ export const login = async (req, res, next) => {
   }
 };
 
-export const logout = async(req,res,next)=>{
-    //console.log("logout working");
-    try {
-        res.clearCookie("token", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-        });
-        res.status(200).json({ message: "Logged out successfully" });
-      } catch (error) {
-        res.status(500).json({ message: "Logout failed", error });
-      }
-}
+export const logout = async (req, res, next) => {
+  try {
+    // Get user from token (if available) to update status
+    const token = req.cookies.token;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      await User.findByIdAndUpdate(decoded.id, { status: 'LoggedOut' });
+      const statusLog = new StatusLog({
+        userId: decoded.id,
+        status: 'LoggedOut',
+        timestamp: new Date(),
+      });
+      await statusLog.save();
+    }
+
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none', // Match login's setting
+      path: '/',
+    });
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Logout failed', error });
+  }
+};

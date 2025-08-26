@@ -41,7 +41,7 @@ function Home() {
   const notificationDropdownRef = useRef(null);
   const socketRef = useRef(null);
   const userButtonRef = useRef(null);
-  const notificationButtonRef = useRef(null); // Added for notification button positioning
+  const notificationButtonRef = useRef(null);
 
   const formatDate = (date) => {
     try {
@@ -69,6 +69,7 @@ function Home() {
     } catch (err) {
       console.error('Error fetching user info:', err);
       toast.error('Failed to load user data');
+      setUser(null); // Clear user on error
     } finally {
       setLoading(false);
     }
@@ -145,8 +146,11 @@ function Home() {
         credentials: 'include',
       });
       if (res.ok) {
+        setUser(null); // Clear user state
+        setNotifications([]); // Clear notifications
+        socketRef.current?.disconnect(); // Disconnect Socket.IO
         toast.success('Logged out successfully');
-        navigate('/');
+        navigate('/', { replace: true }); // Replace history entry
       } else {
         console.error('Logout failed:', res.statusText);
         toast.error('Failed to log out');
@@ -188,11 +192,6 @@ function Home() {
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || `HTTP error! Status: ${res.status}`);
-      }
-
-      if (selectedStatus === 'LoggedOut') {
-        await handleLogout();
-        return;
       }
 
       await fetchUser();
@@ -517,7 +516,13 @@ function Home() {
                           <div
                             key={option.value}
                             className='flex items-center space-x-2 px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-700 dark:text-gray-200'
-                            onClick={() => handleStatusChange(option.value)}
+                            onClick={() => {
+                              if (option.value === 'LoggedOut') {
+                                handleLogout();
+                              } else {
+                                handleStatusChange(option.value);
+                              }
+                            }}
                           >
                             {option.icon}
                             <span>{option.label}</span>
