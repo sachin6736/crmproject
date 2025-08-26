@@ -24,7 +24,11 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 // CORS Configuration
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = [FRONTEND_URL, 'https://crmproject-tau.vercel.app'];
+    const allowedOrigins = [
+      FRONTEND_URL,
+      'https://crmproject-tau.vercel.app',
+      'http://localhost:5173' // Add local development origin
+    ];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -32,6 +36,8 @@ app.use(cors({
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow methods
+  allowedHeaders: ['Content-Type', 'Authorization'] // Allow necessary headers
 }));
 
 // Middleware to parse JSON and cookies
@@ -76,7 +82,7 @@ io.on('connection', (socket) => {
 
 const port = process.env.PORT || 3000;
 
-// MongoDB connection (remove deprecated options)
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log('Error occurred', err));
