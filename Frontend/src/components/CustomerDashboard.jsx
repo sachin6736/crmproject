@@ -312,10 +312,10 @@ const CustomerRelationsDashboard = () => {
               <div
                 key={index}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center"
-                onClick={() => {
-                  setViewMode(viewMode);
-                  setShowOrderDetailsModal(true);
-                }}
+                // onClick={() => {
+                //   setViewMode(viewMode);
+                //   setShowOrderDetailsModal(true);
+                // }}
               >
                 <div className="mb-2">{icon}</div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
