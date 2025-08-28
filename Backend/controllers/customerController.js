@@ -21,6 +21,7 @@ export const getCustomerRelationsOrders = async (req, res) => {
 
     const orders = await Order.find(query).populate('leadId salesPerson customerRelationsPerson procurementPerson');
     res.status(200).json(orders);
+    console.log("orders",orders)
   } catch (error) {
     console.error('Error fetching customer relations orders:', error);
     res.status(500).json({ message: 'Server error' });

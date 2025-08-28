@@ -51,9 +51,12 @@ const CustomerRelationsDashboard = () => {
   const [user, setUser] = useState(null);
 
   const statusColor = {
-    ShipOut:
-      "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
+    ShipOut: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
     Delivered: "bg-lime-100 dark:bg-lime-900 text-lime-800 dark:text-lime-200",
+    "PO Pending": "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
+    "PO Sent": "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
+    "PO Confirmed": "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
+    "PO Canceled": "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200",
   };
 
   const statuses = [
@@ -167,7 +170,10 @@ const CustomerRelationsDashboard = () => {
         const shipOutOrdersData = ordersData.filter(
           (order) => order.status === "ShipOut"
         );
-        const shipOutTotalAmountData = shipOutOrdersData.reduce((sum, order) => sum + (order.amount || 0), 0);
+        const shipOutTotalAmountData = shipOutOrdersData.reduce(
+          (sum, order) => sum + (order.amount || 0),
+          0
+        );
 
         setTotalOrders(ordersData.length || 0);
         setDeliveredCount(deliveredMetricsData.today.count || 0);
@@ -215,7 +221,9 @@ const CustomerRelationsDashboard = () => {
         );
 
         if (!statusComparisonRes.ok) {
-          throw new Error(`Failed to fetch order status comparison: ${statusComparisonRes.status}`);
+          throw new Error(
+            `Failed to fetch order status comparison: ${statusComparisonRes.status}`
+          );
         }
 
         const statusComparisonData = await statusComparisonRes.json();
@@ -514,50 +522,58 @@ const CustomerRelationsDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
-                    <tr
-                      key={order.order_id}
-                      className="border-b border-gray-200 dark:border-gray-600 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      <td className="p-2 text-gray-900 dark:text-gray-100">
-                        {order.clientName}
-                      </td>
-                      <td className="p-2 text-gray-900 dark:text-gray-100">
-                        {order.partRequested}
-                      </td>
-                      <td className="p-2 text-gray-900 dark:text-gray-100">
-                        {order.vendors?.[0]?.businessName || "N/A"}
-                      </td>
-                      <td className="p-2">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            statusColor[order.vendors?.[0]?.poStatus] ||
-                            "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                          }`}
-                        >
-                          {order.vendors?.[0]?.poStatus
-                            ?.replace(/([A-Z])/g, " $1")
-                            .trim() || "N/A"}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            statusColor[order.status] ||
-                            "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                          }`}
-                        >
-                          {order.status.replace(/([A-Z])/g, " $1").trim()}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        <Trash2
-                          className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
-                          onClick={() => !(loading || chartLoading) && handleDeleteOrder(order.order_id)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {orders.map((order) => {
+                    console.log("Order leadId:", order.leadId); // Debug log
+                    return (
+                      <tr
+                        key={order.order_id}
+                        className="border-b border-gray-200 dark:border-gray-600 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        <td className="p-2 text-gray-900 dark:text-gray-100">
+                          {order.clientName || "N/A"}
+                        </td>
+                        <td className="p-2 text-gray-900 dark:text-gray-100">
+                          {order.leadId?.partRequested ||
+                            `${order.make} ${order.model} (${order.year})` ||
+                            "N/A"}
+                        </td>
+                        <td className="p-2 text-gray-900 dark:text-gray-100">
+                          {order.vendors?.[0]?.businessName || "N/A"}
+                        </td>
+                        <td className="p-2">
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full font-medium ${
+                              statusColor[order.vendors?.[0]?.poStatus] ||
+                              "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                            }`}
+                          >
+                            {order.vendors?.[0]?.poStatus
+                              ?.replace(/([A-Z])/g, " $1")
+                              .trim() || "N/A"}
+                          </span>
+                        </td>
+                        <td className="p-2">
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full font-medium ${
+                              statusColor[order.status] ||
+                              "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                            }`}
+                          >
+                            {order.status.replace(/([A-Z])/g, " $1").trim()}
+                          </span>
+                        </td>
+                        <td className="p-2">
+                          <Trash2
+                            className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
+                            onClick={() =>
+                              !(loading || chartLoading) &&
+                              handleDeleteOrder(order.order_id)
+                            }
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
