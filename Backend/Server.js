@@ -15,6 +15,7 @@ import litireplaceroutes from './routes/litireplaceroutes.js';
 import orderroutes from './routes/orderroutes.js';
 import procurementRoutes from './routes/procurementRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import customerRoutes from './routes/customerroutes.js'
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.use('/Order', orderroutes);
 app.use('/Notification', notificationRoutes);
 app.use('/LiteReplace', litireplaceroutes);
 app.use('/Procurement', procurementRoutes);
+app.use('/CustomerRelations', customerRoutes);
 
 // Socket.IO connection
 io.on('connection', (socket) => {

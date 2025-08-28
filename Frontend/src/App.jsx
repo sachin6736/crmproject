@@ -6,6 +6,7 @@ import { useTheme } from './context/ThemeContext';
 import Dashboard from './components/Dashboard';
 import SalesDashboard from './components/SalesDashboard';
 import ProcurementDashboard from './components/ProcurementDashboard'; // Import the new ProcurementDashboard
+import CustomerRelationsDashboard from './components/CustomerDashboard';
 import Login from './components/Login';
 import SignUp from './components/Signup';
 import Home from './components/Home';
@@ -53,6 +54,7 @@ function App() {
           <Route path='dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path='salesdashboard' element={<ProtectedRoute role="sales"><SalesDashboard /></ProtectedRoute>} />
           <Route path='procurementdashboard' element={<ProtectedRoute role="procurement"><ProcurementDashboard /></ProtectedRoute>} /> {/* New route */}
+          <Route path='customerrelationsdashboard' element={<ProtectedRoute role="customer_relations"><CustomerRelationsDashboard /></ProtectedRoute>} />
           <Route path='admin/status-logs' element={<ProtectedRoute role="admin"><AdminStatusLogs /></ProtectedRoute>} />
         </Route>
       </Routes>

@@ -2118,6 +2118,8 @@ const Dashboard = () => {
           navigate("/home/salesdashboard");
         } else if (data.user.role === "procurement") {
           navigate("/home/procurementdashboard");
+        } else if (data.user.role === "customer_relations") {
+          navigate("/home/customerrelationsdashboard");          
         } else if (data.user.role !== "admin") {
           navigate("/home");
         } else {
