@@ -22,11 +22,11 @@ export const createleads = async (req, res, next) => {
         phoneNumber,
         email,
         zip,
-        partRequested,
+        partRequested = 'N/A', // Default if not provided
         make,
         model,
-        year,
-        trim,
+        year = 'N/A', // Default if not provided
+        trim = 'N/A', // Default if not provided
       } = req.body;
       console.log("requestbody", req.body);
 
@@ -112,6 +112,7 @@ export const createleads = async (req, res, next) => {
       const nextIndex = (currentIndex + 1) % salesTeam.length;
       roundRobinState.currentIndex = nextIndex;
       await roundRobinState.save();
+
       const emailContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
               <h2 style="color: #333;">New Quotation Request</h2>
@@ -129,7 +130,7 @@ export const createleads = async (req, res, next) => {
           </div>
       `;
 
-      await sendEmail(ADMIN_EMAIL, "New Quotation Request Received", emailContent);
+      await sendEmail(process.env.ADMIN_EMAIL, "New Quotation Request Received", emailContent);
       res.status(201).json({ message: "Lead created successfully and notifications sent" });
     } catch (error) {
       console.log("An error occurred", error);

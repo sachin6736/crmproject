@@ -11,11 +11,7 @@ export const validateLead = [
   body('zip')
     .notEmpty().withMessage('Zip code is required')
     .isPostalCode('any').withMessage('Invalid zip code'),
-  body('partRequested').notEmpty().withMessage('Part requested is required'),
   body('make').notEmpty().withMessage('Make is required'),
   body('model').notEmpty().withMessage('Model is required'),
-  body('year')
-    .notEmpty().withMessage('Year is required')
-    .isInt({ min: 1900, max: new Date().getFullYear() }).withMessage('Invalid year'),
-  body('trim').notEmpty().withMessage('Trim is required'),
+  // Removed validations for partRequested, year, and trim
 ];
