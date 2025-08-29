@@ -5,7 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { exportToExcel } from "./utilities/exportToExcel";
 import { useTheme } from "../context/ThemeContext";
 import debounce from "lodash/debounce";
-import LoadingOverlay from "./LoadingOverlay"; // Added import
+import LoadingOverlay from "./LoadingOverlay";
 
 const OrdersHistory = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const OrdersHistory = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false); // Added for async actions
+  const [actionLoading, setActionLoading] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const itemsPerPage = 10;
 
@@ -112,7 +112,13 @@ const OrdersHistory = () => {
         if (!response.ok)
           throw new Error(`Failed to fetch orders: ${response.statusText}`);
         const data = await response.json();
-        setOrders(data.orders || []);
+        // Sort orders to show isOwnOrder first
+        const sortedOrders = (data.orders || []).sort((a, b) => {
+          if (a.isOwnOrder && !b.isOwnOrder) return -1;
+          if (!a.isOwnOrder && b.isOwnOrder) return 1;
+          return 0;
+        });
+        setOrders(sortedOrders);
         setTotalPages(data.totalPages || 1);
         setCurrentPage(data.currentPage || 1);
       } catch (error) {
@@ -144,7 +150,7 @@ const OrdersHistory = () => {
       return;
     }
 
-    setActionLoading(true); // Set loading for export
+    setActionLoading(true);
     const formattedOrders = orders.map((order) => ({
       OrderID: order.order_id || "N/A",
       ClientName: order.clientName || "N/A",
@@ -156,6 +162,10 @@ const OrdersHistory = () => {
       PartRequested: order.leadId?.partRequested || "N/A",
       TotalCost: order.leadId?.totalCost ? `$${order.leadId.totalCost}` : "N/A",
       Status: order.status || "N/A",
+      ...(user?.role === "admin" && {
+        AssignedCustomerRelation: order.customerRelationsPerson?.name || "N/A",
+        AssignedProcurement: order.procurementPerson?.name || "N/A",
+      }),
     }));
 
     try {
@@ -165,7 +175,7 @@ const OrdersHistory = () => {
       toast.error("Error exporting orders to Excel");
       console.error("Error exporting to Excel:", error);
     } finally {
-      setActionLoading(false); // Reset loading
+      setActionLoading(false);
     }
   };
 
@@ -189,14 +199,14 @@ const OrdersHistory = () => {
               placeholder="Search by Client Name, Order ID, Phone, Email, or Part..."
               className="px-4 py-2 border rounded-lg w-full sm:w-80 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 transition-all duration-200"
               onChange={handleSearchChange}
-              disabled={actionLoading} // Disable during action
+              disabled={actionLoading}
             />
             <div className="relative w-full sm:w-auto">
               <select
                 className="w-full sm:w-48 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 appearance-none"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                disabled={actionLoading} // Disable during action
+                disabled={actionLoading}
               >
                 <option value="">All Statuses</option>
                 {[
@@ -256,6 +266,7 @@ const OrdersHistory = () => {
                   "Part Requested",
                   "Total Cost",
                   "Status",
+                  ...(user?.role === "admin" ? ["Assigned Customer Relation", "Assigned Procurement"] : []),
                 ].map((header, i) => (
                   <th
                     key={i}
@@ -272,8 +283,10 @@ const OrdersHistory = () => {
                   <tr
                     key={order._id || index}
                     className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
-                      order.isOwnOrder && user?.role === "customer_relations"
-                        ? "bg-red-50 dark:bg-red-900/20"
+                      user?.role === "customer_relations"
+                        ? order.isOwnOrder
+                          ? "bg-green-100 dark:bg-green-900/20"
+                          : "bg-red-100 dark:bg-red-900/20"
                         : ""
                     }`}
                   >
@@ -315,12 +328,22 @@ const OrdersHistory = () => {
                         {order.status || "Unknown"}
                       </span>
                     </td>
+                    {user?.role === "admin" && (
+                      <>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.customerRelationsPerson?.name || "N/A"}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                          {order.procurementPerson?.name || "N/A"}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={user?.role === "admin" ? 10 : 8}
                     className="text-center py-6 text-gray-600 dark:text-gray-400"
                   >
                     No orders found

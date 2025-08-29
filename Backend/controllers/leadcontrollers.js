@@ -636,28 +636,79 @@ export const updatecost = async (req, res, next) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
+    // Store original values for comparison
+    const originalValues = {
+      partCost: lead.partCost || 0,
+      shippingCost: lead.shippingCost || 0,
+      grossProfit: lead.grossProfit || 0,
+      warranty: lead.warranty || "0 months",
+      totalCost: lead.totalCost || 0,
+    };
+
     // Check if there are any changes
     const hasChanges =
-      (partCost !== undefined && parseFloat(partCost) !== (lead.partCost || 0)) ||
-      (shippingCost !== undefined && parseFloat(shippingCost) !== (lead.shippingCost || 0)) ||
-      (grossProfit !== undefined && parseFloat(grossProfit) !== (lead.grossProfit || 0)) ||
-      (warranty !== undefined && warranty !== (lead.warranty || "0 months")) ||
-      (totalCost !== undefined && parseFloat(totalCost) !== (lead.totalCost || 0));
+      (partCost !== undefined && parseFloat(partCost) !== originalValues.partCost) ||
+      (shippingCost !== undefined && parseFloat(shippingCost) !== originalValues.shippingCost) ||
+      (grossProfit !== undefined && parseFloat(grossProfit) !== originalValues.grossProfit) ||
+      (warranty !== undefined && warranty !== originalValues.warranty) ||
+      (totalCost !== undefined && parseFloat(totalCost) !== originalValues.totalCost);
 
     if (!hasChanges) {
       return res.status(200).json(lead); // Return existing lead without updating
     }
 
-    // Update fields only if provided and different
-    lead.partCost = partCost !== undefined ? parseFloat(partCost) : lead.partCost;
-    lead.shippingCost = shippingCost !== undefined ? parseFloat(shippingCost) : lead.shippingCost;
-    lead.grossProfit = grossProfit !== undefined ? parseFloat(grossProfit) : lead.grossProfit;
-    lead.warranty = warranty || lead.warranty;
-    lead.totalCost = totalCost !== undefined ? parseFloat(totalCost) : lead.totalCost;
+    // Update fields only if provided
+    const updates = {};
+    if (partCost !== undefined) updates.partCost = parseFloat(partCost);
+    if (shippingCost !== undefined) updates.shippingCost = parseFloat(shippingCost);
+    if (grossProfit !== undefined) updates.grossProfit = parseFloat(grossProfit);
+    if (warranty !== undefined) updates.warranty = warranty;
+    if (totalCost !== undefined) updates.totalCost = parseFloat(totalCost);
 
+    // Determine if this is an initial cost addition or an update
+    const isInitialCostAddition =
+      originalValues.partCost === 0 &&
+      originalValues.shippingCost === 0 &&
+      originalValues.grossProfit === 0 &&
+      originalValues.warranty === "0 months" &&
+      originalValues.totalCost === 0;
+
+    // Generate note based on whether it's an addition or update
     const userIdentity = req?.user?.name || req?.user?.id || "Unknown User";
+    let noteText;
+    if (isInitialCostAddition) {
+      // For initial cost addition, list all provided fields
+      noteText = `Costs added by ${userIdentity}: `;
+      const fields = [];
+      if (partCost !== undefined) fields.push(`Part Cost: $${parseFloat(partCost).toFixed(2)}`);
+      if (shippingCost !== undefined) fields.push(`Shipping Cost: $${parseFloat(shippingCost).toFixed(2)}`);
+      if (grossProfit !== undefined) fields.push(`Gross Profit: $${parseFloat(grossProfit).toFixed(2)}`);
+      if (warranty !== undefined) fields.push(`Warranty: ${warranty}`);
+      if (totalCost !== undefined) fields.push(`Total Cost: $${parseFloat(totalCost).toFixed(2)}`);
+      noteText += fields.join(", ");
+    } else {
+      // For updates, list only changed fields with old and new values
+      noteText = `Costs updated by ${userIdentity}: `;
+      const changedFields = [];
+      if (partCost !== undefined && parseFloat(partCost) !== originalValues.partCost)
+        changedFields.push(`Part Cost: $${originalValues.partCost.toFixed(2)} to $${parseFloat(partCost).toFixed(2)}`);
+      if (shippingCost !== undefined && parseFloat(shippingCost) !== originalValues.shippingCost)
+        changedFields.push(`Shipping Cost: $${originalValues.shippingCost.toFixed(2)} to $${parseFloat(shippingCost).toFixed(2)}`);
+      if (grossProfit !== undefined && parseFloat(grossProfit) !== originalValues.grossProfit)
+        changedFields.push(`Gross Profit: $${originalValues.grossProfit.toFixed(2)} to $${parseFloat(grossProfit).toFixed(2)}`);
+      if (warranty !== undefined && warranty !== originalValues.warranty)
+        changedFields.push(`Warranty: ${originalValues.warranty} to ${warranty}`);
+      if (totalCost !== undefined && parseFloat(totalCost) !== originalValues.totalCost)
+        changedFields.push(`Total Cost: $${originalValues.totalCost.toFixed(2)} to $${parseFloat(totalCost).toFixed(2)}`);
+      noteText += changedFields.join(", ");
+    }
+
+    // Apply updates to lead
+    Object.assign(lead, updates);
+
+    // Add note to lead
     lead.notes.push({
-      text: `Costs updated by ${userIdentity}. Total:$${lead.totalCost}, Warranty:${lead.warranty}`,
+      text: noteText,
       addedBy: userIdentity,
       createdAt: new Date(),
     });
@@ -674,19 +725,26 @@ export const leadquatation = async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Fetch the lead by ID
     const lead = await Lead.findById(id);
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
     }
 
+    // Validate email presence
     if (!lead.email) {
       return res.status(400).json({ message: "Lead email is missing" });
     }
 
+    // Validate total cost
     if (!lead.totalCost || lead.totalCost <= 0) {
       return res.status(400).json({ message: "Quotation cannot be sent without a valid total cost" });
     }
 
+    // Get user information from req.user (assuming authentication middleware)
+    const user = req?.user?.name || req?.user?.id || "Unknown User";
+
+    // Generate email content
     const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
       <div style="text-align: center;">
@@ -756,7 +814,20 @@ export const leadquatation = async (req, res) => {
     </div>
     `;
 
+    // Send the email
     await sendEmail(lead.email, `${lead.partRequested} Quotation`, htmlContent);
+
+    // Add note to the lead's notes array
+    const noteText = `Quotation sent by ${user} with cost $${lead.totalCost}`;
+    lead.notes.push({
+      text: noteText,
+      createdAt: new Date(),
+    });
+
+    // Save the updated lead
+    await lead.save();
+
+    // Return success response
     res.status(200).json({ message: "Quotation sent successfully" });
   } catch (error) {
     console.error("Error sending quotation:", error);

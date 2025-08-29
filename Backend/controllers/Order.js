@@ -320,7 +320,6 @@ export const checkOrderByLeadId = async (req, res) => {
   }
 };///getting ordersbyleadid
 
-
 export const getAllOrders = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', status = '' } = req.query;
@@ -345,6 +344,7 @@ export const getAllOrders = async (req, res) => {
       .populate('leadId', 'make model year partRequested clientName email totalCost')
       .populate('salesPerson', 'name email')
       .populate('customerRelationsPerson', 'name email')
+      .populate('procurementPerson', 'name email') // Added population for procurementPerson
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .sort({ createdAt: -1 }) // Sort by creation date, newest first
