@@ -82,3 +82,10 @@ body {
   background: #2563EB; /* blue-600 */
   color: #FFFFFF;
 }
+
+/* Custom style for selected important dates */
+.react-calendar__tile--selected-date {
+  background: #EF4444 !important; /* red-500 */
+  color: #FFFFFF !important;
+  border-radius: 9999px !important;
+}

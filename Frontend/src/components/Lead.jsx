@@ -16,6 +16,7 @@ import { exportToExcel } from "./utilities/exportToExcel";
 import { useTheme } from "../context/ThemeContext";
 import LoadingOverlay from "./LoadingOverlay";
 import ConfirmationModal from "./ConfirmationModal";
+import LeadQuotationPreviewModal from "./orderdetails/LeadQuotationPreviewModal";
 
 // Utility function to format date to YYYY-MM-DD in local timezone
 const formatLocalDate = (date) => {
@@ -79,6 +80,8 @@ const Lead = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [dateNote, setDateNote] = useState("");
   const [profitRatio, setProfitRatio] = useState(null);
+  const [showQuotationPreviewModal, setShowQuotationPreviewModal] = useState(false);
+  const [emailContent, setEmailContent] = useState("");
 
   useEffect(() => {
     if (singleLead && singleLead.notes) {
@@ -97,7 +100,7 @@ const Lead = () => {
         if (!response.ok) throw new Error("Failed to fetch lead");
         const data = await response.json();
         setSingleLead(data);
-        setSelectedDates(data.importantDates.map((d) => d.date) || []);
+        setSelectedDates(data.importantDates?.map((d) => d.date) || []);
         setEditForm({
           clientName: data.clientName || "",
           phoneNumber: data.phoneNumber || "",
@@ -152,6 +155,82 @@ const Lead = () => {
     }
   }, [grossProfit, totalCost]);
 
+  useEffect(() => {
+    if (singleLead) {
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
+          <div style="text-align: center;">
+            <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598236/Picsart_24-04-02_10-36-01-714_xpnbgi.png" alt="First Used Autoparts Logo" style="max-width: 250px; margin-bottom: 24px;" />
+          </div>
+          
+          <h2 style="color: #2a2a2a;">Welcome to First Used Autoparts!</h2>
+          <p style="color: #555;">
+            Dear ${singleLead.clientName || "Customer"},<br />
+            Thank you for your inquiry. Below is your quotation for the requested part.    
+          </p>
+      
+          <h3 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Quotation Details</h3>
+          <ul style="list-style: none; padding: 0; color: #333;">
+            <li style="margin-bottom: 8px;"><strong>Part:</strong> ${singleLead.partRequested || "N/A"}</li>
+            <li style="margin-bottom: 8px;"><strong>Make:</strong> ${singleLead.make || "N/A"}</li>
+            <li style="margin-bottom: 8px;"><strong>Model:</strong> ${singleLead.model || "N/A"}</li>
+            <li style="margin-bottom: 8px;"><strong>Year:</strong> ${singleLead.year || "N/A"}</li>
+            <li style="margin-bottom: 8px;"><strong>Trim:</strong> ${singleLead.trim || "N/A"}</li>
+            <li style="margin-bottom: 8px;"><strong>Estimated Cost (with shipping):</strong> $${singleLead.totalCost || "0.00"}</li>
+          </ul> 
+          <p style="color: #555;">
+            To proceed or ask questions, reply to this email or call +1 888-282-7476.
+          </p>
+      
+          <p style="color: #555;">Best regards,<br />
+          <strong>First Used Autoparts Team</strong></p>
+      
+          <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;" />
+      
+          <div style="font-size: 14px; color: #888;">
+            <p><strong>Address:</strong><br />
+            330 N Brand Blvd, STE 700<br />
+            Glendale, California 91203</p>
+      
+            <p><strong>Contact:</strong><br />
+            +1 888-282-7476<br />
+            <a href="mailto:contact@firstusedautoparts.com" style="color: #007BFF; text-decoration: none;">contact@firstusedautoparts.com</a></p>
+          </div>
+      
+          <div style="text-align: center; margin-top: 20px;">
+            <a href="https://www.facebook.com/profile.php?id=61558228601060" style="margin: 0 10px; display: inline-block;">
+              <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599473/fb_n6h6ja.png" alt="Facebook" style="width: 32px; height: 32px;" />
+            </a>
+            <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="margin: 0 10px; display: inline-block;">
+              <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599377/linkedin_v3pufc.png" alt="LinkedIn" style="width: 32px; height: 32px;" />
+            </a>
+            <a href="https://www.instagram.com/first_used_auto_parts/" style="margin: 0 10px; display: inline-block;">
+              <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746598983/10462345_g4oluw.png" alt="Instagram" style="width: 32px; height: 32px;" />
+            </a>
+            <a href="https://twitter.com/parts54611" style="margin: 0 10px; display: inline-block;">
+              <img src="https://res.cloudinary.com/dxv6yvhbj/image/upload/v1746599225/twitter_kivbi6.png" alt="X" style="width: 32px; height: 32px;" />
+            </a>
+          </div>
+          
+          <p style="text-align: center; margin-top: 10px;">
+            <a href="https://www.facebook.com/profile.php?id=61558228601060" style="color: #007BFF; margin: 0 5px;">Facebook</a> |
+            <a href="https://www.linkedin.com/company/first-used-auto-parts/" style="color: #007BFF; margin: 0 5px;">LinkedIn</a> |
+            <a href="https://www.instagram.com/first_used_auto_parts/" style="color: #007BFF; margin: 0 5px;">Instagram</a> |
+            <a href="https://twitter.com/parts54611" style="color: #007BFF; margin: 0 5px;">X</a>
+          </p>
+      
+          <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
+            © ${new Date().getFullYear()} First Used Autoparts. All rights reserved.<br />
+            <a href="https://www.firstusedautoparts.com/preferences?email=${encodeURIComponent(singleLead.email || "")}" style="color: #007BFF; text-decoration: none;">Manage email preferences</a>
+          </p>
+        </div>
+      `;
+      setEmailContent(htmlContent);
+    } else {
+      setEmailContent("");
+    }
+  }, [singleLead]);
+
   const areCostsValid = () => {
     const part = parseFloat(partCost);
     const shipping = parseFloat(shippingCost);
@@ -188,18 +267,34 @@ const Lead = () => {
   };
 
   const showSendQuoteConfirmation = () => {
-    setConfirmTitle("Confirm Send Quote");
-    setConfirmMessage("Are you sure you want to send the quotation for this lead?");
-    setConfirmText("Send Quote");
-    setConfirmAction(() => async () => {
-      await handleSendQuote();
-      setShowConfirmModal(false);
-    });
-    setConfirmOverrideClass("");
-    setSecondaryConfirmText("");
-    setSecondaryConfirmAction(null);
-    setSecondaryOverrideClass("");
-    setShowConfirmModal(true);
+    if (!areCostsValid()) {
+      toast.error("Please add and submit quote details before sending a quotation.");
+      return;
+    }
+    if (!singleLead?.email) {
+      toast.error("Lead email is missing");
+      return;
+    }
+    if (!singleLead?.totalCost || singleLead.totalCost <= 0) {
+      toast.error("Quotation cannot be sent without a valid total cost");
+      return;
+    }
+    setShowQuotationPreviewModal(true);
+  };
+
+  const handleQuotationSent = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/Lead/getleadbyid/${id}`,
+        { credentials: "include" }
+      );
+      if (!response.ok) throw new Error("Failed to fetch lead");
+      const data = await response.json();
+      setSingleLead(data);
+    } catch (error) {
+      console.error("Error refreshing lead data:", error);
+      toast.error("Failed to refresh lead data");
+    }
   };
 
   const showSubmitCostsConfirmation = () => {
@@ -517,39 +612,6 @@ const Lead = () => {
     }
   };
 
-  const handleSendQuote = async () => {
-    if (!areCostsValid()) {
-      toast.error("Please add and submit quote details before sending a quotation.");
-      return;
-    }
-  
-    setIsSendingQuote(true);
-    setActionLoading(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/Lead/leadquatation/${id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        }
-      );
-  
-      const data = await response.json();
-      if (response.ok) {
-        toast.success(data.message);
-      } else {
-        toast.error(data.message || "Failed to send quotation");
-      }
-    } catch (error) {
-      toast.error("Error sending quotation");
-      console.error("Error sending quotation:", error);
-    } finally {
-      setIsSendingQuote(false);
-      setActionLoading(false);
-    }
-  };
-
   const handleGoToOrder = () => {
     navigate(`/home/order/${id}`);
   };
@@ -696,7 +758,7 @@ const Lead = () => {
                           href={`mailto:${singleLead[item.key]}`}
                           className="text-blue-500 dark:text-blue-400 hover:underline truncate"
                         >
-                          {singleLead[item.key]}
+                          {singleLead[item.key] || "N/A"}
                         </a>
                       ) : (
                         <div
@@ -705,7 +767,7 @@ const Lead = () => {
                             "text-gray-900 dark:text-gray-100"
                           }`}
                         >
-                          {singleLead[item.key]}
+                          {singleLead[item.key] || "N/A"}
                         </div>
                       )}
                     </div>
@@ -885,9 +947,7 @@ const Lead = () => {
                 onClickDay={(date) => !actionLoading && handleDateClick(date)}
                 tileClassName={({ date }) =>
                   selectedDates.includes(formatLocalDate(date))
-                    ? theme === "dark"
-                      ? "bg-red-600 text-white rounded-full"
-                      : "bg-blue-500 text-white rounded-full"
+                    ? "react-calendar__tile--selected-date"
                     : ""
                 }
                 className={theme === "dark" ? "dark-calendar" : ""}
@@ -954,6 +1014,15 @@ const Lead = () => {
             </div>
           </div>
         )}
+
+        {/* Quotation Preview Modal */}
+        <LeadQuotationPreviewModal
+          isOpen={showQuotationPreviewModal}
+          onClose={() => setShowQuotationPreviewModal(false)}
+          emailContent={emailContent}
+          leadId={id}
+          onQuotationSent={handleQuotationSent}
+        />
       </div>
     </div>
   );

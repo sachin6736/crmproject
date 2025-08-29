@@ -15,7 +15,7 @@ router.put('/editstatus/:id',protect,editstatus)//editing status;
 router.get('/getleadbyid/:id',getLeadById)//get leadbyid by clientid;
 router.put('/editlead/:id',protect,editlead)//editing lead details;
 router.post('/updatecost/:id',protect,updatecost)//updatecost;
-router.post('/leadquatation/:id',leadquatation)//
+router.post('/leadquatation/:id',protect,leadquatation)//senting quatation
 router.post('/reassign/:id',protect,changeowner)
 
 router.put('/updateNotes/:id',protect,createnotes)//creating notes
