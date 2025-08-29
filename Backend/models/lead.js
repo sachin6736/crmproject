@@ -5,11 +5,11 @@ const leadSchema = new mongoose.Schema({
   phoneNumber: { type: String, required: true },
   email: { type: String, required: true },
   zip: { type: String, required: true },
-  partRequested: { type: String, required: true },
+  partRequested: { type: String, required: false }, // Changed to required: false
   make: { type: String, required: true },
   model: { type: String, required: true },
-  year: { type: String, required: true },
-  trim: { type: String, required: true },
+  year: { type: String, required: false }, // Changed to required: false
+  trim: { type: String, required: false }, // Already changed to required: false
   status: {
     type: String,
     enum: [
