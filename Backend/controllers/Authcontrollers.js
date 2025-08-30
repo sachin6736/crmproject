@@ -63,8 +63,12 @@ export const createuser = async (req, res, next) => {
       email,
       role,
       password: hashedPassword,
+      // Do not explicitly set status to allow schema default ("LoggedOut") to apply
     });
     await newUser.save();
+
+    // Log the created user to verify the status
+    console.log("Created user:", newUser);
 
     const subject = "Your Equivise CRM Account Details";
     const emailcontent = `
@@ -76,6 +80,7 @@ export const createuser = async (req, res, next) => {
         <ul style="list-style: none; padding-left: 0;">
           <li><strong>Login Email:</strong> ${email}</li>
           <li><strong>Password:</strong> <span style="color: #d6336c;">${plainPassword}</span></li>
+          <li><strong>Status:</strong> ${newUser.status}</li>
         </ul>
         <p>Need help? Feel free to reach out to our support team.</p>
         <br/>
@@ -85,7 +90,7 @@ export const createuser = async (req, res, next) => {
     `;
 
     await sendEmail(email, subject, emailcontent);
-    console.log(`User created: ${email} with role ${role}`);
+    console.log(`User created: ${email} with role ${role}, status: ${newUser.status}`);
     res.status(201).json(newUser);
   } catch (error) {
     console.error("Create user error:", error);
