@@ -6,6 +6,7 @@ import { useTheme } from "../context/ThemeContext";
 import { debounce } from "lodash";
 import LoadingOverlay from "./LoadingOverlay";
 import ConfirmationModal from "./ConfirmationModal";
+import { exportToExcel } from "./utilities/exportToExcel";
 
 const LeadTableHeader = () => {
   const navigate = useNavigate();

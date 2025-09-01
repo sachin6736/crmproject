@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     status: {
       type: String,
       enum: ["Available", "OnBreak", "Lunch", "Meeting", "LoggedOut"],
-      default: "Available"
+      default: "LoggedOut"
     },
     Access: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
