@@ -63,7 +63,7 @@ export const createuser = async (req, res, next) => {
       email,
       role,
       password: hashedPassword,
-      // Do not explicitly set status to allow schema default ("LoggedOut") to apply
+      status: "LoggedOut", // Explicitly set status to "LoggedOut"
     });
     await newUser.save();
 
@@ -80,7 +80,7 @@ export const createuser = async (req, res, next) => {
         <ul style="list-style: none; padding-left: 0;">
           <li><strong>Login Email:</strong> ${email}</li>
           <li><strong>Password:</strong> <span style="color: #d6336c;">${plainPassword}</span></li>
-          <li><strong>Status:</strong> ${newUser.status}</li>
+          <li><strong>Status:</strong> LoggedOut</li>
         </ul>
         <p>Need help? Feel free to reach out to our support team.</p>
         <br/>
