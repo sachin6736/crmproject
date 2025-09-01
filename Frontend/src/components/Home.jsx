@@ -264,10 +264,8 @@ function Home() {
           navigate('/home/dashboard');
         } else if (user.role === 'procurement') {
           navigate('/home/procurementdashboard');
-        } else if(user.role==='sales'){
+        } else {
           navigate('/home/salesdashboard');
-        }else if(user.role ==='customer_relations'){
-          navigate('/home/customerrelationsdashboard');
         }
         setShowSidebar(false);
       },
