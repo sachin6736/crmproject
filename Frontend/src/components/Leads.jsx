@@ -61,7 +61,15 @@ const LeadTableHeader = () => {
         );
         if (!response.ok) throw new Error("Failed to fetch leads");
         const data = await response.json();
-        setLeads(data.leads);
+        // Sort leads to show isOwnLead first for sales users
+        const sortedLeads = (data.leads || []).sort((a, b) => {
+          if (user?.role === "sales") {
+            if (a.isOwnLead && !b.isOwnLead) return -1;
+            if (!a.isOwnLead && b.isOwnLead) return 1;
+          }
+          return 0;
+        });
+        setLeads(sortedLeads);
         setTotalPages(data.totalPages);
         setCurrentPage(data.currentPage || 1);
       } catch (error) {
@@ -181,7 +189,7 @@ const LeadTableHeader = () => {
     setShowConfirmModal(true);
   };
 
-  const showReassignConfirmation = (leadId, salesPersonId, salesPersonName) => {
+  const mandates = (leadId, salesPersonId, salesPersonName) => {
     setEditingAssignedId(null);
     setConfirmTitle("Confirm Lead Reassignment");
     setConfirmMessage(`Are you sure you want to reassign this lead to ${salesPersonName}?`);
@@ -259,6 +267,7 @@ const LeadTableHeader = () => {
               ? {
                   ...lead,
                   salesPerson: { _id: salesPersonId, name: salesPersonName },
+                  isOwnLead: salesPersonId.toString() === user?._id?.toString(),
                 }
               : lead
           )
@@ -387,7 +396,13 @@ const LeadTableHeader = () => {
                 leads.map((lead, index) => (
                   <tr
                     key={index}
-                    className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                      user?.role === "sales"
+                        ? lead.isOwnLead
+                          ? "bg-green-100 dark:bg-green-900/20"
+                          : "bg-red-100 dark:bg-red-900/20"
+                        : ""
+                    }`}
                   >
                     <td
                       className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer whitespace-nowrap"

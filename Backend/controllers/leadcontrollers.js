@@ -308,7 +308,8 @@ export const leadbyperson = async (req, res, next) => {
   const search = req.query.search?.trim() || "";
   const status = req.query.status || "";
 
-  const query = { salesPerson: userId };
+  // Remove the salesPerson filter to fetch all leads
+  const query = {};
 
   if (search) {
     const isNumericSearch = !isNaN(search) && search !== "";
@@ -328,22 +329,31 @@ export const leadbyperson = async (req, res, next) => {
   try {
     const totalLeads = await Lead.countDocuments(query);
     const leads = await Lead.find(query)
+      .populate('salesPerson', 'name email') // Populate salesPerson to access name
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 })
       .lean();
+
+    // Add isOwnLead flag to each lead
+    const leadsWithFlag = leads.map(lead => ({
+      ...lead,
+      isOwnLead: lead.salesPerson?._id?.toString() === userId.toString(),
+    }));
+
     res.status(200).json({
-      leads,
+      leads: leadsWithFlag,
       totalPages: Math.ceil(totalLeads / limit),
       currentPage: page,
     });
   } catch (error) {
     console.error("Error fetching user-specific leads:", error);
-    res.status(500).json({ message: "Error while fetching your leads." });
+    res.status(500).json({ message: "Error while fetching leads." });
   }
 };
 
 //==============================================editing lead status
+
 export const editstatus = async (req, res, next) => {
   console.log("editstatus working");
   try {

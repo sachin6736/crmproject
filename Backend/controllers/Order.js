@@ -465,7 +465,9 @@ export const getProcurementOrders = async (req, res) => {
     const userId = req.user.id;
     console.log("id", userId);
     const { page = 1, limit = 10, search = '', status = '' } = req.query;
-    const query = { procurementPerson: userId };
+    
+    // Remove the procurementPerson filter to fetch all orders
+    const query = {};
 
     if (search) {
       const isNumericSearch = !isNaN(search) && search.trim() !== '';
@@ -495,7 +497,7 @@ export const getProcurementOrders = async (req, res) => {
     // Add isOwnOrder flag to each order
     const ordersWithFlag = orders.map(order => ({
       ...order,
-      isOwnOrder: order.procurementPerson?._id.toString() === userId.toString(),
+      isOwnOrder: order.procurementPerson?._id?.toString() === userId.toString(),
     }));
 
     const totalOrders = await Order.countDocuments(query);
