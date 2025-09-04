@@ -541,7 +541,7 @@ const ProcurementDashboard = () => {
                         {order.clientName}
                       </td>
                       <td className="p-2 text-gray-900 dark:text-gray-100">
-                        {order.partRequested}
+                        {order.leadId.partRequested}
                       </td>
                       <td className="p-2 text-gray-900 dark:text-gray-100">
                         {order.vendors?.[0]?.businessName || "N/A"}
