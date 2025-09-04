@@ -2761,7 +2761,7 @@ const closeProcurementModal = () => {
                 Edit Costs
               </button>
             )}
-            {["procurement"].includes(user?.role) && (
+            {["procurement", "admin"].includes(user?.role) && (
               <button
                 ref={shipmentButtonRef}
                 onClick={() => setShowShipmentModal(!showShipmentModal)}
