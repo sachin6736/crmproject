@@ -3032,50 +3032,53 @@ const closeProcurementModal = () => {
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
-              ParteeCost ($)
-            </label>
-            <input
-              type="number"
-              name="costPrice"
-              value={vendorDetailsForm.costPrice}
-              onChange={handleVendorDetailsFormChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-              min="0"
-              step="0.01"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
-              Shipping Cost ($)
-            </label>
-            <input
-              type="number"
-              name="shippingCost"
-              value={vendorDetailsForm.shippingCost}
-              onChange={handleVendorDetailsFormChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-              min="0"
-              step="0.01"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
-              Core Price ($)
-            </label>
-            <input
-              type="number"
-              name="corePrice"
-              value={vendorDetailsForm.corePrice}
-              onChange={handleVendorDetailsFormChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              min="0"
-              step="0.01"
-            />
-          </div>
+<div>
+  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+    PartCost ($)
+  </label>
+  <input
+    type="text"
+    name="costPrice"
+    value={vendorDetailsForm.costPrice === "0" ? "" : vendorDetailsForm.costPrice}
+    onChange={handleVendorDetailsFormChange}
+    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+    required
+    pattern="^\d*\.?\d{0,2}$"
+    inputmode="decimal"
+    placeholder=""
+  />
+</div>
+<div>
+  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+    Shipping Cost ($)
+  </label>
+  <input
+    type="text"
+    name="shippingCost"
+    value={vendorDetailsForm.shippingCost === "0" ? "" : vendorDetailsForm.shippingCost}
+    onChange={handleVendorDetailsFormChange}
+    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+    required
+    pattern="^\d*\.?\d{0,2}$"
+    inputmode="decimal"
+    placeholder=""
+  />
+</div>
+<div>
+  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+    Core Price ($)
+  </label>
+  <input
+    type="text"
+    name="corePrice"
+    value={vendorDetailsForm.corePrice === "0" ? "" : vendorDetailsForm.corePrice}
+    onChange={handleVendorDetailsFormChange}
+    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+    pattern="^\d*\.?\d{0,2}$"
+    inputmode="decimal"
+    placeholder=""
+  />
+</div>
           <div>
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
               Total Cost ($)
