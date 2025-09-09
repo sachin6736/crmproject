@@ -19,7 +19,7 @@ import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
-import { createPortal } from 'react-dom';
+import { createPortal } from "react-dom";
 import {
   LineChart,
   Line,
@@ -38,9 +38,6 @@ import { useTheme } from "../context/ThemeContext";
 import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/solid";
 import LoadingOverlay from "./LoadingOverlay";
 import ConfirmationModal from "./ConfirmationModal";
-
-
-  
 
 const LeadDetailsModal = ({
   isOpen,
@@ -186,7 +183,9 @@ const LeadDetailsModal = ({
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/Admin/getLeadCountsAndConversions${queryString}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/Admin/getLeadCountsAndConversions${queryString}`,
           {
             credentials: "include",
           }
@@ -238,7 +237,7 @@ const LeadDetailsModal = ({
             },
           }),
         });
-  
+
         // Calculate comparison text
         let totalLeadsText = {
           direction: "",
@@ -291,7 +290,7 @@ const LeadDetailsModal = ({
         setIsLoading(false); // Set loading to false
       }
     };
-  
+
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
@@ -352,23 +351,23 @@ const LeadDetailsModal = ({
 
   return (
     <motion.div
-    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-  >
-    <motion.div
-      className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 50, opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
-      <LoadingOverlay isLoading={isLoading} />
-      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-          Lead Details
-        </h3>
-        <div className="space-y-3"></div>
+      <motion.div
+        className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+      >
+        <LoadingOverlay isLoading={isLoading} />
+        <div className={`${isLoading ? "blur-[1px]" : ""}`}>
+          <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+            Lead Details
+          </h3>
+          <div className="space-y-3"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">
@@ -665,10 +664,10 @@ const LeadDetailsModal = ({
             >
               Close
             </button>
-            </div>
-      </div>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
-  </motion.div>
   );
 };
 
@@ -800,16 +799,25 @@ const OrderDetailsModal = ({
         const queryString = query.length ? `?${query.join("&")}` : "";
         const [statusRes, amountRes, countsRes] = await Promise.all([
           fetch(
-            `${import.meta.env.VITE_API_URL}/Admin/getOrderStatusComparison${queryString}`,
+            `${
+              import.meta.env.VITE_API_URL
+            }/Admin/getOrderStatusComparison${queryString}`,
             { credentials: "include" }
           ),
           fetch(
-            `${import.meta.env.VITE_API_URL}/Admin/getOrderAmountTotals${queryString}`,
+            `${
+              import.meta.env.VITE_API_URL
+            }/Admin/getOrderAmountTotals${queryString}`,
             { credentials: "include" }
           ),
-          fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderCounts${queryString}`, {
-            credentials: "include",
-          }),
+          fetch(
+            `${
+              import.meta.env.VITE_API_URL
+            }/Admin/getOrderCounts${queryString}`,
+            {
+              credentials: "include",
+            }
+          ),
         ]);
         if (!statusRes.ok || !amountRes.ok || !countsRes.ok) {
           throw new Error("Failed to fetch order data");
@@ -822,7 +830,7 @@ const OrderDetailsModal = ({
         setStatusComparison(statusData);
         setAmountTotals(amountData);
         setOrderCounts(countsData);
-  
+
         // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(
@@ -849,7 +857,7 @@ const OrderDetailsModal = ({
         setIsLoading(false); // Set loading to false
       }
     };
-  
+
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
   const chartData = statuses.map((status) => ({
@@ -919,24 +927,24 @@ const OrderDetailsModal = ({
   };
 
   return (
-<motion.div
-    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-  >
     <motion.div
-      className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 50, opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
-      <LoadingOverlay isLoading={isLoading} />
-      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-          Order Details
-        </h3>
-        <div className="space-y-3"></div>
+      <motion.div
+        className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+      >
+        <LoadingOverlay isLoading={isLoading} />
+        <div className={`${isLoading ? "blur-[1px]" : ""}`}>
+          <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+            Order Details
+          </h3>
+          <div className="space-y-3"></div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">
@@ -1207,10 +1215,10 @@ const OrderDetailsModal = ({
             >
               Close
             </button>
-            </div>
-      </div>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
-  </motion.div>
   );
 };
 
@@ -1271,13 +1279,15 @@ const PoSentDetailsModal = ({
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/Admin/getPoSentCountsAndTotals${queryString}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/Admin/getPoSentCountsAndTotals${queryString}`,
           { credentials: "include" }
         );
         if (!res.ok) throw new Error("Failed to fetch PO sent data");
         const data = await res.json();
         setPoSentCountsAndTotals(data);
-  
+
         // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
@@ -1296,7 +1306,7 @@ const PoSentDetailsModal = ({
         setIsLoading(false); // Set loading to false
       }
     };
-  
+
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
@@ -1329,23 +1339,23 @@ const PoSentDetailsModal = ({
 
   return (
     <motion.div
-    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-  >
-    <motion.div
-      className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 50, opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
-      <LoadingOverlay isLoading={isLoading} />
-      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
-        <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-          PO Sent Details
-        </h3>
-        <div className="space-y-3"></div>
+      <motion.div
+        className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 50, opacity: 0 }}
+      >
+        <LoadingOverlay isLoading={isLoading} />
+        <div className={`${isLoading ? "blur-[1px]" : ""}`}>
+          <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+            PO Sent Details
+          </h3>
+          <div className="space-y-3"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300 text-xs">
@@ -1516,10 +1526,10 @@ const PoSentDetailsModal = ({
             >
               Close
             </button>
-            </div>
-      </div>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
-  </motion.div>
   );
 };
 
@@ -1582,13 +1592,15 @@ const DeliveredDetailsModal = ({
         if (selectedYear) query.push(`selectedYear=${selectedYear}`);
         const queryString = query.length ? `?${query.join("&")}` : "";
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/Admin/getDeliveredMetrics${queryString}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/Admin/getDeliveredMetrics${queryString}`,
           { credentials: "include" }
         );
         if (!res.ok) throw new Error("Failed to fetch delivered metrics");
         const data = await res.json();
         setDeliveredMetrics(data);
-  
+
         // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
@@ -1607,7 +1619,7 @@ const DeliveredDetailsModal = ({
         setIsLoading(false); // Set loading to false
       }
     };
-  
+
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
@@ -1733,43 +1745,43 @@ const DeliveredDetailsModal = ({
 
   return (
     <motion.div
-    className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 px-4 py-6 sm:px-8"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-  >
-    <motion.div
-      className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300"
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.95, opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 px-4 py-6 sm:px-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
-      <LoadingOverlay isLoading={isLoading} />
-      <div className={`${isLoading ? "blur-[1px]" : ""}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-500" />
-            Delivered Details
-          </h3>
-          <button
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            onClick={onClose}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <motion.div
+        className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+      >
+        <LoadingOverlay isLoading={isLoading} />
+        <div className={`${isLoading ? "blur-[1px]" : ""}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              Delivered Details
+            </h3>
+            <button
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              onClick={onClose}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
@@ -1992,7 +2004,8 @@ const Dashboard = () => {
     today: { count: 0, revenue: 0, profit: 0 },
     currentMonth: { count: 0, revenue: 0, profit: 0 },
   });
-  const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] = useState(false);
+  const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] =
+    useState(false);
   const [totalOrders, setTotalOrders] = useState(0);
   const buttonRefs = useRef({});
 
@@ -2131,7 +2144,6 @@ const Dashboard = () => {
     }
   }, [loading]);
 
-
   useEffect(() => {
     const verifyRole = async () => {
       try {
@@ -2149,7 +2161,7 @@ const Dashboard = () => {
         } else if (data.user.role === "procurement") {
           navigate("/home/procurementdashboard");
         } else if (data.user.role === "customer_relations") {
-          navigate("/home/customerrelationsdashboard");          
+          navigate("/home/customerrelationsdashboard");
         } else if (data.user.role !== "admin") {
           navigate("/home");
         } else {
@@ -2195,21 +2207,30 @@ const Dashboard = () => {
           fetch(`${import.meta.env.VITE_API_URL}/Admin/getLeadCreationCounts`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.VITE_API_URL}/Admin/getLeadCountsAndConversions`, {
-            credentials: "include",
-          }),
-          fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderStatusComparison`, {
-            credentials: "include",
-          }),
+          fetch(
+            `${import.meta.env.VITE_API_URL}/Admin/getLeadCountsAndConversions`,
+            {
+              credentials: "include",
+            }
+          ),
+          fetch(
+            `${import.meta.env.VITE_API_URL}/Admin/getOrderStatusComparison`,
+            {
+              credentials: "include",
+            }
+          ),
           fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderAmountTotals`, {
             credentials: "include",
           }),
           fetch(`${import.meta.env.VITE_API_URL}/Admin/getOrderCounts`, {
             credentials: "include",
           }),
-          fetch(`${import.meta.env.VITE_API_URL}/Admin/getPoSentCountsAndTotals`, {
-            credentials: "include",
-          }),
+          fetch(
+            `${import.meta.env.VITE_API_URL}/Admin/getPoSentCountsAndTotals`,
+            {
+              credentials: "include",
+            }
+          ),
           fetch(`${import.meta.env.VITE_API_URL}/Admin/getDeliveredMetrics`, {
             credentials: "include",
           }),
@@ -2345,17 +2366,19 @@ const Dashboard = () => {
             credentials: "include",
           }
         );
-  
+
         const data = await res.json();
         if (!res.ok) {
           toast.error(data.message || "Failed to reassign leads");
           return;
         }
-  
+
         toast.success(data.message);
       } else if (confirmAction === "Password") {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/User/Resetpassword/${selectedUserId}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/User/Resetpassword/${selectedUserId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -2363,13 +2386,13 @@ const Dashboard = () => {
             body: JSON.stringify({ newpassword: passwordInput }),
           }
         );
-  
+
         const data = await res.json();
         if (!res.ok) {
           toast.error(data.message || "Failed to reset password");
           return;
         }
-  
+
         toast.success(data.message || "Password reset successfully");
         setShowPasswordModal(false); // Close the password modal
         setPasswordInput(""); // Clear the password input
@@ -2384,13 +2407,13 @@ const Dashboard = () => {
             body: JSON.stringify({ newrole: selectedRole }),
           }
         );
-  
+
         const data = await res.json();
         if (!res.ok) {
           toast.error(data.message || "Failed to change role");
           return;
         }
-  
+
         // Update the teamUsers state with the new role
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
@@ -2419,12 +2442,15 @@ const Dashboard = () => {
     }
     setActionLoading(true); // Set loading to true
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/Auth/Createuser`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(newMember),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/Auth/Createuser`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(newMember),
+        }
+      );
       if (res.status === 403) {
         toast.error("Access denied, contact admin");
         return;
@@ -2464,7 +2490,7 @@ const Dashboard = () => {
             body: JSON.stringify({ status }),
           }
         );
-  
+
         if (res.status === 403) {
           toast.error("Access denied, contact admin");
           return;
@@ -2481,7 +2507,7 @@ const Dashboard = () => {
           toast.error("Failed to change status");
           return;
         }
-  
+
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === userId ? { ...user, isPaused: status } : user
@@ -2507,13 +2533,16 @@ const Dashboard = () => {
       } else if (action === "Grant Access" || action === "Revoke Access") {
         setIsAccessLoading(true);
         const newAccess = action === "Grant Access";
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/User/${userId}/access`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ access: newAccess }),
-        });
-  
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/User/${userId}/access`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ access: newAccess }),
+          }
+        );
+
         const data = await res.json();
         if (res.status === 403) {
           toast.error("Access denied, admin access required");
@@ -2535,7 +2564,7 @@ const Dashboard = () => {
           );
           return;
         }
-  
+
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === userId ? { ...user, Access: newAccess } : user
@@ -2572,7 +2601,6 @@ const Dashboard = () => {
       ? 100
       : 0;
 
-  
   return (
     <div className="relative w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 p-4 md:p-8">
       <LoadingOverlay isLoading={loading} />
@@ -2616,7 +2644,9 @@ const Dashboard = () => {
               },
               {
                 title: "Today's PO Sent Total",
-                value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`,
+                value: `$${(
+                  poSentCountsAndTotals.today?.totalAmount || 0
+                ).toFixed(2)}`,
                 onClick: () => setShowPoSentDetailsModal(true),
                 icon: <DollarSign className="w-5 h-5 text-purple-500" />,
               },
@@ -2632,8 +2662,14 @@ const Dashboard = () => {
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
                 onClick={onClick}
                 initial={{ opacity: 0, y: isAnimationReady ? 50 : 0 }} // Start off-screen only if animation is ready
-                animate={{ opacity: isAnimationReady ? 1 : 0, y: isAnimationReady ? 0 : 0 }} // Animate only if ready
-                transition={{ duration: 0.5, delay: isAnimationReady ? index * 0.1 : 0 }} // Delay animation based on index
+                animate={{
+                  opacity: isAnimationReady ? 1 : 0,
+                  y: isAnimationReady ? 0 : 0,
+                }} // Animate only if ready
+                transition={{
+                  duration: 0.5,
+                  delay: isAnimationReady ? index * 0.1 : 0,
+                }} // Delay animation based on index
               >
                 <div className="mb-2">{icon}</div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
@@ -2646,90 +2682,95 @@ const Dashboard = () => {
             ))}
           </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <motion.div
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
-            initial={{ opacity: 0, x: -100 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <BarChart2 className="w-5 h-5 text-blue-500" />
-              Order Status Comparison
-            </h3>
-            <div className="space-y-3">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={theme === "dark" ? "#4B5563" : "#E5E7EB"}
-                  />
-                  <XAxis
-                    dataKey="status"
-                    stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis
-                    stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: theme === "dark" ? "#1F2937" : "#FFFFFF",
-                      border: `1px solid ${theme === "dark" ? "#4B5563" : "#E5E7EB"}`,
-                      color: theme === "dark" ? "#D1D5DB" : "#1F2937",
-                      fontSize: "12px",
-                      borderRadius: "8px",
-                      padding: "10px",
-                    }}
-                  />
-                  <Legend
-                    wrapperStyle={{
-                      color: theme === "dark" ? "#D1D5DB" : "#1F2937",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="currentMonth"
-                    stroke={lineColors.currentMonth}
-                    name="Current Month"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="previousMonth"
-                    stroke={lineColors.previousMonth}
-                    name="Previous Month"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                <p>
-                  Number of orders{" "}
-                  {currentOrders > previousOrders ? "increased" : "decreased"}{" "}
-                  by {Math.abs(percentageChange)}% ({orderDifference}) compared
-                  to previous month. Previous month orders: {previousOrders},
-                  Current month orders: {currentOrders}
-                </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4"
+              initial={{ opacity: 0, x: -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <BarChart2 className="w-5 h-5 text-blue-500" />
+                Order Status Comparison
+              </h3>
+              <div className="space-y-3">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={theme === "dark" ? "#4B5563" : "#E5E7EB"}
+                    />
+                    <XAxis
+                      dataKey="status"
+                      stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis
+                      stroke={theme === "dark" ? "#D1D5DB" : "#4B5563"}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor:
+                          theme === "dark" ? "#1F2937" : "#FFFFFF",
+                        border: `1px solid ${
+                          theme === "dark" ? "#4B5563" : "#E5E7EB"
+                        }`,
+                        color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                        fontSize: "12px",
+                        borderRadius: "8px",
+                        padding: "10px",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{
+                        color: theme === "dark" ? "#D1D5DB" : "#1F2937",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="currentMonth"
+                      stroke={lineColors.currentMonth}
+                      name="Current Month"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="previousMonth"
+                      stroke={lineColors.previousMonth}
+                      name="Previous Month"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                  <p>
+                    Number of orders{" "}
+                    {currentOrders > previousOrders ? "increased" : "decreased"}{" "}
+                    by {Math.abs(percentageChange)}% ({orderDifference})
+                    compared to previous month. Previous month orders:{" "}
+                    {previousOrders}, Current month orders: {currentOrders}
+                  </p>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
 
-          <motion.div
+            <motion.div
               className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 relative"
               initial={{ opacity: 0, x: 100 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
               <LoadingOverlay isLoading={loading || actionLoading} />
-              <div className={`${loading || actionLoading ? "blur-[1px]" : ""}`}>
+              <div
+                className={`${loading || actionLoading ? "blur-[1px]" : ""}`}
+              >
                 <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
                   <Users className="w-5 h-5 text-purple-500" />
                   Team Management
@@ -2743,184 +2784,188 @@ const Dashboard = () => {
                     Add New Member
                   </button>
                 </div>
-  <div className="space-y-3 overflow-y-auto max-h-96">
-    {teamUsers.map((user) => (
-      <motion.div
-        key={user._id}
-        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-        transition={{ duration: 0.3 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
-            {user.role.charAt(0).toUpperCase()}
-          </div>
-          <div className="text-sm">
-            <p className="font-medium text-gray-900 dark:text-gray-100">
-              {user.name}
-            </p>
-            <p className="text-gray-600 dark:text-gray-300">
-              {user.email}
-            </p>
-            <p className="text-gray-500 dark:text-gray-400 capitalize">
-              {user.role}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Show both Paused and status icons when isPaused is true, otherwise show only status icon */}
-          <div className="flex items-center gap-2">
-            {user.isPaused && statusIcons.Paused}
-            {statusIcons[user.status] || (
-              <span className="text-gray-500 dark:text-gray-400 text-xs">
-                Unknown
-              </span>
-            )}
-          </div>
-          {/* Show Access status */}
-          {accessIcons[user.Access]}
-          <div className="relative">
-            <button
-              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
-              onClick={() =>
-                setDropdownOpen(
-                  dropdownOpen === user._id ? null : user._id
-                )
-              }
-            >
-              <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            </button>
-            {dropdownOpen === user._id && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] min-w-max">
-                <button
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() =>
-                    showConfirmation(
-                      user.isPaused ? "Resume" : "Pause",
-                      user._id,
-                      user.name
-                    )
-                  }
-                >
-                  {user.isPaused ? "Resume" : "Pause"}
-                </button>
-                <button
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() =>
-                    handleUserAction("Reassign Leads", user._id)
-                  }
-                >
-                  Reassign Leads
-                </button>
-                <button
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() =>
-                    handleUserAction("Change Role", user._id)
-                  }
-                >
-                  Change Role
-                </button>
-                <button
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() =>
-                    handleUserAction("Password", user._id)
-                  }
-                >
-                  Reset Password
-                </button>
-                <button
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() =>
-                    showConfirmation(
-                      user.Access ? "Revoke Access" : "Grant Access",
-                      user._id,
-                      user.name
-                    )
-                  }
-                  disabled={actionLoading}
-                >
-                  {user.Access ? "Revoke Access" : "Grant Access"}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    ))}
-  </div>
+                <div className="space-y-3 overflow-y-auto max-h-96">
+                  {teamUsers.map((user) => (
+                    <motion.div
+                      key={user._id}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
+                          {user.role.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="text-sm">
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            {user.name}
+                          </p>
+                          <p className="text-gray-600 dark:text-gray-300">
+                            {user.email}
+                          </p>
+                          <p className="text-gray-500 dark:text-gray-400 capitalize">
+                            {user.role}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Show both Paused and status icons when isPaused is true, otherwise show only status icon */}
+                        <div className="flex items-center gap-2">
+                          {user.isPaused && statusIcons.Paused}
+                          {statusIcons[user.status] || (
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">
+                              Unknown
+                            </span>
+                          )}
+                        </div>
+                        {/* Show Access status */}
+                        {accessIcons[user.Access]}
+                        <div className="relative">
+                          <button
+                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                            onClick={() =>
+                              setDropdownOpen(
+                                dropdownOpen === user._id ? null : user._id
+                              )
+                            }
+                          >
+                            <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                          </button>
+                          {dropdownOpen === user._id && (
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] min-w-max">
+                              <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() =>
+                                  showConfirmation(
+                                    user.isPaused ? "Resume" : "Pause",
+                                    user._id,
+                                    user.name
+                                  )
+                                }
+                              >
+                                {user.isPaused ? "Resume" : "Pause"}
+                              </button>
+                              <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() =>
+                                  handleUserAction("Reassign Leads", user._id)
+                                }
+                              >
+                                Reassign Leads
+                              </button>
+                              <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() =>
+                                  handleUserAction("Change Role", user._id)
+                                }
+                              >
+                                Change Role
+                              </button>
+                              <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() =>
+                                  handleUserAction("Password", user._id)
+                                }
+                              >
+                                Reset Password
+                              </button>
+                              <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() =>
+                                  showConfirmation(
+                                    user.Access
+                                      ? "Revoke Access"
+                                      : "Grant Access",
+                                    user._id,
+                                    user.name
+                                  )
+                                }
+                                disabled={actionLoading}
+                              >
+                                {user.Access ? "Revoke Access" : "Grant Access"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </motion.div>
-        </div>
+          </div>
 
-        <AnimatePresence>
-        {showModal && (
-  <motion.div
-    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-  >
-    <motion.div
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 50, opacity: 0 }}
-    >
-      <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-        Add New Member
-      </h3>
-      <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="Name"
-          className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-          value={newMember.name}
-          onChange={(e) =>
-            setNewMember({ ...newMember, name: e.target.value })
-          }
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-          value={newMember.email}
-          onChange={(e) =>
-            setNewMember({ ...newMember, email: e.target.value })
-          }
-        />
-        <select
-          className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-          value={newMember.role}
-          onChange={(e) =>
-            setNewMember({ ...newMember, role: e.target.value })
-          }
-        >
-          <option value="">Select Role</option>
-          <option value="admin">Admin</option>
-          <option value="sales">Sales</option>
-          <option value="customer_relations">Customer Relations</option>
-          <option value="procurement">Procurement</option>
-        </select>
-        <div className="flex justify-end gap-2">
-          <button
-            className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => setShowModal(false)}
-          >
-            Cancel
-          </button>
-          <button
-            className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
-              actionLoading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            onClick={handleAddUserWithConfirmation}
-            disabled={actionLoading}
-          >
-            {actionLoading ? "Adding..." : "Add"}
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  </motion.div>
-)}
+          <AnimatePresence>
+            {showModal && (
+              <motion.div
+                className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+                  initial={{ y: -50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 50, opacity: 0 }}
+                >
+                  <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                    Add New Member
+                  </h3>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                      value={newMember.name}
+                      onChange={(e) =>
+                        setNewMember({ ...newMember, name: e.target.value })
+                      }
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                      value={newMember.email}
+                      onChange={(e) =>
+                        setNewMember({ ...newMember, email: e.target.value })
+                      }
+                    />
+                    <select
+                      className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                      value={newMember.role}
+                      onChange={(e) =>
+                        setNewMember({ ...newMember, role: e.target.value })
+                      }
+                    >
+                      <option value="">Select Role</option>
+                      <option value="admin">Admin</option>
+                      <option value="sales">Sales</option>
+                      <option value="customer_relations">
+                        Customer Relations
+                      </option>
+                      <option value="procurement">Procurement</option>
+                    </select>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setShowModal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
+                          actionLoading ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                        onClick={handleAddUserWithConfirmation}
+                        disabled={actionLoading}
+                      >
+                        {actionLoading ? "Adding..." : "Add"}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
             {showPasswordModal && (
               <motion.div
                 className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
@@ -2957,7 +3002,8 @@ const Dashboard = () => {
                         setShowConfirmModal(true);
                         setConfirmAction("Password");
                         setConfirmUserName(
-                          teamUsers.find((user) => user._id === selectedUserId)?.name || "User"
+                          teamUsers.find((user) => user._id === selectedUserId)
+                            ?.name || "User"
                         );
                       }}
                     >
@@ -2968,66 +3014,71 @@ const Dashboard = () => {
               </motion.div>
             )}
             {showRoleModal && (
-  <motion.div
-    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-  >
-    <motion.div
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 50, opacity: 0 }}
-    >
-      <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-        Change Role
-      </h3>
-      <select
-        className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-        value={selectedRole}
-        onChange={(e) => setSelectedRole(e.target.value)}
-      >
-        <option value="">Select New Role</option>
-        <option value="admin">Admin</option>
-        <option value="sales">Sales</option>
-        <option value="customer_relations">Customer Relations</option>
-        <option value="procurement">Procurement</option>
-      </select>
-      <div className="flex justify-end gap-2 mt-3">
-        <button
-          className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-          onClick={() => setShowRoleModal(false)}
-        >
-          Cancel
-        </button>
-        <button
-          className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
-            actionLoading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          onClick={() => {
-            if (!selectedRole) {
-              toast.error("Please select a role");
-              return;
-            }
-            if (selectedRole === currentRole) {
-              toast.info("Selected role is the same as current role");
-              return;
-            }
-            setShowConfirmModal(true);
-            setConfirmAction("Change Role");
-            setConfirmUserName(
-              teamUsers.find((user) => user._id === selectedUserId)?.name || "User"
-            );
-          }}
-          disabled={actionLoading}
-        >
-          {actionLoading ? "Changing..." : "Change"}
-        </button>
-      </div>
-    </motion.div>
-  </motion.div>
-)}
+              <motion.div
+                className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+                  initial={{ y: -50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 50, opacity: 0 }}
+                >
+                  <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                    Change Role
+                  </h3>
+                  <select
+                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                  >
+                    <option value="">Select New Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="sales">Sales</option>
+                    <option value="customer_relations">
+                      Customer Relations
+                    </option>
+                    <option value="procurement">Procurement</option>
+                  </select>
+                  <div className="flex justify-end gap-2 mt-3">
+                    <button
+                      className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setShowRoleModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
+                        actionLoading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      onClick={() => {
+                        if (!selectedRole) {
+                          toast.error("Please select a role");
+                          return;
+                        }
+                        if (selectedRole === currentRole) {
+                          toast.info(
+                            "Selected role is the same as current role"
+                          );
+                          return;
+                        }
+                        setShowConfirmModal(true);
+                        setConfirmAction("Change Role");
+                        setConfirmUserName(
+                          teamUsers.find((user) => user._id === selectedUserId)
+                            ?.name || "User"
+                        );
+                      }}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? "Changing..." : "Change"}
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
             <ConfirmationModal
               isOpen={showConfirmModal}
               onClose={() => setShowConfirmModal(false)}
@@ -3066,6 +3117,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
 
 export default Dashboard;
