@@ -1235,8 +1235,20 @@ const PoSentDetailsModal = ({
   const [selectedYear, setSelectedYear] = useState("");
   const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState(
     initialPoSentCountsAndTotals || {
-      today: { count: 0, totalAmount: 0 },
-      currentMonth: { count: 0, totalAmount: 0 },
+      today: {
+        totalPOs: 0,
+        totalAmount: 0,
+        poSent: { count: 0, totalAmount: 0 },
+        poConfirmed: { count: 0, totalAmount: 0 },
+        poCanceled: { count: 0, totalAmount: 0 },
+      },
+      currentMonth: {
+        totalPOs: 0,
+        totalAmount: 0,
+        poSent: { count: 0, totalAmount: 0 },
+        poConfirmed: { count: 0, totalAmount: 0 },
+        poCanceled: { count: 0, totalAmount: 0 },
+      },
     }
   );
   const [comparisonText, setComparisonText] = useState("");
@@ -1246,14 +1258,9 @@ const PoSentDetailsModal = ({
     difference: 0,
   });
 
-  console.log(
-    "PoSentDetailsModal - poSentCountsAndTotals:",
-    poSentCountsAndTotals
-  );
-
   const calculateComparison = (current, selected, period) => {
-    const currentValue = current?.count || 0;
-    const selectedValue = selected?.count || 0;
+    const currentValue = current?.totalPOs || 0;
+    const selectedValue = selected?.totalPOs || 0;
     if (selectedValue === 0)
       return { direction: "", percentage: 0, difference: 0, text: "" };
     const difference = currentValue - selectedValue;
@@ -1265,14 +1272,15 @@ const PoSentDetailsModal = ({
       direction,
       percentage: Math.abs(percentage),
       difference: absDifference,
-      text: `PO sent count ${direction} by ${Math.abs(
+      text: `Total PO count ${direction} by ${Math.abs(
         percentage
-      )}% (${absDifference}) compared to selected ${period}. Selected ${period} PO sent count=${selectedValue}, ${comparePeriod} PO sent count=${currentValue}`,
+      )}% (${absDifference}) compared to selected ${period}. Selected ${period} total PO count=${selectedValue}, ${comparePeriod} total PO count=${currentValue}`,
     };
   };
+
   useEffect(() => {
     const fetchComparisonData = async () => {
-      setIsLoading(true); // Set loading to true
+      setIsLoading(true);
       try {
         const query = [];
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
@@ -1284,11 +1292,10 @@ const PoSentDetailsModal = ({
           }/Admin/getPoSentCountsAndTotals${queryString}`,
           { credentials: "include" }
         );
-        if (!res.ok) throw new Error("Failed to fetch PO sent data");
+        if (!res.ok) throw new Error("Failed to fetch PO data");
         const data = await res.json();
         setPoSentCountsAndTotals(data);
 
-        // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(data.currentMonth, data.selectedMonth, "month")
           : selectedYear
@@ -1301,9 +1308,9 @@ const PoSentDetailsModal = ({
           difference: comparison.difference,
         });
       } catch (error) {
-        console.error("Error fetching PO sent data:", error);
+        console.error("Error fetching PO data:", error);
       } finally {
-        setIsLoading(false); // Set loading to false
+        setIsLoading(false);
       }
     };
 
@@ -1352,95 +1359,133 @@ const PoSentDetailsModal = ({
       >
         <LoadingOverlay isLoading={isLoading} />
         <div className={`${isLoading ? "blur-[1px]" : ""}`}>
-          <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-            PO Sent Details
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+            Purchase Order Details
           </h3>
-          <div className="space-y-3"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">
-                Today's PO Sent Count
-              </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                {poSentCountsAndTotals.today?.count || 0}
-              </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Today's POs</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">PO Sent</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.today?.poSent.count || 0} (${(poSentCountsAndTotals.today?.poSent.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">PO Confirmed</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.today?.poConfirmed.count || 0} (${(poSentCountsAndTotals.today?.poConfirmed.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">PO Canceled</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.today?.poCanceled.count || 0} (${(poSentCountsAndTotals.today?.poCanceled.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Total</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.today?.totalPOs || 0} (${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">
-                Today's PO Sent Total
-              </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                ${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">
-                Current Month PO Sent Count
-              </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                {poSentCountsAndTotals.currentMonth?.count || 0}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300 text-xs">
-                Current Month PO Sent Total
-              </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                $
-                {(poSentCountsAndTotals.currentMonth?.totalAmount || 0).toFixed(
-                  2
-                )}
-              </span>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Current Month POs</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">PO Sent</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.currentMonth?.poSent.count || 0} (${(poSentCountsAndTotals.currentMonth?.poSent.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">PO Confirmed</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.currentMonth?.poConfirmed.count || 0} (${(poSentCountsAndTotals.currentMonth?.poConfirmed.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">PO Canceled</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.currentMonth?.poCanceled.count || 0} (${(poSentCountsAndTotals.currentMonth?.poCanceled.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-300 text-xs">Total</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {poSentCountsAndTotals.currentMonth?.totalPOs || 0} (${(poSentCountsAndTotals.currentMonth?.totalAmount || 0).toFixed(2)})
+                  </span>
+                </div>
+              </div>
             </div>
             {selectedMonth && (
-              <>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">
-                    Selected Month PO Sent Count
-                  </span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                    {poSentCountsAndTotals.selectedMonth?.count || 0}
-                  </span>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Selected Month POs</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">PO Sent</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedMonth?.poSent.count || 0} (${(poSentCountsAndTotals.selectedMonth?.poSent.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">PO Confirmed</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedMonth?.poConfirmed.count || 0} (${(poSentCountsAndTotals.selectedMonth?.poConfirmed.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">PO Canceled</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedMonth?.poCanceled.count || 0} (${(poSentCountsAndTotals.selectedMonth?.poCanceled.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">Total</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedMonth?.totalPOs || 0} (${(poSentCountsAndTotals.selectedMonth?.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">
-                    Selected Month PO Sent Total
-                  </span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                    $
-                    {(
-                      poSentCountsAndTotals.selectedMonth?.totalAmount || 0
-                    ).toFixed(2)}
-                  </span>
-                </div>
-              </>
+              </div>
             )}
             {selectedYear && (
-              <>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">
-                    Selected Year PO Sent Count
-                  </span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                    {poSentCountsAndTotals.selectedYear?.count || 0}
-                  </span>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Selected Year POs</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">PO Sent</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedYear?.poSent.count || 0} (${(poSentCountsAndTotals.selectedYear?.poSent.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">PO Confirmed</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedYear?.poConfirmed.count || 0} (${(poSentCountsAndTotals.selectedYear?.poConfirmed.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">PO Canceled</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedYear?.poCanceled.count || 0} (${(poSentCountsAndTotals.selectedYear?.poCanceled.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300 text-xs">Total</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {poSentCountsAndTotals.selectedYear?.totalPOs || 0} (${(poSentCountsAndTotals.selectedYear?.totalAmount || 0).toFixed(2)})
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span className="text-gray-600 dark:text-gray-300 text-xs">
-                    Selected Year PO Sent Total
-                  </span>
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                    $
-                    {(
-                      poSentCountsAndTotals.selectedYear?.totalAmount || 0
-                    ).toFixed(2)}
-                  </span>
-                </div>
-              </>
+              </div>
             )}
           </div>
           {comparisonText && (
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
               <div className="flex items-start gap-2">
                 <div className="flex-shrink-0">
                   {comparisonMeta.direction === "increased" ? (
@@ -1451,12 +1496,12 @@ const PoSentDetailsModal = ({
                 </div>
                 <div>
                   <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    PO Sent Comparison
+                    Total PO Comparison
                   </h5>
                   <p className="text-xs text-gray-600 dark:text-gray-300">
                     {comparisonMeta.direction === "increased" ? (
                       <span>
-                        PO sent count{" "}
+                        Total PO count{" "}
                         <span className="font-bold text-green-600 dark:text-green-400">
                           increased
                         </span>{" "}
@@ -1468,7 +1513,7 @@ const PoSentDetailsModal = ({
                       </span>
                     ) : (
                       <span>
-                        PO sent count{" "}
+                        Total PO count{" "}
                         <span className="font-bold text-red-600 dark:text-red-400">
                           decreased
                         </span>{" "}
@@ -1487,13 +1532,13 @@ const PoSentDetailsModal = ({
               </div>
             </div>
           )}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
             <select
               className="w-full sm:w-1/2 border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
               value={selectedMonth}
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
-                setSelectedYear(""); // Reset year when month is selected
+                setSelectedYear("");
               }}
             >
               <option value="">Select Month to Compare</option>
@@ -1508,7 +1553,7 @@ const PoSentDetailsModal = ({
               value={selectedYear}
               onChange={(e) => {
                 setSelectedYear(e.target.value);
-                setSelectedMonth(""); // Reset month when year is selected
+                setSelectedMonth("");
               }}
             >
               <option value="">Select Year to Compare</option>
@@ -1519,7 +1564,7 @@ const PoSentDetailsModal = ({
               ))}
             </select>
           </div>
-          <div className="flex justify-end gap-2 mt-3">
+          <div className="flex justify-end">
             <button
               className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={onClose}
@@ -1532,6 +1577,7 @@ const PoSentDetailsModal = ({
     </motion.div>
   );
 };
+
 
 const DeliveredDetailsModal = ({
   isOpen,
@@ -1995,10 +2041,24 @@ const Dashboard = () => {
     currentMonth: 0,
     currentYear: 0,
   });
+  
   const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState({
-    today: { count: 0, totalAmount: 0 },
-    currentMonth: { count: 0, totalAmount: 0 },
+    today: {
+      totalPOs: 0,
+      totalAmount: 0,
+      poSent: { count: 0, totalAmount: 0 },
+      poConfirmed: { count: 0, totalAmount: 0 },
+      poCanceled: { count: 0, totalAmount: 0 },
+    },
+    currentMonth: {
+      totalPOs: 0,
+      totalAmount: 0,
+      poSent: { count: 0, totalAmount: 0 },
+      poConfirmed: { count: 0, totalAmount: 0 },
+      poCanceled: { count: 0, totalAmount: 0 },
+    },
   });
+
   const [showPoSentDetailsModal, setShowPoSentDetailsModal] = useState(false);
   const [deliveredMetrics, setDeliveredMetrics] = useState({
     today: { count: 0, revenue: 0, profit: 0 },
@@ -2631,25 +2691,23 @@ const Dashboard = () => {
                 icon: <Users className="w-5 h-5 text-blue-500" />,
               },
               {
-                title: "Today's Total Amount",
-                value: `$${orderAmountTotals.today.toFixed(2)}`,
-                onClick: null,
-                icon: <DollarSign className="w-5 h-5 text-green-500" />,
-              },
-              {
-                title: "Today's PO Sent",
-                value: poSentCountsAndTotals.today?.count || 0,
+                title: "Today's Total POs",
+                value: poSentCountsAndTotals.today?.totalPOs || 0,
                 onClick: () => setShowPoSentDetailsModal(true),
                 icon: <Send className="w-5 h-5 text-orange-500" />,
               },
               {
-                title: "Today's PO Sent Total",
-                value: `$${(
-                  poSentCountsAndTotals.today?.totalAmount || 0
-                ).toFixed(2)}`,
+                title: "Today's Total PO Amount",
+                value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`,
                 onClick: () => setShowPoSentDetailsModal(true),
                 icon: <DollarSign className="w-5 h-5 text-purple-500" />,
               },
+              {
+                title: "Today's PO Total Amount",
+                value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`,
+                onClick: () => setShowPoSentDetailsModal(true),
+                icon: <DollarSign className="w-5 h-5 text-purple-500" />,
+              },,
               {
                 title: "Today's Delivered",
                 value: deliveredMetrics.today?.count || 0,

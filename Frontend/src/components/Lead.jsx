@@ -51,6 +51,7 @@ const Lead = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [singleLead, setSingleLead] = useState(null);
+  const [user, setUser] = useState(null);
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -82,6 +83,29 @@ const Lead = () => {
   const [profitRatio, setProfitRatio] = useState(null);
   const [showQuotationPreviewModal, setShowQuotationPreviewModal] = useState(false);
   const [emailContent, setEmailContent] = useState("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/Auth/check`, {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            navigate("/login");
+            return;
+          }
+          throw new Error("Failed to fetch user");
+        }
+        const data = await response.json();
+        setUser(data.user);
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+        toast.error("Failed to load user data");
+      }
+    };
+    fetchUser();
+  }, [navigate]);
 
   useEffect(() => {
     if (singleLead && singleLead.notes) {
@@ -630,13 +654,15 @@ const Lead = () => {
             >
               {isSendingQuote ? "Sending..." : "Send Quote"}
             </button>
-            <button
-              onClick={handleDownload}
-              className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={actionLoading}
-            >
-              Download
-            </button>
+            {user?.role === "admin" && (
+              <button
+                onClick={handleDownload}
+                className="px-4 py-2 text-blue-600 dark:text-blue-400 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={actionLoading}
+              >
+                Download
+              </button>
+            )}
             {singleLead?.status === "Ordered" && (
               <button
                 onClick={handleGoToOrder}

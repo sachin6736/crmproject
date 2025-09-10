@@ -492,82 +492,162 @@ export const getLeadCountsAndConversions = async (req, res) => {
     });
   }
 };
+
 export const getPoSentCountsAndTotals = async (req, res) => {
-    try {
-        const { selectedMonth, selectedYear } = req.query;
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  try {
+    const { selectedMonth, selectedYear } = req.query;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-        const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
-        const currentMonthEnd = new Date(currentYear, currentMonth, 0);
+    const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
+    const currentMonthEnd = new Date(currentYear, currentMonth, 0);
 
-        let selectedMonthQuery = {};
-        let selectedYearQuery = {};
+    let selectedMonthQuery = {};
+    let selectedYearQuery = {};
 
-        if (selectedMonth) {
-            const [year, month] = selectedMonth.split("-").map(Number);
-            const selectedMonthStart = new Date(year, month - 1, 1);
-            const selectedMonthEnd = new Date(year, month, 0);
-            selectedMonthQuery = {
-                createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
-            };
-        }
-
-        if (selectedYear) {
-            const yearStart = new Date(selectedYear, 0, 1);
-            const yearEnd = new Date(selectedYear, 11, 31);
-            selectedYearQuery = {
-                createdAt: { $gte: yearStart, $lte: yearEnd },
-            };
-        }
-
-        const poSentMetrics = async (query) => {
-            const result = await Order.aggregate([
-                {
-                    $match: {
-                        ...query,
-                        status: "PO Sent",
-                    },
-                },
-                {
-                    $unwind: "$vendors",
-                },
-                {
-                    $match: {
-                        "vendors.poStatus": "PO Sent",
-                    },
-                },
-                {
-                    $group: {
-                        _id: null,
-                        count: { $sum: 1 },
-                        totalAmount: { $sum: "$vendors.totalCost" },
-                    },
-                },
-            ]);
-            return result.length > 0 ? { count: result[0].count, totalAmount: result[0].totalAmount } : { count: 0, totalAmount: 0 };
-        };
-
-        const [todayMetrics, currentMonthMetrics, selectedMonthMetrics, selectedYearMetrics] = await Promise.all([
-            poSentMetrics({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
-            poSentMetrics({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
-            selectedMonth ? poSentMetrics(selectedMonthQuery) : Promise.resolve({ count: 0, totalAmount: 0 }),
-            selectedYear ? poSentMetrics(selectedYearQuery) : Promise.resolve({ count: 0, totalAmount: 0 }),
-        ]);
-
-        res.status(200).json({
-            today: todayMetrics,
-            currentMonth: currentMonthMetrics,
-            ...(selectedMonth && { selectedMonth: selectedMonthMetrics }),
-            ...(selectedYear && { selectedYear: selectedYearMetrics }),
-        });
-    } catch (error) {
-        console.error("Error fetching PO Sent counts and totals:", error);
-        res.status(500).json({ message: "Server error" });
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const selectedMonthStart = new Date(year, month - 1, 1);
+      const selectedMonthEnd = new Date(year, month, 0);
+      selectedMonthQuery = {
+        createdAt: { $gte: selectedMonthStart, $lte: selectedMonthEnd },
+      };
     }
+
+    if (selectedYear) {
+      const yearStart = new Date(selectedYear, 0, 1);
+      const yearEnd = new Date(selectedYear, 11, 31);
+      selectedYearQuery = {
+        createdAt: { $gte: yearStart, $lte: yearEnd },
+      };
+    }
+
+    // Aggregate PO metrics for a given query, grouping by poStatus
+    const poMetrics = async (query) => {
+      const result = await Order.aggregate([
+        { $match: query },
+        { $unwind: "$vendors" },
+        {
+          $group: {
+            _id: "$vendors.poStatus",
+            count: { $sum: 1 },
+            totalAmount: { $sum: "$vendors.totalCost" },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            statuses: {
+              $push: {
+                status: "$_id",
+                count: "$count",
+                totalAmount: "$totalAmount",
+              },
+            },
+            totalPOs: { $sum: "$count" },
+            totalAmount: { $sum: "$totalAmount" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            totalPOs: 1,
+            totalAmount: 1,
+            poSent: {
+              $arrayElemAt: [
+                {
+                  $filter: {
+                    input: "$statuses",
+                    as: "status",
+                    cond: { $eq: ["$$status.status", "PO Sent"] },
+                  },
+                },
+                0,
+              ],
+            },
+            poConfirmed: {
+              $arrayElemAt: [
+                {
+                  $filter: {
+                    input: "$statuses",
+                    as: "status",
+                    cond: { $eq: ["$$status.status", "PO Confirmed"] },
+                  },
+                },
+                0,
+              ],
+            },
+            poCanceled: {
+              $arrayElemAt: [
+                {
+                  $filter: {
+                    input: "$statuses",
+                    as: "status",
+                    cond: { $eq: ["$$status.status", "PO Canceled"] },
+                  },
+                },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $project: {
+            totalPOs: 1,
+            totalAmount: 1,
+            poSent: {
+              count: { $ifNull: ["$poSent.count", 0] },
+              totalAmount: { $ifNull: ["$poSent.totalAmount", 0] },
+            },
+            poConfirmed: {
+              count: { $ifNull: ["$poConfirmed.count", 0] },
+              totalAmount: { $ifNull: ["$poConfirmed.totalAmount", 0] },
+            },
+            poCanceled: {
+              count: { $ifNull: ["$poCanceled.count", 0] },
+              totalAmount: { $ifNull: ["$poCanceled.totalAmount", 0] },
+            },
+          },
+        },
+      ]);
+
+      return result.length > 0
+        ? {
+            totalPOs: result[0].totalPOs || 0,
+            totalAmount: result[0].totalAmount || 0,
+            poSent: result[0].poSent || { count: 0, totalAmount: 0 },
+            poConfirmed: result[0].poConfirmed || { count: 0, totalAmount: 0 },
+            poCanceled: result[0].poCanceled || { count: 0, totalAmount: 0 },
+          }
+        : {
+            totalPOs: 0,
+            totalAmount: 0,
+            poSent: { count: 0, totalAmount: 0 },
+            poConfirmed: { count: 0, totalAmount: 0 },
+            poCanceled: { count: 0, totalAmount: 0 },
+          };
+    };
+
+    const [todayMetrics, currentMonthMetrics, selectedMonthMetrics, selectedYearMetrics] = await Promise.all([
+      poMetrics({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+      poMetrics({ createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } }),
+      selectedMonth ? poMetrics(selectedMonthQuery) : Promise.resolve({ totalPOs: 0, totalAmount: 0, poSent: { count: 0, totalAmount: 0 }, poConfirmed: { count: 0, totalAmount: 0 }, poCanceled: { count: 0, totalAmount: 0 } }),
+      selectedYear ? poMetrics(selectedYearQuery) : Promise.resolve({ totalPOs: 0, totalAmount: 0, poSent: { count: 0, totalAmount: 0 }, poConfirmed: { count: 0, totalAmount: 0 }, poCanceled: { count: 0, totalAmount: 0 } }),
+    ]);
+
+    res.status(200).json({
+      today: todayMetrics,
+      currentMonth: currentMonthMetrics,
+      ...(selectedMonth && { selectedMonth: selectedMonthMetrics }),
+      ...(selectedYear && { selectedYear: selectedYearMetrics }),
+    });
+  } catch (error) {
+    console.error("Error fetching PO counts and totals:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const getDeliveredMetrics = async (req, res) => {

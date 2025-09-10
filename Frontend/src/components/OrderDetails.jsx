@@ -249,12 +249,17 @@ const [litigationLoading, setLitigationLoading] = useState(false);
   useEffect(() => {
     const costPrice = parseFloat(editVendorForm.costPrice) || 0;
     const shippingCost = parseFloat(editVendorForm.shippingCost) || 0;
-    const calculatedTotalCost = (costPrice + shippingCost).toFixed(2);
+    const corePrice = parseFloat(editVendorForm.corePrice) || 0;
+    const calculatedTotalCost = (costPrice + shippingCost + corePrice).toFixed(2);
     setEditVendorForm((prev) => ({
       ...prev,
       totalCost: calculatedTotalCost,
     }));
-  }, [editVendorForm.costPrice, editVendorForm.shippingCost]);
+  }, [
+    editVendorForm.costPrice,
+    editVendorForm.shippingCost,
+    editVendorForm.corePrice,
+  ]);
 
   // Fetch initial data
   useEffect(() => {
@@ -324,12 +329,17 @@ const [litigationLoading, setLitigationLoading] = useState(false);
   useEffect(() => {
     const costPrice = parseFloat(vendorDetailsForm.costPrice) || 0;
     const shippingCost = parseFloat(vendorDetailsForm.shippingCost) || 0;
-    const calculatedTotalCost = (costPrice + shippingCost).toFixed(2);
+    const corePrice = parseFloat(vendorDetailsForm.corePrice) || 0;
+    const calculatedTotalCost = (costPrice + shippingCost + corePrice).toFixed(2);
     setVendorDetailsForm((prev) => ({
       ...prev,
       totalCost: calculatedTotalCost,
     }));
-  }, [vendorDetailsForm.costPrice, vendorDetailsForm.shippingCost]);
+  }, [
+    vendorDetailsForm.costPrice,
+    vendorDetailsForm.shippingCost,
+    vendorDetailsForm.corePrice,
+  ]);
 
   // Handle click outside to close forms
   useEffect(() => {
@@ -2809,7 +2819,7 @@ const closeProcurementModal = () => {
                   )}
                 </button>
               )}
-
+             {user?.role === "admin" && (
             <button
               onClick={handleExportToExcel}
               className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
@@ -2817,6 +2827,7 @@ const closeProcurementModal = () => {
             >
               Download as Excel
             </button>
+             )}
           </div>
         </div>
       </div>
