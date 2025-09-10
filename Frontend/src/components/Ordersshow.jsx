@@ -50,7 +50,6 @@ const OrdersHistory = () => {
       const statusHeaderRef = document.getElementById("status-header");
       if (statusHeaderRef && !statusHeaderRef.contains(event.target)) {
         setShowStatusDropdown(false);
- ремонт
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -284,7 +283,9 @@ const OrdersHistory = () => {
                   <tr
                     key={order._id || index}
                     className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
-                      user?.role === "customer_relations" || user?.role === "procurement"
+                      order.status === "Replacement"
+                        ? "bg-red-100 dark:bg-red-900/30"
+                        : user?.role === "customer_relations" || user?.role === "procurement"
                         ? order.isOwnOrder
                           ? "bg-green-100 dark:bg-green-900/20"
                           : "bg-red-100 dark:bg-red-900/20"
