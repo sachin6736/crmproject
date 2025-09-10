@@ -1,15 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import {
   Home as HomeIcon,
-  Users,
-  Briefcase,
   LineChart,
-  Headset,
-  Megaphone,
-  LucideShoppingCart,
   PenTool,
   User,
   CheckCircle,
@@ -67,7 +62,6 @@ function Home() {
       if (!data.user) {
         throw new Error('No user data in response');
       }
-      console.log('Fetched user data:', data);
       setUser(data.user);
     } catch (err) {
       console.error('Error fetching user info:', err);
@@ -107,7 +101,6 @@ function Home() {
       socketRef.current.emit('joinRoom', user._id);
 
       socketRef.current.on('newNotification', (notification) => {
-        console.log('Received notification:', notification);
         setNotifications((prev) => [notification, ...prev]);
         toast.info(notification.message);
       });
@@ -149,17 +142,15 @@ function Home() {
         credentials: 'include',
       });
       if (res.ok) {
-        navigate('/', { replace: true }); // Navigate first
-        setUser(null); // Clear user state
-        setNotifications([]); // Clear notifications
-        socketRef.current?.disconnect(); // Disconnect Socket.IO
+        navigate('/', { replace: true });
+        setUser(null);
+        setNotifications([]);
+        socketRef.current?.disconnect();
         toast.success('Logged out successfully');
       } else {
-        console.error('Logout failed:', res.statusText);
         toast.error('Failed to log out');
       }
     } catch (error) {
-      console.error('Error during logout:', error);
       toast.error('Error during logout');
     }
   };
@@ -200,7 +191,6 @@ function Home() {
       await fetchUser();
       toast.success('Status updated successfully');
     } catch (err) {
-      console.error('Error changing status:', err);
       toast.error(err.message || 'Failed to update status');
     } finally {
       setShowStatusDropdown(false);
@@ -221,7 +211,6 @@ function Home() {
         )
       );
     } catch (err) {
-      console.error('Error marking notification as read:', err);
       toast.error('Failed to mark notification as read');
     }
   };
@@ -322,9 +311,9 @@ function Home() {
   const unreadCount = notifications.filter((notif) => !notif.isRead).length;
 
   return (
-    <div className='w-screen h-screen bg-gray-100 dark:bg-gray-900 flex text-gray-900 dark:text-gray-100'>
+    <div className='flex min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100'>
       {/* Desktop Sidebar */}
-      <div className='hidden md:flex w-20 h-screen bg-[#002775] dark:bg-gray-800 fixed left-0 top-0 border-r-[2px] border-r-white dark:border-r-gray-700 flex-col items-center pt-3 space-y-3 overflow-hidden'>
+      <div className='hidden md:flex w-20 h-screen bg-[#002775] dark:bg-gray-800 fixed left-0 top-0 border-r-[2px] border-r-white dark:border-r-gray-700 flex-col items-center pt-3 space-y-3 overflow-hidden z-20'>
         {navItems.map((item, index) => (
           <div
             key={index}
@@ -343,34 +332,36 @@ function Home() {
 
       {/* Mobile Sidebar (Hamburger Menu) */}
       {showSidebar && (
-        <div className='md:hidden fixed inset-0 bg-[#002775] dark:bg-gray-800 z-50 flex flex-col items-center pt-6 space-y-6'>
-          <button
-            onClick={() => setShowSidebar(false)}
-            className='absolute top-4 right-4 text-white dark:text-gray-300'
-          >
-            <X className='w-8 h-8' />
-          </button>
-          {navItems.map((item, index) => (
-            <div
-              key={index}
-              className='flex items-center space-x-4 cursor-pointer'
-              onClick={item.onClick}
+        <div className='md:hidden fixed inset-0 bg-black/50 z-40'>
+          <div className='fixed left-0 top-0 bottom-0 w-64 bg-[#002775] dark:bg-gray-800 z-50 flex flex-col items-center pt-6 space-y-6'>
+            <button
+              onClick={() => setShowSidebar(false)}
+              className='absolute top-4 right-4 text-white dark:text-gray-300'
             >
-              <div className='w-10 h-10 flex items-center justify-center'>
-                {item.icon}
+              <X className='w-8 h-8' />
+            </button>
+            {navItems.map((item, index) => (
+              <div
+                key={index}
+                className='flex items-center space-x-4 cursor-pointer'
+                onClick={item.onClick}
+              >
+                <div className='w-10 h-10 flex items-center justify-center'>
+                  {item.icon}
+                </div>
+                <span className='text-white dark:text-gray-300 text-lg font-bold'>
+                  {item.label}
+                </span>
               </div>
-              <span className='text-white dark:text-gray-300 text-lg font-bold'>
-                {item.label}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {/* Main Content */}
-      <div className='flex-1 h-screen md:ml-20 flex flex-col'>
+      <div className='flex-1 flex flex-col w-full md:ml-20'>
         {/* Header */}
-        <div className='w-full h-16 md:h-24 bg-[#066afe] dark:bg-gray-800 flex items-center justify-between px-4'>
+        <div className='fixed top-0 left-0 md:left-20 right-0 h-16 md:h-20 bg-[#066afe] dark:bg-gray-800 flex items-center justify-between px-4 z-10'>
           <div className='flex items-center space-x-2'>
             <button
               className='md:hidden text-white dark:text-gray-300'
@@ -378,7 +369,8 @@ function Home() {
             >
               <Menu className='w-8 h-8' />
             </button>
-            {/* <img src={logo} alt='Equivise Logo' className='w-16 h-16 md:w-20 md:h-20' /> */}
+            {/* Uncomment to include logo */}
+            {/* <img src={logo} alt='Equivise Logo' className='w-12 h-12 md:w-16 md:h-16' /> */}
             {/* <span className='text-white dark:text-gray-100 font-serif text-base md:text-lg'>| Equivise</span> */}
           </div>
           <div className='relative flex items-center space-x-4'>
@@ -546,7 +538,8 @@ function Home() {
             </div>
           </div>
         </div>
-        <div className='flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-4'>
+        {/* Main Content Area */}
+        <div className='flex-1 mt-16 md:mt-20 md:ml-20 overflow-y-auto p-4'>
           <Outlet />
         </div>
       </div>
