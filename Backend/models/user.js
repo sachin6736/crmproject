@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true }, // Store raw password (before hashing in controller)
     role: { 
       type: String, 
-      enum: ["admin", "sales", "customer_relations", "procurement"], 
+      enum: ["admin", "sales", "customer_relations", "procurement","viewer"], 
       default: "sales" 
     },
     isPaused: { type: Boolean, default: false },

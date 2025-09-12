@@ -41,12 +41,17 @@ export const signup = async(req,res,next)=>{
 
 export const createuser = async (req, res, next) => {
   console.log("createuser working");
+  
   try {
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
     const { name, email, role } = req.body;
-    const allowedRoles = ["admin", "sales", "customer_relations", "procurement"];
+    console.log("name",name);
+    console.log("email",email);
+    console.log("role",role);
+    
+    const allowedRoles = ["admin", "sales", "customer_relations", "procurement","viewer"];
     if (!name || !email || !role || !allowedRoles.includes(role)) {
       return res.status(400).json({ message: "Name, email, and valid role are required." });
     }

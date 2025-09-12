@@ -2495,46 +2495,72 @@ const Dashboard = () => {
     }
   };
 
-  const handleAddUser = async () => {
-    if (!newMember.name || !newMember.email || !newMember.role) {
-      toast.error("All fields are required");
+ const handleAddUser = async () => {
+  if (!newMember.name || !newMember.email || !newMember.role) {
+    toast.error("All fields are required");
+    return;
+  }
+  setActionLoading(true); // Set loading to true
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/Auth/Createuser`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(newMember),
+      }
+    );
+    
+    // Log the full response object (status, headers, etc.) for debugging
+    console.log("Response of creating user:", {
+      status: res.status,
+      statusText: res.statusText,
+      ok: res.ok,
+      headers: res.headers,
+    });
+    
+    if (res.status === 403) {
+      toast.error("Access denied, contact admin");
       return;
     }
-    setActionLoading(true); // Set loading to true
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/Auth/Createuser`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(newMember),
-        }
-      );
-      if (res.status === 403) {
-        toast.error("Access denied, contact admin");
-        return;
-      }
-      if (res.status === 409) {
-        toast.error("User with email already exists");
-        return;
-      }
-      if (!res.ok) {
-        toast.error("Failed to add user");
-        return;
-      }
-      const savedUser = await res.json();
-      setTeamUsers((prev) => [...prev, savedUser]);
-      setShowModal(false);
-      setNewMember({ name: "", email: "", role: "" });
-      toast.success("User added to the team!");
-    } catch (error) {
-      console.error("Add user error:", error);
-      toast.error("Error adding user");
-    } finally {
-      setActionLoading(false); // Set loading to false
+    if (res.status === 409) {
+      toast.error("User with email already exists");
+      return;
     }
-  };
+    if (!res.ok) {
+      // Parse error details if available
+      let errorData = null;
+      try {
+        errorData = await res.json();
+      } catch (parseError) {
+        console.error("Failed to parse error response:", parseError);
+      }
+      console.error("API Error Details:", errorData);
+      toast.error(errorData?.message || "Failed to add user");
+      return;
+    }
+    
+    // Now parse the successful response body (only once)
+    const savedUser = await res.json();
+    console.log("Saved user:", savedUser);
+    
+    // Validate the saved user before updating state
+    if (!savedUser || !savedUser._id) {
+      throw new Error("Invalid user data returned from server");
+    }
+    
+    setTeamUsers((prev) => [...prev, savedUser]);
+    setShowModal(false);
+    setNewMember({ name: "", email: "", role: "" });
+    toast.success("User added to the team!");
+  } catch (error) {
+    console.error("Add user error:", error);
+    toast.error(error.message || "Error adding user");
+  } finally {
+    setActionLoading(false); // Set loading to false
+  }
+};
 
   const handleUserAction = async (action, userId) => {
     setActionLoading(true); // Set loading to true
@@ -3002,6 +3028,7 @@ const Dashboard = () => {
                         Customer Relations
                       </option>
                       <option value="procurement">Procurement</option>
+                      <option value="viewer">viewer</option>
                     </select>
                     <div className="flex justify-end gap-2">
                       <button
@@ -3071,72 +3098,68 @@ const Dashboard = () => {
                 </motion.div>
               </motion.div>
             )}
-            {showRoleModal && (
-              <motion.div
-                className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <motion.div
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-                  initial={{ y: -50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 50, opacity: 0 }}
-                >
-                  <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-                    Change Role
-                  </h3>
-                  <select
-                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                  >
-                    <option value="">Select New Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="sales">Sales</option>
-                    <option value="customer_relations">
-                      Customer Relations
-                    </option>
-                    <option value="procurement">Procurement</option>
-                  </select>
-                  <div className="flex justify-end gap-2 mt-3">
-                    <button
-                      className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => setShowRoleModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
-                        actionLoading ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                      onClick={() => {
-                        if (!selectedRole) {
-                          toast.error("Please select a role");
-                          return;
-                        }
-                        if (selectedRole === currentRole) {
-                          toast.info(
-                            "Selected role is the same as current role"
-                          );
-                          return;
-                        }
-                        setShowConfirmModal(true);
-                        setConfirmAction("Change Role");
-                        setConfirmUserName(
-                          teamUsers.find((user) => user._id === selectedUserId)
-                            ?.name || "User"
-                        );
-                      }}
-                      disabled={actionLoading}
-                    >
-                      {actionLoading ? "Changing..." : "Change"}
-                    </button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
+{showRoleModal && (
+  <motion.div
+    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <motion.div
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 50, opacity: 0 }}
+    >
+      <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+        Change Role
+      </h3>
+      <select
+        className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+        value={selectedRole}
+        onChange={(e) => setSelectedRole(e.target.value)}
+      >
+        <option value="">Select New Role</option>
+        <option value="admin">Admin</option>
+        <option value="sales">Sales</option>
+        <option value="customer_relations">Customer Relations</option>
+        <option value="procurement">Procurement</option>
+        <option value="viewer">viewer</option>
+      </select>
+      <div className="flex justify-end gap-2 mt-3">
+        <button
+          className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+          onClick={() => setShowRoleModal(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
+            actionLoading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={() => {
+            if (!selectedRole) {
+              toast.error("Please select a role");
+              return;
+            }
+            if (selectedRole === currentRole) {
+              toast.info("Selected role is the same as current role");
+              return;
+            }
+            setShowConfirmModal(true);
+            setConfirmAction("Change Role");
+            setConfirmUserName(
+              teamUsers.find((user) => user._id === selectedUserId)?.name || "User"
+            );
+          }}
+          disabled={actionLoading}
+        >
+          {actionLoading ? "Changing..." : "Change"}
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+)}
             <ConfirmationModal
               isOpen={showConfirmModal}
               onClose={() => setShowConfirmModal(false)}

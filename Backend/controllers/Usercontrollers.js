@@ -66,7 +66,7 @@ export const rolechange = async (req, res, next) => {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
     const { newrole } = req.body;
-    const allowedRoles = ["admin", "sales", "customer_relations", "procurement"];
+    const allowedRoles = ["admin", "sales", "customer_relations", "procurement","viewer"];
     if (!newrole || !allowedRoles.includes(newrole)) {
       return res.status(400).json({ message: "Invalid role provided." });
     }
