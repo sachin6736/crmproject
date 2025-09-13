@@ -189,7 +189,7 @@ const LeadTableHeader = () => {
     setShowConfirmModal(true);
   };
 
-  const mandates = (leadId, salesPersonId, salesPersonName) => {
+  const showReassignConfirmation = (leadId, salesPersonId, salesPersonName) => {
     setEditingAssignedId(null);
     setConfirmTitle("Confirm Lead Reassignment");
     setConfirmMessage(`Are you sure you want to reassign this lead to ${salesPersonName}?`);
@@ -314,23 +314,29 @@ const LeadTableHeader = () => {
     }
   };
 
+  // Check if user is a viewer
+  const isViewer = user?.role === "viewer";
+
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
       <LoadingOverlay isLoading={loadingUser || loadingLeads || loadingSalesPersons || actionLoading} />
       <div className={`${(loadingUser || loadingLeads || loadingSalesPersons || actionLoading) ? "blur-[1px]" : ""}`}>
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-1/2 rounded-md">
-            {["New"].map((btn, i) => (
-              <button
-                key={i}
-                className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 hover:bg-[#032d60] dark:hover:bg-gray-700 hover:text-white dark:hover:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => btn === "New" && navigate("/home/userform")}
-                disabled={actionLoading}
-              >
-                {btn}
-              </button>
-            ))}
-          </div>
+          {/* Hide "New" button for viewers */}
+          {!isViewer && (
+            <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-1/2 rounded-md">
+              {["New"].map((btn, i) => (
+                <button
+                  key={i}
+                  className="px-4 py-2 text-blue-600 dark:text-blue-400 border-r last:border-r-0 border-gray-300 dark:border-gray-600 hover:bg-[#032d60] dark:hover:bg-gray-700 hover:text-white dark:hover:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => btn === "New" && navigate("/home/userform")}
+                  disabled={actionLoading}
+                >
+                  {btn}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center space-x-4">
             <input
@@ -356,6 +362,7 @@ const LeadTableHeader = () => {
                   </option>
                 ))}
             </select>
+            {/* Hide "Download as Excel" button for viewers */}
             {user?.role === "admin" && (
               <button
                 onClick={handleExportToExcel}
@@ -405,9 +412,11 @@ const LeadTableHeader = () => {
                     }`}
                   >
                     <td
-                      className="px-3 md:px-4 py-2 hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer whitespace-nowrap"
+                      className={`px-3 md:px-4 py-2 whitespace-nowrap text-gray-900 dark:text-gray-100 ${
+                        isViewer ? "" : "hover:underline hover:bg-[#749fdf] dark:hover:bg-blue-600 cursor-pointer"
+                      }`}
                       onClick={() =>
-                        !actionLoading && navigate(`/home/sales/lead/${lead._id}`)
+                        !isViewer && !actionLoading && navigate(`/home/sales/lead/${lead._id}`)
                       }
                     >
                       {lead.clientName || "N/A"}
@@ -423,15 +432,15 @@ const LeadTableHeader = () => {
                     </td>
                     <td className="px-3 md:px-4 py-2 relative">
                       <span
-                        className={`cursor-pointer font-semibold ${
+                        className={`font-semibold ${
                           statusTextColors[lead.status] ||
                           statusTextColors.default
-                        }`}
-                        onClick={() => !actionLoading && setEditingLeadId(lead._id)}
+                        } ${isViewer ? "" : "cursor-pointer"}`}
+                        onClick={() => !isViewer && !actionLoading && setEditingLeadId(lead._id)}
                       >
                         {lead.status || "Unknown"}
                       </span>
-                      {editingLeadId === lead._id && (
+                      {!isViewer && editingLeadId === lead._id && (
                         <div
                           ref={dropdownRef}
                           className="absolute left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
@@ -462,12 +471,14 @@ const LeadTableHeader = () => {
                     {user?.role === "admin" && (
                       <td className="px-3 md:px-4 py-2 relative">
                         <span
-                          className="cursor-pointer text-gray-900 dark:text-gray-100"
-                          onClick={() => !actionLoading && setEditingAssignedId(lead._id)}
+                          className={`text-gray-900 dark:text-gray-100 ${
+                            isViewer ? "" : "cursor-pointer"
+                          }`}
+                          onClick={() => !isViewer && !actionLoading && setEditingAssignedId(lead._id)}
                         >
                           {lead.salesPerson?.name || "Unassigned"}
                         </span>
-                        {editingAssignedId === lead._id && (
+                        {!isViewer && editingAssignedId === lead._id && (
                           <div
                             ref={assignedDropdownRef}
                             className="absolute left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md w-40 border border-gray-200 dark:border-gray-700 z-10"
@@ -516,6 +527,7 @@ const LeadTableHeader = () => {
           </table>
         </div>
 
+        {/* Keep pagination visible for all users, including viewers */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center mt-4 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 z-20 relative">
             <button

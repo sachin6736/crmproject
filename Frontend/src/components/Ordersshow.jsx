@@ -91,7 +91,7 @@ const OrdersHistory = () => {
       setLoadingOrders(true);
       try {
         let endpoint;
-        if (user?.role === "admin") {
+        if (user?.role === "admin" || user?.role === "viewer") {
           endpoint = "/getallorders";
         } else if (user?.role === "sales") {
           endpoint = "/getmyorders";
@@ -112,10 +112,12 @@ const OrdersHistory = () => {
         if (!response.ok)
           throw new Error(`Failed to fetch orders: ${response.statusText}`);
         const data = await response.json();
-        // Sort orders to show isOwnOrder first
+        // Sort orders to show isOwnOrder first for non-viewer roles
         const sortedOrders = (data.orders || []).sort((a, b) => {
-          if (a.isOwnOrder && !b.isOwnOrder) return -1;
-          if (!a.isOwnOrder && b.isOwnOrder) return 1;
+          if (user?.role === "sales" || user?.role === "customer_relations" || user?.role === "procurement") {
+            if (a.isOwnOrder && !b.isOwnOrder) return -1;
+            if (!a.isOwnOrder && b.isOwnOrder) return 1;
+          }
           return 0;
         });
         setOrders(sortedOrders);
@@ -187,6 +189,9 @@ const OrdersHistory = () => {
     setStatusFilter(status);
     setShowStatusDropdown(false);
   };
+
+  // Check if user is a viewer
+  const isViewer = user?.role === "viewer";
 
   return (
     <div className="p-4 sm:p-6 min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
@@ -267,7 +272,9 @@ const OrdersHistory = () => {
                   "Total Cost",
                   "Status",
                   ...(user?.role === "admin" ? ["Assigned Customer Relation", "Assigned Procurement"] : []),
-                ].map((header, i) => (
+                ].filter((header) => 
+                  !(isViewer && (header === "Assigned Customer Relation" || header === "Assigned Procurement"))
+                ).map((header, i) => (
                   <th
                     key={i}
                     className="px-4 py-3 border-b border-gray-200 dark:border-gray-600 font-semibold text-sm sm:text-base"
@@ -285,7 +292,7 @@ const OrdersHistory = () => {
                     className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
                       order.status === "Replacement"
                         ? "bg-red-100 dark:bg-red-900/30"
-                        : user?.role === "customer_relations" || user?.role === "procurement"
+                        : (user?.role === "customer_relations" || user?.role === "procurement")
                         ? order.isOwnOrder
                           ? "bg-green-100 dark:bg-green-900/20"
                           : "bg-red-100 dark:bg-red-900/20"
@@ -345,7 +352,7 @@ const OrdersHistory = () => {
               ) : (
                 <tr>
                   <td
-                    colSpan={user?.role === "admin" ? 10 : 8}
+                    colSpan={isViewer ? 8 : user?.role === "admin" ? 10 : 8}
                     className="text-center py-6 text-gray-600 dark:text-gray-400"
                   >
                     No orders found

@@ -17,7 +17,7 @@ const LitigationOrders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false); // Added for async actions
+  const [actionLoading, setActionLoading] = useState(false);
   const itemsPerPage = 10;
 
   const debouncedSearch = useCallback(
@@ -94,7 +94,7 @@ const LitigationOrders = () => {
     if (user) {
       fetchOrders(user, searchQuery, currentPage);
     }
-    return () => fetchOrders.cancel(); // Cleanup debounce on unmount
+    return () => fetchOrders.cancel();
   }, [user, searchQuery, currentPage, fetchOrders]);
 
   // Handle search input change
@@ -108,7 +108,7 @@ const LitigationOrders = () => {
       return;
     }
 
-    setActionLoading(true); // Set loading for export
+    setActionLoading(true);
     const formattedOrders = orders.map((order) => ({
       OrderID: order.order_id || "N/A",
       ClientName: order.clientName || "N/A",
@@ -127,13 +127,16 @@ const LitigationOrders = () => {
       toast.error("Error exporting orders to Excel");
       console.error("Error exporting to Excel:", error);
     } finally {
-      setActionLoading(false); // Reset loading
+      setActionLoading(false);
     }
   };
 
   const handleOrderClick = (orderId) => {
     navigate(`/home/litigation/details/${orderId}`);
   };
+
+  // Check if user is a viewer
+  const isViewer = user?.role === "viewer";
 
   return (
     <div className="p-4 sm:p-6 min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
@@ -146,7 +149,7 @@ const LitigationOrders = () => {
               placeholder="Search by Client Name, Order ID, Phone, Email, or Part..."
               className="px-4 py-2 border rounded-lg w-full sm:w-80 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 transition-all duration-200"
               onChange={handleSearchChange}
-              disabled={actionLoading} // Disable during action
+              disabled={actionLoading}
             />
             {user?.role === "admin" && (
               <button
@@ -191,8 +194,8 @@ const LitigationOrders = () => {
                     className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
                   >
                     <td
-                      className="px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                      onClick={() => !actionLoading && handleOrderClick(order._id)}
+                      className={`px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 ${!isViewer ? "hover:underline cursor-pointer" : ""}`}
+                      onClick={() => !isViewer && !actionLoading && handleOrderClick(order._id)}
                     >
                       {order.order_id || "N/A"}
                     </td>
