@@ -339,29 +339,34 @@ const LeadTableHeader = () => {
           )}
 
           <div className="flex items-center space-x-4">
-            <input
-              type="text"
-              placeholder="Search by Name, Email, Phone, Part Requested, or Zip..."
-              className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={actionLoading}
-            />
-            <select
-              className="border px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              disabled={actionLoading}
-            >
-              <option value="">All</option>
-              {Object.keys(statusTextColors)
-                .filter((key) => key !== "default")
-                .map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-            </select>
+            {/* Conditionally render search input and status filter */}
+            {!isViewer && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Search by Name, Email, Phone, Part Requested, or Zip..."
+                  className="px-3 py-2 border rounded w-60 md:w-72 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  disabled={actionLoading}
+                />
+                <select
+                  className="border px-3 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  disabled={actionLoading}
+                >
+                  <option value="">All</option>
+                  {Object.keys(statusTextColors)
+                    .filter((key) => key !== "default")
+                    .map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                </select>
+              </>
+            )}
             {/* Hide "Download as Excel" button for viewers */}
             {user?.role === "admin" && (
               <button
