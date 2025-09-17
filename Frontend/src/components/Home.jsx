@@ -291,13 +291,13 @@ function Home() {
         setShowSidebar(false);
       },
     },
-    {
-      label: 'Your Account',
-      icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
-      onClick: () => {
-        setShowSidebar(false);
-      },
-    },
+    // {
+    //   label: 'Your Account',
+    //   icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+    //   onClick: () => {
+    //     setShowSidebar(false);
+    //   },
+    // },
   ];
 
   if (loading) {
