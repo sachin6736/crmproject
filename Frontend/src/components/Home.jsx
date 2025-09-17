@@ -249,7 +249,7 @@ function Home() {
       icon: <HomeIcon className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         if (loading || !user) return;
-        if (user.role === 'admin') {
+        if (user.role === 'admin'|| user.role === 'viewer') {
           navigate('/home/dashboard');
         } else if (user.role === 'procurement') {
           navigate('/home/procurementdashboard');

@@ -1994,6 +1994,8 @@ const DeliveredDetailsModal = ({
   );
 };
 
+
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -2003,7 +2005,7 @@ const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [teamUsers, setTeamUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAnimationReady, setIsAnimationReady] = useState(false); // New state for animation control
+  const [isAnimationReady, setIsAnimationReady] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [newMember, setNewMember] = useState({ name: "", email: "", role: "" });
   const [dropdownOpen, setDropdownOpen] = useState(null);
@@ -2041,7 +2043,6 @@ const Dashboard = () => {
     currentMonth: 0,
     currentYear: 0,
   });
-  
   const [poSentCountsAndTotals, setPoSentCountsAndTotals] = useState({
     today: {
       totalPOs: 0,
@@ -2058,7 +2059,6 @@ const Dashboard = () => {
       poCanceled: { count: 0, totalAmount: 0 },
     },
   });
-
   const [showPoSentDetailsModal, setShowPoSentDetailsModal] = useState(false);
   const [deliveredMetrics, setDeliveredMetrics] = useState({
     today: { count: 0, revenue: 0, profit: 0 },
@@ -2067,6 +2067,7 @@ const Dashboard = () => {
   const [showDeliveredDetailsModal, setShowDeliveredDetailsModal] =
     useState(false);
   const [totalOrders, setTotalOrders] = useState(0);
+  const [userRole, setUserRole] = useState(""); // New state for user role
   const buttonRefs = useRef({});
 
   const statusIcons = {
@@ -2195,11 +2196,10 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Delay animation until loading is complete
     if (!loading) {
       const timer = setTimeout(() => {
         setIsAnimationReady(true);
-      }, 100); // Small delay to ensure loading overlay is gone
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [loading]);
@@ -2216,13 +2216,14 @@ const Dashboard = () => {
           throw new Error("Not authorized");
         }
         const data = await res.json();
+        setUserRole(data.user.role); // Store the user's role
         if (data.user.role === "sales") {
           navigate("/home/salesdashboard");
         } else if (data.user.role === "procurement") {
           navigate("/home/procurementdashboard");
         } else if (data.user.role === "customer_relations") {
           navigate("/home/customerrelationsdashboard");
-        } else if (data.user.role !== "admin") {
+        } else if (data.user.role !== "admin" && data.user.role !== "viewer") {
           navigate("/home");
         } else {
           setLoading(false);
@@ -2362,7 +2363,7 @@ const Dashboard = () => {
           currentMonth: orderCountsData.currentMonth || 0,
           currentYear: orderCountsData.currentYear || 0,
         });
-        setTotalOrders(orderCountsData.totalOrders || 0); // Set total orders
+        setTotalOrders(orderCountsData.totalOrders || 0);
         setLeadCreationCounts({
           createdByUser: creationCountsData.createdByUser || 0,
           assignedAutomatically: creationCountsData.assignedAutomatically || 0,
@@ -2413,7 +2414,7 @@ const Dashboard = () => {
   };
 
   const handleConfirmAction = async () => {
-    setActionLoading(true); // Set loading to true
+    setActionLoading(true);
     try {
       if (confirmAction === "Create User") {
         await handleAddUser();
@@ -2454,10 +2455,9 @@ const Dashboard = () => {
         }
 
         toast.success(data.message || "Password reset successfully");
-        setShowPasswordModal(false); // Close the password modal
-        setPasswordInput(""); // Clear the password input
+        setShowPasswordModal(false);
+        setPasswordInput("");
       } else if (confirmAction === "Change Role") {
-        // Handle role change
         const res = await fetch(
           `${import.meta.env.VITE_API_URL}/User/Changerole/${selectedUserId}`,
           {
@@ -2474,15 +2474,14 @@ const Dashboard = () => {
           return;
         }
 
-        // Update the teamUsers state with the new role
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === selectedUserId ? { ...user, role: selectedRole } : user
           )
         );
         toast.success(data.message || "Role changed successfully");
-        setShowRoleModal(false); // Close the role modal
-        setSelectedRole(""); // Clear the selected role
+        setShowRoleModal(false);
+        setSelectedRole("");
       } else {
         await handleUserAction(confirmAction, confirmUserId);
       }
@@ -2490,80 +2489,76 @@ const Dashboard = () => {
       console.error(`Error performing action ${confirmAction}:`, error);
       toast.error(`Failed to perform action: ${confirmAction}`);
     } finally {
-      setShowConfirmModal(false); // Close the confirmation modal
-      setActionLoading(false); // Set loading to false
+      setShowConfirmModal(false);
+      setActionLoading(false);
     }
   };
 
- const handleAddUser = async () => {
-  if (!newMember.name || !newMember.email || !newMember.role) {
-    toast.error("All fields are required");
-    return;
-  }
-  setActionLoading(true); // Set loading to true
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/Auth/Createuser`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(newMember),
+  const handleAddUser = async () => {
+    if (!newMember.name || !newMember.email || !newMember.role) {
+      toast.error("All fields are required");
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/Auth/Createuser`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(newMember),
+        }
+      );
+
+      console.log("Response of creating user:", {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+        headers: res.headers,
+      });
+
+      if (res.status === 403) {
+        toast.error("Access denied, contact admin");
+        return;
       }
-    );
-    
-    // Log the full response object (status, headers, etc.) for debugging
-    console.log("Response of creating user:", {
-      status: res.status,
-      statusText: res.statusText,
-      ok: res.ok,
-      headers: res.headers,
-    });
-    
-    if (res.status === 403) {
-      toast.error("Access denied, contact admin");
-      return;
-    }
-    if (res.status === 409) {
-      toast.error("User with email already exists");
-      return;
-    }
-    if (!res.ok) {
-      // Parse error details if available
-      let errorData = null;
-      try {
-        errorData = await res.json();
-      } catch (parseError) {
-        console.error("Failed to parse error response:", parseError);
+      if (res.status === 409) {
+        toast.error("User with email already exists");
+        return;
       }
-      console.error("API Error Details:", errorData);
-      toast.error(errorData?.message || "Failed to add user");
-      return;
+      if (!res.ok) {
+        let errorData = null;
+        try {
+          errorData = await res.json();
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+        }
+        console.error("API Error Details:", errorData);
+        toast.error(errorData?.message || "Failed to add user");
+        return;
+      }
+
+      const savedUser = await res.json();
+      console.log("Saved user:", savedUser);
+
+      if (!savedUser || !savedUser._id) {
+        throw new Error("Invalid user data returned from server");
+      }
+
+      setTeamUsers((prev) => [...prev, savedUser]);
+      setShowModal(false);
+      setNewMember({ name: "", email: "", role: "" });
+      toast.success("User added to the team!");
+    } catch (error) {
+      console.error("Add user error:", error);
+      toast.error(error.message || "Error adding user");
+    } finally {
+      setActionLoading(false);
     }
-    
-    // Now parse the successful response body (only once)
-    const savedUser = await res.json();
-    console.log("Saved user:", savedUser);
-    
-    // Validate the saved user before updating state
-    if (!savedUser || !savedUser._id) {
-      throw new Error("Invalid user data returned from server");
-    }
-    
-    setTeamUsers((prev) => [...prev, savedUser]);
-    setShowModal(false);
-    setNewMember({ name: "", email: "", role: "" });
-    toast.success("User added to the team!");
-  } catch (error) {
-    console.error("Add user error:", error);
-    toast.error(error.message || "Error adding user");
-  } finally {
-    setActionLoading(false); // Set loading to false
-  }
-};
+  };
 
   const handleUserAction = async (action, userId) => {
-    setActionLoading(true); // Set loading to true
+    setActionLoading(true);
     try {
       if (action === "Pause" || action === "Resume") {
         const status = action === "Pause";
@@ -2601,7 +2596,6 @@ const Dashboard = () => {
         );
         toast.success(`User ${action.toLowerCase()}d successfully`);
       } else if (action === "Reassign Leads") {
-        // Trigger confirmation modal instead of directly reassigning
         const user = teamUsers.find((user) => user._id === userId);
         if (user) {
           showConfirmation("Reassign Leads", userId, user.name);
@@ -2664,7 +2658,7 @@ const Dashboard = () => {
       console.error(`Error performing action ${action}:`, error);
       toast.error(`Failed to perform action: ${action}`);
     } finally {
-      setActionLoading(false); // Set loading to false
+      setActionLoading(false);
       setIsAccessLoading(false);
     }
   };
@@ -2676,7 +2670,6 @@ const Dashboard = () => {
     setShowConfirmModal(true);
   };
 
-  // Calculate comparison metrics for TotalOrders
   const currentOrders = orderStatusComparison.currentMonth?.TotalOrders || 0;
   const previousOrders = orderStatusComparison.previousMonth?.TotalOrders || 0;
   const orderDifference = Math.abs(currentOrders - previousOrders);
@@ -2733,7 +2726,7 @@ const Dashboard = () => {
                 value: `$${(poSentCountsAndTotals.today?.totalAmount || 0).toFixed(2)}`,
                 onClick: () => setShowPoSentDetailsModal(true),
                 icon: <DollarSign className="w-5 h-5 text-purple-500" />,
-              },,
+              },
               {
                 title: "Today's Delivered",
                 value: deliveredMetrics.today?.count || 0,
@@ -2745,15 +2738,15 @@ const Dashboard = () => {
                 key={index}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200 flex flex-col items-center justify-center text-center transform hover:scale-105"
                 onClick={onClick}
-                initial={{ opacity: 0, y: isAnimationReady ? 50 : 0 }} // Start off-screen only if animation is ready
+                initial={{ opacity: 0, y: isAnimationReady ? 50 : 0 }}
                 animate={{
                   opacity: isAnimationReady ? 1 : 0,
                   y: isAnimationReady ? 0 : 0,
-                }} // Animate only if ready
+                }}
                 transition={{
                   duration: 0.5,
                   delay: isAnimationReady ? index * 0.1 : 0,
-                }} // Delay animation based on index
+                }}
               >
                 <div className="mb-2">{icon}</div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
@@ -2859,15 +2852,17 @@ const Dashboard = () => {
                   <Users className="w-5 h-5 text-purple-500" />
                   Team Management
                 </h3>
-                <div className="flex justify-end mb-4">
-                  <button
-                    className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                    onClick={() => setShowModal(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add New Member
-                  </button>
-                </div>
+                {userRole !== "viewer" && (
+                  <div className="flex justify-end mb-4">
+                    <button
+                      className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                      onClick={() => setShowModal(true)}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add New Member
+                    </button>
+                  </div>
+                )}
                 <div className="space-y-3 overflow-y-auto max-h-96">
                   {teamUsers.map((user) => (
                     <motion.div
@@ -2892,7 +2887,6 @@ const Dashboard = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {/* Show both Paused and status icons when isPaused is true, otherwise show only status icon */}
                         <div className="flex items-center gap-2">
                           {user.isPaused && statusIcons.Paused}
                           {statusIcons[user.status] || (
@@ -2901,75 +2895,76 @@ const Dashboard = () => {
                             </span>
                           )}
                         </div>
-                        {/* Show Access status */}
                         {accessIcons[user.Access]}
-                        <div className="relative">
-                          <button
-                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
-                            onClick={() =>
-                              setDropdownOpen(
-                                dropdownOpen === user._id ? null : user._id
-                              )
-                            }
-                          >
-                            <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                          </button>
-                          {dropdownOpen === user._id && (
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] min-w-max">
-                              <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                onClick={() =>
-                                  showConfirmation(
-                                    user.isPaused ? "Resume" : "Pause",
-                                    user._id,
-                                    user.name
-                                  )
-                                }
-                              >
-                                {user.isPaused ? "Resume" : "Pause"}
-                              </button>
-                              <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                onClick={() =>
-                                  handleUserAction("Reassign Leads", user._id)
-                                }
-                              >
-                                Reassign Leads
-                              </button>
-                              <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                onClick={() =>
-                                  handleUserAction("Change Role", user._id)
-                                }
-                              >
-                                Change Role
-                              </button>
-                              <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                onClick={() =>
-                                  handleUserAction("Password", user._id)
-                                }
-                              >
-                                Reset Password
-                              </button>
-                              <button
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                onClick={() =>
-                                  showConfirmation(
-                                    user.Access
-                                      ? "Revoke Access"
-                                      : "Grant Access",
-                                    user._id,
-                                    user.name
-                                  )
-                                }
-                                disabled={actionLoading}
-                              >
-                                {user.Access ? "Revoke Access" : "Grant Access"}
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        {userRole !== "viewer" && (
+                          <div className="relative">
+                            <button
+                              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                              onClick={() =>
+                                setDropdownOpen(
+                                  dropdownOpen === user._id ? null : user._id
+                                )
+                              }
+                            >
+                              <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                            </button>
+                            {dropdownOpen === user._id && (
+                              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] min-w-max">
+                                <button
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  onClick={() =>
+                                    showConfirmation(
+                                      user.isPaused ? "Resume" : "Pause",
+                                      user._id,
+                                      user.name
+                                    )
+                                  }
+                                >
+                                  {user.isPaused ? "Resume" : "Pause"}
+                                </button>
+                                <button
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  onClick={() =>
+                                    handleUserAction("Reassign Leads", user._id)
+                                  }
+                                >
+                                  Reassign Leads
+                                </button>
+                                <button
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  onClick={() =>
+                                    handleUserAction("Change Role", user._id)
+                                  }
+                                >
+                                  Change Role
+                                </button>
+                                <button
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  onClick={() =>
+                                    handleUserAction("Password", user._id)
+                                  }
+                                >
+                                  Reset Password
+                                </button>
+                                <button
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  onClick={() =>
+                                    showConfirmation(
+                                      user.Access
+                                        ? "Revoke Access"
+                                        : "Grant Access",
+                                      user._id,
+                                      user.name
+                                    )
+                                  }
+                                  disabled={actionLoading}
+                                >
+                                  {user.Access ? "Revoke Access" : "Grant Access"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -3098,68 +3093,68 @@ const Dashboard = () => {
                 </motion.div>
               </motion.div>
             )}
-{showRoleModal && (
-  <motion.div
-    className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-  >
-    <motion.div
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 50, opacity: 0 }}
-    >
-      <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
-        Change Role
-      </h3>
-      <select
-        className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
-        value={selectedRole}
-        onChange={(e) => setSelectedRole(e.target.value)}
-      >
-        <option value="">Select New Role</option>
-        <option value="admin">Admin</option>
-        <option value="sales">Sales</option>
-        <option value="customer_relations">Customer Relations</option>
-        <option value="procurement">Procurement</option>
-        <option value="viewer">viewer</option>
-      </select>
-      <div className="flex justify-end gap-2 mt-3">
-        <button
-          className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-          onClick={() => setShowRoleModal(false)}
-        >
-          Cancel
-        </button>
-        <button
-          className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
-            actionLoading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          onClick={() => {
-            if (!selectedRole) {
-              toast.error("Please select a role");
-              return;
-            }
-            if (selectedRole === currentRole) {
-              toast.info("Selected role is the same as current role");
-              return;
-            }
-            setShowConfirmModal(true);
-            setConfirmAction("Change Role");
-            setConfirmUserName(
-              teamUsers.find((user) => user._id === selectedUserId)?.name || "User"
-            );
-          }}
-          disabled={actionLoading}
-        >
-          {actionLoading ? "Changing..." : "Change"}
-        </button>
-      </div>
-    </motion.div>
-  </motion.div>
-)}
+            {showRoleModal && (
+              <motion.div
+                className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-xs"
+                  initial={{ y: -50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 50, opacity: 0 }}
+                >
+                  <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                    Change Role
+                  </h3>
+                  <select
+                    className="w-full border p-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 text-sm"
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                  >
+                    <option value="">Select New Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="sales">Sales</option>
+                    <option value="customer_relations">Customer Relations</option>
+                    <option value="procurement">Procurement</option>
+                    <option value="viewer">viewer</option>
+                  </select>
+                  <div className="flex justify-end gap-2 mt-3">
+                    <button
+                      className="px-3 py-1 border rounded-lg text-sm text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setShowRoleModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className={`px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-600 dark:hover:bg-blue-700 ${
+                        actionLoading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      onClick={() => {
+                        if (!selectedRole) {
+                          toast.error("Please select a role");
+                          return;
+                        }
+                        if (selectedRole === currentRole) {
+                          toast.info("Selected role is the same as current role");
+                          return;
+                        }
+                        setShowConfirmModal(true);
+                        setConfirmAction("Change Role");
+                        setConfirmUserName(
+                          teamUsers.find((user) => user._id === selectedUserId)?.name || "User"
+                        );
+                      }}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? "Changing..." : "Change"}
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
             <ConfirmationModal
               isOpen={showConfirmModal}
               onClose={() => setShowConfirmModal(false)}
