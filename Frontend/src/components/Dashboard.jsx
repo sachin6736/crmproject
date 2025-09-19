@@ -14,6 +14,8 @@ import {
   Send,
   Truck,
   BarChart2,
+  MailCheck,
+  MailX
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
@@ -2130,19 +2132,40 @@ const Dashboard = () => {
   const accessIcons = {
     true: (
       <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200 rounded-full text-xs font-medium">
-        <CheckCircle className="w-3 h-3 text-teal-500 dark:text-teal-400" />
-        <span>Access Granted</span>
+        <MailCheck className="w-3 h-3 text-teal-500 dark:text-teal-400" />
+        <span>PO: Authorized</span>
         <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
-          Access Granted
+        PO: Authorized
         </span>
       </div>
     ),
     false: (
       <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-full text-xs font-medium">
-        <Trash2 className="w-3 h-3 text-red-500 dark:text-red-400" />
-        <span>Access Denied</span>
+        <MailCheck className="w-3 h-3 text-red-500 dark:text-red-400" />
+        <span>PO: Restricted</span>
         <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
-          Access Denied
+        PO: Restricted
+        </span>
+      </div>
+    ),
+  };
+
+  const editCostIcons = {
+    true: (
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
+        <DollarSign className="w-3 h-3 text-green-500 dark:text-green-400" />
+        <span>Cost Edit: Authorized</span>
+        <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+          Cost Edit: Authorized
+        </span>
+      </div>
+    ),
+    false: (
+      <div className="group relative flex items-center space-x-1 px-1.5 py-0.5 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-full text-xs font-medium">
+        <DollarSign className="w-3 h-3 text-red-500 dark:text-red-400" />
+        <span>Cost Edit: Restricted</span>
+        <span className="absolute hidden group-hover:block bg-gray-800 dark:bg-gray-900 text-white dark:text-gray-100 text-xs rounded py-1 px-2 -top-8 left-1/2 -translate-x-1/2">
+          Cost Edit: Restricted
         </span>
       </div>
     ),
@@ -2571,7 +2594,7 @@ const Dashboard = () => {
             body: JSON.stringify({ status }),
           }
         );
-
+  
         if (res.status === 403) {
           toast.error("Access denied, contact admin");
           return;
@@ -2588,7 +2611,7 @@ const Dashboard = () => {
           toast.error("Failed to change status");
           return;
         }
-
+  
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === userId ? { ...user, isPaused: status } : user
@@ -2610,9 +2633,52 @@ const Dashboard = () => {
       } else if (action === "Password") {
         setSelectedUserId(userId);
         setShowPasswordModal(true);
-      } else if (action === "Grant Access" || action === "Revoke Access") {
+      } else if (action === "Authorize Editing Cost" || action === "Suspend Editing Cost") {
         setIsAccessLoading(true);
-        const newAccess = action === "Grant Access";
+        const newAccess = action === "Authorize Editing Cost";
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/User/${userId}/editcostaccess`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ editCostAccess: newAccess }),
+          }
+        );
+  
+        const data = await res.json();
+        if (res.status === 403) {
+          toast.error("Access denied, admin access required");
+          return;
+        }
+        if (res.status === 404) {
+          toast.error("User not found");
+          return;
+        }
+        if (res.status === 400) {
+          toast.error("Invalid input");
+          return;
+        }
+        if (!res.ok) {
+          toast.error(
+            `Failed to ${newAccess ? "grant" : "revoke"} edit cost access: ${
+              data.message || "Unknown error"
+            }`
+          );
+          return;
+        }
+  
+        setTeamUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === userId ? { ...user, Editcost: newAccess } : user
+          )
+        );
+        toast.success(
+          `Edit cost access ${newAccess ? "granted" : "revoked"} successfully`
+        );
+      } else if (action === "Authorize PO Sending" || action === "Suspend PO Sending") {
+        setIsAccessLoading(true);
+        const newAccess = action === "Authorize PO Sending";
         const res = await fetch(
           `${import.meta.env.VITE_API_URL}/User/${userId}/access`,
           {
@@ -2622,7 +2688,7 @@ const Dashboard = () => {
             body: JSON.stringify({ access: newAccess }),
           }
         );
-
+  
         const data = await res.json();
         if (res.status === 403) {
           toast.error("Access denied, admin access required");
@@ -2644,7 +2710,7 @@ const Dashboard = () => {
           );
           return;
         }
-
+  
         setTeamUsers((prevUsers) =>
           prevUsers.map((user) =>
             user._id === userId ? { ...user, Access: newAccess } : user
@@ -2886,101 +2952,104 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              {user.isPaused && statusIcons.Paused}
-              {statusIcons[user.status] || (
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  Unknown
-                </span>
-              )}
-            </div>
-            {accessIcons[user.Access]}
-            {userRole !== "viewer" && (
-              <div className="relative">
-                <button
-                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
-                  onClick={() =>
-                    setDropdownOpen(
-                      dropdownOpen === user._id ? null : user._id
-                    )
-                  }
-                >
-                  <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                </button>
-                {dropdownOpen === user._id && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] min-w-max">
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() =>
-                        showConfirmation(
-                          user.isPaused ? "Resume" : "Pause",
-                          user._id,
-                          user.name
-                        )
-                      }
-                    >
-                      {user.isPaused ? "Resume" : "Pause"}
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() =>
-                        handleUserAction("Reassign Leads", user._id)
-                      }
-                    >
-                      Reassign Leads
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() =>
-                        handleUserAction("Change Role", user._id)
-                      }
-                    >
-                      Change Role
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() =>
-                        handleUserAction("Password", user._id)
-                      }
-                    >
-                      Reset Password
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() =>
-                        showConfirmation(
-                          user.EditCostAccess
-                            ? "Revoke Edit Cost Access"
-                            : "Grant Edit Cost Access",
-                          user._id,
-                          user.name
-                        )
-                      }
-                      disabled={actionLoading}
-                    >
-                      {user.EditCostAccess ? "Revoke Edit Cost Access" : "Grant Edit Cost Access"}
-                    </button>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() =>
-                        showConfirmation(
-                          user.Access
-                            ? "Revoke Access"
-                            : "Grant Access",
-                          user._id,
-                          user.name
-                        )
-                      }
-                      disabled={actionLoading}
-                    >
-                      {user.Access ? "Revoke Access" : "Grant Access"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <div className="flex items-center gap-4">
+  <div className="flex flex-col gap-1">
+    {user.isPaused && statusIcons.Paused}
+    {statusIcons[user.status] || (
+      <span className="text-gray-500 dark:text-gray-400 text-xs">
+        Unknown
+      </span>
+    )}
+  </div>
+  <div className="flex flex-col gap-1">
+    {accessIcons[user.Access]}
+    {editCostIcons[user.Editcost]}
+  </div>
+  {userRole !== "viewer" && (
+    <div className="relative">
+      <button
+        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+        onClick={() =>
+          setDropdownOpen(
+            dropdownOpen === user._id ? null : user._id
+          )
+        }
+      >
+        <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+      </button>
+      {dropdownOpen === user._id && (
+        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[100] min-w-max">
+          <button
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onClick={() =>
+              showConfirmation(
+                user.isPaused ? "Resume" : "Pause",
+                user._id,
+                user.name
+              )
+            }
+          >
+            {user.isPaused ? "Resume" : "Pause"}
+          </button>
+          <button
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onClick={() =>
+              handleUserAction("Reassign Leads", user._id)
+            }
+          >
+            Reassign Leads
+          </button>
+          <button
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onClick={() =>
+              handleUserAction("Change Role", user._id)
+            }
+          >
+            Change Role
+          </button>
+          <button
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onClick={() =>
+              handleUserAction("Password", user._id)
+            }
+          >
+            Reset Password
+          </button>
+          <button
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onClick={() =>
+              showConfirmation(
+                user.Editcost
+                  ? "Suspend Editing Cost"
+                  : "Authorize Editing Cost",
+                user._id,
+                user.name
+              )
+            }
+            disabled={actionLoading}
+          >
+            {user.Editcost ? "Suspend Editing Cost" : "Authorize Editing Cost"}
+          </button>
+          <button
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onClick={() =>
+              showConfirmation(
+                user.Access
+                  ? "Suspend PO Sending"
+                  : "Authorize PO Sending",
+                user._id,
+                user.name
+              )
+            }
+            disabled={actionLoading}
+          >
+            {user.Access ? "Suspend PO Sending" : "Authorize PO Sending"}
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+</div>
         </motion.div>
       ))}
     </div>

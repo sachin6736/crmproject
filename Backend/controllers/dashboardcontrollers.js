@@ -38,14 +38,14 @@ export const getorders = async (req, res, next) => {
 };
 
 export const getmyteam = async (req, res, next) => {
-    console.log("getusers controller working");
-    try {
-        const team = await User.find({}, "name email role isPaused status createdAt Access");
-        res.status(200).json(team);
-    } catch (error) {
-        console.log("error in getting team", error);
-        res.status(500).json({ error: "an error occured" });
-    }
+  console.log("getusers controller working");
+  try {
+    const team = await User.find({}, "name email role isPaused status createdAt Access Editcost");
+    res.status(200).json(team);
+  } catch (error) {
+    console.log("error in getting team", error);
+    res.status(500).json({ error: "an error occurred" });
+  }
 };
 
 export const getLeadCreationCounts = async (req, res, next) => {
@@ -735,3 +735,4 @@ export const getDeliveredMetrics = async (req, res) => {
       res.status(500).json({ message: "Server error" });
   }
 };
+

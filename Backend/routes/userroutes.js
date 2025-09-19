@@ -1,5 +1,5 @@
 import express from "express";
-import { getCurrentUser, pauseandresume, reassign, resetpassword ,rolechange , updateUserAccess} from "../controllers/Usercontrollers.js";
+import { getCurrentUser, pauseandresume, reassign, resetpassword ,rolechange , updateUserAccess , updateEditCostAccess} from "../controllers/Usercontrollers.js";
 import {protect} from "../middleware/authmiddleware.js"
 
 const router = express.Router();
@@ -9,7 +9,8 @@ router.patch('/Resetpassword/:id',protect,resetpassword)//RESETTING PASSWORD
 router.patch('/Pauseandresume/:id',protect,pauseandresume)//PAUSING AND RESUMING A USER
 router.patch('/Changerole/:id',protect,rolechange)//changing user role
 router.post('/Reassign/:id',protect,reassign)//asigning leads
-router.patch('/:id/access', protect, updateUserAccess);//grant access
+router.patch('/:id/access', protect, updateUserAccess);//grant access for po senting
+router.patch("/:userId/editcostaccess", protect, updateEditCostAccess); // grant access for editing cost
 
 
 
