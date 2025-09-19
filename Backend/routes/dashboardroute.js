@@ -1,6 +1,6 @@
 import express from 'express';
-import { getcountbystatus, getleadcount, getmyteam, getorders, getLeadCreationCounts, getLeadStatusComparison, getOrderStatusComparison, getOrderAmountTotals,getPoSentCountsAndTotals ,getDeliveredMetrics,getOrderCounts,getLeadCountsAndConversions } from '../controllers/dashboardcontrollers.js';
-
+import { getcountbystatus, getleadcount, getmyteam, getorders, getLeadCreationCounts, getLeadStatusComparison, getOrderStatusComparison, getOrderAmountTotals,getPoSentCountsAndTotals ,getDeliveredMetrics,getOrderCounts,getLeadCountsAndConversions ,  } from '../controllers/dashboardcontrollers.js';
+import { protect } from "../middleware/authmiddleware.js";
 const router = express.Router();
 
 router.get('/getleadcount', getleadcount);
@@ -15,5 +15,6 @@ router.get("/getPoSentCountsAndTotals", getPoSentCountsAndTotals);
 router.get('/getDeliveredMetrics',  getDeliveredMetrics);
 router.get("/getOrderCounts", getOrderCounts);
 router.get("/getLeadCountsAndConversions", getLeadCountsAndConversions);
+
 
 export default router;

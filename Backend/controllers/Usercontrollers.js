@@ -229,3 +229,34 @@ export const updateUserAccess = async (req, res, next) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+export const updateEditCostAccess = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { editCostAccess } = req.body;
+
+    if (typeof editCostAccess !== "boolean") {
+      return res.status(400).json({ message: "Invalid input" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the requesting user has admin privileges (assumes req.user is set by authentication middleware)
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied, admin access required" });
+    }
+
+    user.Editcost = editCostAccess;
+    await user.save();
+
+    res.status(200).json({
+      message: `Edit cost access ${editCostAccess ? "granted" : "revoked"} successfully`,
+    });
+  } catch (error) {
+    console.error("Error updating edit cost access:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
