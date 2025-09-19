@@ -1593,63 +1593,67 @@ const closeProcurementModal = () => {
     Profit Margin: {getActiveVendorProfitMargin(order)}
   </span>
 </div>
+
+
 <div className="ml-6 flex flex-col space-y-2">
-  <div className="relative">
-    <button
-      onClick={handleLitigationClick}
-      className={`px-6 py-3 text-white rounded-lg transition-all duration-200 font-medium text-sm sm:text-base ${
-        litigationLoading
-          ? "bg-red-400 cursor-not-allowed"
-          : "bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-700"
-      }`}
-      aria-label="Toggle litigation status dropdown"
-      aria-expanded={isLitigationDropdownOpen}
-      disabled={litigationLoading}
-    >
-      {litigationLoading ? (
-        <span className="flex items-center gap-2">
-          <FullPageLoader
-            size="w-4 h-4"
-            color="text-white"
-            fill="fill-red-200"
-          />
-          Updating...
-        </span>
-      ) : (
-        "Litigation"
+  {order?.status === "Delivered" && (
+    <div className="relative">
+      <button
+        onClick={handleLitigationClick}
+        className={`px-6 py-3 text-white rounded-lg transition-all duration-200 font-medium text-sm sm:text-base ${
+          litigationLoading
+            ? "bg-red-400 cursor-not-allowed"
+            : "bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-700"
+        }`}
+        aria-label="Toggle litigation status dropdown"
+        aria-expanded={isLitigationDropdownOpen}
+        disabled={litigationLoading}
+      >
+        {litigationLoading ? (
+          <span className="flex items-center gap-2">
+            <FullPageLoader
+              size="w-4 h-4"
+              color="text-white"
+              fill="fill-red-200"
+            />
+            Updating...
+          </span>
+        ) : (
+          "Litigation"
+        )}
+      </button>
+      {isLitigationDropdownOpen && (
+        <div className="litigation-dropdown absolute top-full left-0 mt-2 w-32 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-300 dark:border-gray-600 animate-fade-in">
+          <ul className="py-1 text-gray-800 dark:text-gray-100">
+            <li
+              className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
+              onClick={() => handleLitigationSelect("Yes")}
+              onKeyDown={(e) =>
+                e.key === "Enter" && handleLitigationSelect("Yes")
+              }
+              role="button"
+              tabIndex={0}
+              aria-label="Set order status to Litigation"
+            >
+              Yes
+            </li>
+            <li
+              className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
+              onClick={() => handleLitigationSelect("No")}
+              onKeyDown={(e) =>
+                e.key === "Enter" && handleLitigationSelect("No")
+              }
+              role="button"
+              tabIndex={0}
+              aria-label="Cancel litigation status change"
+            >
+              No
+            </li>
+          </ul>
+        </div>
       )}
-    </button>
-    {isLitigationDropdownOpen && (
-      <div className="litigation-dropdown absolute top-full left-0 mt-2 w-32 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-300 dark:border-gray-600 animate-fade-in">
-        <ul className="py-1 text-gray-800 dark:text-gray-100">
-          <li
-            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
-            onClick={() => handleLitigationSelect("Yes")}
-            onKeyDown={(e) =>
-              e.key === "Enter" && handleLitigationSelect("Yes")
-            }
-            role="button"
-            tabIndex={0}
-            aria-label="Set order status to Litigation"
-          >
-            Yes
-          </li>
-          <li
-            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm"
-            onClick={() => handleLitigationSelect("No")}
-            onKeyDown={(e) =>
-              e.key === "Enter" && handleLitigationSelect("No")
-            }
-            role="button"
-            tabIndex={0}
-            aria-label="Cancel litigation status change"
-          >
-            No
-          </li>
-        </ul>
-      </div>
-    )}
-  </div>
+    </div>
+  )}
   {order?.order_id?.toLowerCase().includes('r') && (
     <>
       <button
@@ -1667,6 +1671,8 @@ const closeProcurementModal = () => {
   )}
 </div>
 </div>
+
+
               <div className="space-y-6">
                 {/* Customer Information */}
                 <section className="border-b border-gray-200 dark:border-gray-700 pb-6">
