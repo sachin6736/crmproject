@@ -18,7 +18,7 @@ router.post('/order/:orderId/vendor', protect, addVendorToOrder);//addingvendor 
 router.patch('/order/:orderId/vendor/:vendorId/status', protect, updateVendorPOStatus);//update po status of vendor
 router.patch('/order/:orderId/vendor/:vendorId', protect, updateVendorDetails); // update vendor
 router.patch("/order/:orderId/vendor/:vendorId/confirm-payment",protect, confirmVendorPayment);// confirmation
-router.post('/:orderId/notes', addNoteToOrder);//adding notes to order
+router.post('/:orderId/notes',protect, addNoteToOrder);//adding notes to order
 router.post("/:orderId/procurementnotes", protect, addProcurementNote);//adding notes by procurement team
 //router.get('/getallvendors',getAllVendors);//showing vendor details
 router.get('/vendor-simple', protect, getVendorSimpleList); //vendor details list
