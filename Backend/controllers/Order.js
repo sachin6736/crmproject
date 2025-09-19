@@ -977,15 +977,24 @@ export const updateVendorDetails = async (req, res) => {
 };
 
 
-
 export const addNoteToOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { note } = req.body;
 
+    // Log user details for debugging
+    console.log('req.user:', req.user);
+    const name = req.user?.name;
+    console.log('name:', name);
+
     // Validate note
     if (!note || typeof note !== 'string' || note.trim() === '') {
       return res.status(400).json({ message: 'Note is required and must be a non-empty string' });
+    }
+
+    // Validate req.user and req.user.name
+    if (!req.user || !req.user.name) {
+      return res.status(401).json({ message: 'User not authenticated or name not provided' });
     }
 
     // Find order
@@ -994,8 +1003,12 @@ export const addNoteToOrder = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Add note to order
-    order.notes.push({ text: note.trim(), createdAt: new Date() });
+    // Add note to order with concatenated text including user's name
+    const noteText = `${note.trim()} (${req.user.name})`; // Concatenate note with user's name in brackets
+    order.notes.push({ 
+      text: noteText, 
+      createdAt: new Date() 
+    });
     await order.save();
 
     // Populate relevant fields in the response
@@ -1538,9 +1551,10 @@ export const addProcurementNote = async (req, res) => {
       return res.status(404).json({ message: 'Order not found.' });
     }
 
+    const noteText = `${note.trim()} (${req.user.name})`;
     // Add procurement note
     order.procurementnotes.push({
-      text: note.trim(),
+      text: noteText,
       createdAt: new Date(),
     });
 
