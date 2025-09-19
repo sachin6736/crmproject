@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true }, // Store raw password (before hashing in controller)
     role: { 
       type: String, 
-      enum: ["admin", "sales", "customer_relations", "procurement","viewer"], 
+      enum: ["admin", "sales", "customer_relations", "procurement", "viewer"], 
       default: "sales" 
     },
     isPaused: { type: Boolean, default: false },
@@ -16,8 +16,9 @@ const userSchema = new mongoose.Schema({
       default: "LoggedOut"
     },
     Access: { type: Boolean, default: false },
+    Editcost: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   });
   
-const User = mongoose.model("User",userSchema);
+const User = mongoose.model("User", userSchema);
 export default User;
