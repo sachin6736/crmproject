@@ -1567,6 +1567,7 @@ export const addProcurementNote = async (req, res) => {
   }
 };
 
+
 export const updateOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -1589,43 +1590,76 @@ export const updateOrderDetails = async (req, res) => {
     const user = req.user;
 
     // Validate user role
-    if (!['customer_relations', 'admin'].includes(user.role)) {
-      return res.status(403).json({ message: 'Unauthorized. Only customer relations or admin can update order details.' });
+    if (!["customer_relations", "admin"].includes(user.role)) {
+      return res.status(403).json({ message: "Unauthorized. Only customer relations or admin can update order details." });
     }
 
     // Find order
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Find associated lead
+    const lead = await Lead.findById(order.leadId);
+    if (!lead) {
+      return res.status(404).json({ message: "Associated lead not found" });
     }
 
     // Validate required fields
     if (
-      !clientName || !phone || !email ||
-      !billingAddress || !city || !state || !zip ||
-      !shippingAddress || !shippingCity || !shippingState || !shippingZip ||
-      !make || !model || !year
+      !clientName ||
+      !phone ||
+      !email ||
+      !billingAddress ||
+      !city ||
+      !state ||
+      !zip ||
+      !shippingAddress ||
+      !shippingCity ||
+      !shippingState ||
+      !shippingZip ||
+      !make ||
+      !model ||
+      !year
     ) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: 'Invalid email format' });
+      return res.status(400).json({ message: "Invalid email format" });
     }
 
     // Validate phone format (basic validation, adjust as needed)
     const phoneRegex = /^\+?\d{10,15}$/;
     if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: 'Invalid phone number format' });
+      return res.status(400).json({ message: "Invalid phone number format" });
     }
 
     // Validate year
     const currentYear = new Date().getFullYear();
     if (isNaN(year) || year < 1900 || year > currentYear + 1) {
-      return res.status(400).json({ message: 'Invalid year' });
+      return res.status(400).json({ message: "Invalid year" });
     }
+
+    // Track changed fields for order
+    const orderChanges = [];
+    if (order.clientName !== clientName) orderChanges.push(`clientName: ${order.clientName} -> ${clientName}`);
+    if (order.phone !== phone) orderChanges.push(`phone: ${order.phone} -> ${phone}`);
+    if (order.email !== email) orderChanges.push(`email: ${order.email} -> ${email}`);
+    if (order.billingAddress !== billingAddress) orderChanges.push(`billingAddress: ${order.billingAddress} -> ${billingAddress}`);
+    if (order.city !== city) orderChanges.push(`city: ${order.city} -> ${city}`);
+    if (order.state !== state.toUpperCase()) orderChanges.push(`state: ${order.state} -> ${state.toUpperCase()}`);
+    if (order.zip !== zip) orderChanges.push(`zip: ${order.zip} -> ${zip}`);
+    if (order.shippingAddress !== shippingAddress) orderChanges.push(`shippingAddress: ${order.shippingAddress} -> ${shippingAddress}`);
+    if (order.shippingCity !== shippingCity) orderChanges.push(`shippingCity: ${order.shippingCity} -> ${shippingCity}`);
+    if (order.shippingState !== shippingState.toUpperCase()) orderChanges.push(`shippingState: ${order.shippingState} -> ${shippingState.toUpperCase()}`);
+    if (order.shippingZip !== shippingZip) orderChanges.push(`shippingZip: ${order.shippingZip} -> ${shippingZip}`);
+    if (order.make !== make) orderChanges.push(`make: ${order.make} -> ${make}`);
+    if (order.model !== model) orderChanges.push(`model: ${order.model} -> ${model}`);
+    if (order.year !== year) orderChanges.push(`year: ${order.year} -> ${year}`);
 
     // Update order details
     order.clientName = clientName;
@@ -1643,30 +1677,62 @@ export const updateOrderDetails = async (req, res) => {
     order.model = model;
     order.year = year;
 
-    // Add note for the update
-    const userIdentity = user.name || user.id || 'Unknown User';
-    order.notes.push({
-      text: `Order details updated by ${userIdentity}`,
-      addedBy: userIdentity,
-      createdAt: new Date(),
-    });
+    // Add note for the order update if changes were made
+    const userIdentity = user.name || user.id || "Unknown User";
+    if (orderChanges.length > 0) {
+      order.notes.push({
+        text: `Order details updated by ${userIdentity}: ${orderChanges.join(", ")}`,
+        addedBy: userIdentity,
+        createdAt: new Date(),
+      });
+    }
 
     // Save updated order
     await order.save();
 
+    // Track changed fields for lead
+    const leadChanges = [];
+    if (lead.clientName !== clientName) leadChanges.push(`clientName: ${lead.clientName} -> ${clientName}`);
+    if (lead.phoneNumber !== phone) leadChanges.push(`phoneNumber: ${lead.phoneNumber} -> ${phone}`);
+    if (lead.email !== email) leadChanges.push(`email: ${lead.email} -> ${email}`);
+    if (lead.zip !== zip) leadChanges.push(`zip: ${lead.zip} -> ${zip}`);
+    if (lead.make !== make) leadChanges.push(`make: ${lead.make} -> ${make}`);
+    if (lead.model !== model) leadChanges.push(`model: ${lead.model} -> ${model}`);
+    if (lead.year !== year) leadChanges.push(`year: ${lead.year} -> ${year}`);
+
+    // Update lead details
+    lead.clientName = clientName;
+    lead.phoneNumber = phone;
+    lead.email = email;
+    lead.zip = zip;
+    lead.make = make;
+    lead.model = model;
+    lead.year = year;
+
+    // Add note for the lead update if changes were made
+    if (leadChanges.length > 0) {
+      lead.notes.push({
+        text: `Lead details updated via order update by ${userIdentity}: ${leadChanges.join(", ")}`,
+        addedBy: userIdentity,
+        createdAt: new Date(),
+      });
+    }
+
+    // Save updated lead
+    await lead.save();
+
     // Fetch updated order with populated fields
     const updatedOrder = await Order.findById(orderId)
-      .populate('leadId')
-      .populate('salesPerson', 'name email')
-      .populate('customerRelationsPerson', 'name email')
-      .populate('vendors');
-      console.log("Updated order:",updatedOrder);
-      
+      .populate("leadId")
+      .populate("salesPerson", "name email")
+      .populate("customerRelationsPerson", "name email")
+      .populate("vendors");
+    console.log("Updated order:", updatedOrder);
 
-    res.status(200).json({ message: 'Order details updated successfully', order: updatedOrder });
+    res.status(200).json({ message: "Order and lead details updated successfully", order: updatedOrder });
   } catch (error) {
-    console.error('Error updating order details:', error);
-    res.status(500).json({ message: 'Server error while updating order details' });
+    console.error("Error updating order and lead details:", error);
+    res.status(500).json({ message: "Server error while updating order and lead details" });
   }
 };//update order details
 //=============================================================================================
