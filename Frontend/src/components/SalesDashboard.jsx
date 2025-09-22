@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import 'react-toastify/dist/ReactToastify.css';
-import LoadingOverlay from './LoadingOverlay'; // Import LoadingOverlay
+import LoadingOverlay from './LoadingOverlay';
 import {
   LineChart,
   Line,
@@ -14,12 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useTheme } from '../context/ThemeContext';
-
-const localizer = momentLocalizer(moment);
 
 const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomatically, onMonthChange, onYearChange, loading }) => {
   if (!isOpen) return null;
@@ -194,7 +188,7 @@ const LeadDetailsModal = ({ isOpen, onClose, createdByUser, assignedAutomaticall
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        <LoadingOverlay isLoading={loading || fetchLoading} /> {/* Replace FullPageLoader */}
+        <LoadingOverlay isLoading={loading || fetchLoading} />
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Lead Details</h3>
         <div className={`${(loading || fetchLoading) ? "blur-[1px]" : ""}`}>
           <div className="space-y-3">
@@ -430,7 +424,7 @@ const OrderDetailsModal = ({ isOpen, onClose, onMonthChange, onYearChange, loadi
         const queryString = query.length ? `?${query.join('&')}` : '';
 
         const controller = new AbortController();
-       const timeoutId = setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           controller.abort();
           toast.warn('Request taking longer than expected. Please check your network.');
         }, 10000);
@@ -535,7 +529,7 @@ const OrderDetailsModal = ({ isOpen, onClose, onMonthChange, onYearChange, loadi
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
       >
-        <LoadingOverlay isLoading={loading || fetchLoading} /> {/* Replace FullPageLoader */}
+        <LoadingOverlay isLoading={loading || fetchLoading} />
         <h3 className="text-md font-semibold mb-3 text-gray-900 dark:text-gray-100">Order Details</h3>
         <div className={`${(loading || fetchLoading) ? "blur-[1px]" : ""}`}>
           <div className="space-y-3">
@@ -702,7 +696,6 @@ const SalesDashboard = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [showLeadDetailsModal, setShowLeadDetailsModal] = useState(false);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
-  const [calendarEvents, setCalendarEvents] = useState([]);
 
   const statusColor = {
     Quoted: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
@@ -819,16 +812,6 @@ const SalesDashboard = () => {
           assignedAutomatically: leadCreationCountsData.assignedAutomatically || 0,
         });
         setOrderAmountTotals(orderAmountTotalsData || { today: 0, currentMonth: 0, currentYear: 0 });
-
-        const events = leadsData.flatMap(lead =>
-          lead.importantDates?.map(date => ({
-            title: `${lead.clientName} - ${lead.partRequested}`,
-            start: new Date(date),
-            end: new Date(date),
-            allDay: true,
-          })) || []
-        );
-        setCalendarEvents(events);
       } catch (error) {
         console.error("Fetch sales data error:", error);
         if (error.name === 'AbortError') {
@@ -844,59 +827,9 @@ const SalesDashboard = () => {
     fetchSalesData();
   }, []);
 
-  const handleDeleteOrder = async (orderId) => {
-    if (actionLoading) return;
-    setActionLoading(true);
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        toast.warn('Delete request taking longer than expected. Please check your network.');
-      }, 10000);
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Order/delete/${orderId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        toast.success('Order deleted successfully');
-        setOrders((prevOrders) => prevOrders.filter((order) => order.order_id !== orderId));
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to delete order');
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        toast.error('Delete request timed out. Please try again.');
-      } else {
-        toast.error('Network error: Unable to delete order');
-      }
-      console.error('Error deleting order:', error);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const eventStyleGetter = (event, start, end, isSelected) => {
-    return {
-      style: {
-        backgroundColor: '#ef4444',
-        borderRadius: '5px',
-        opacity: 0.8,
-        color: 'white',
-        border: '0px',
-        display: 'block',
-      },
-    };
-  };
-
   return (
     <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
-      <LoadingOverlay isLoading={loading || actionLoading} /> {/* Main page loading overlay */}
+      <LoadingOverlay isLoading={loading || actionLoading} />
       <div className={`${(loading || actionLoading) ? "blur-[1px]" : ""}`}>
         <div className="flex flex-wrap gap-6 p-3 px-4 sm:px-20">
           {['Ordered', 'Quoted'].map((status) => (
@@ -955,55 +888,12 @@ const SalesDashboard = () => {
               </ResponsiveContainer>
             </div>
           </div>
-
-          <div className="w-full sm:max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Calendar</h3>
-            <Calendar
-              localizer={localizer}
-              events={calendarEvents}
-              startAccessor="start"
-              endAccessor="end"
-              style={{ height: 300 }}
-              eventPropGetter={eventStyleGetter}
-              className="rbc-calendar-custom"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-6 p-6 px-4 sm:px-20">
-          <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow">
-            <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
-              Placeholder for future content
-            </div>
-          </div>
-          <div className="flex-1 min-w-[300px] h-96 bg-white dark:bg-gray-800 rounded-xl shadow">
-            <div className="p-4 text-gray-500 dark:text-gray-400 text-sm">
-              Placeholder for future content
-            </div>
-          </div>
         </div>
 
         <div className="w-full px-4 sm:px-20 py-8">
           <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-600 overflow-x-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
-              <div className="space-x-2">
-                <button
-                  className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  disabled={actionLoading}
-                >
-                  Filter
-                </button>
-                <button
-                  className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  disabled={actionLoading}
-                >
-                  See all
-                </button>
-              </div>
-            </div>
-
-            <table className="min-w-[700px] w-full table-auto">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Orders</h2>
+            <table className="min-w-[600px] w-full table-auto">
               <thead>
                 <tr className="text-left text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
                   <th className="p-2">Client Name</th>
@@ -1011,7 +901,6 @@ const SalesDashboard = () => {
                   <th className="p-2">Part Requested</th>
                   <th className="p-2">Close Date</th>
                   <th className="p-2">Status</th>
-                  <th className="p-2">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -1035,12 +924,6 @@ const SalesDashboard = () => {
                       >
                         {order.status.replace(/([A-Z])/g, ' $1').trim()}
                       </span>
-                    </td>
-                    <td className="p-2">
-                      <Trash2
-                        className={`w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer ${actionLoading ? 'opacity-50' : ''}`}
-                        onClick={() => !actionLoading && handleDeleteOrder(order.order_id)}
-                      />
                     </td>
                   </tr>
                 ))}
