@@ -641,6 +641,15 @@ export const updatecost = async (req, res, next) => {
   const { partCost, shippingCost, grossProfit, warranty, totalCost } = req.body;
 
   try {
+    // Check if user has Editcost permission
+    const user = await User.findById(req.user.id, "Editcost");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!user.Editcost) {
+      return res.status(403).json({ message: "Unauthorized: Cost editing permission required" });
+    }
+
     const lead = await Lead.findById(id);
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
