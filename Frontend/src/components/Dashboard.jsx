@@ -2753,7 +2753,7 @@ const Dashboard = () => {
         <div className="container mx-auto">
           <h1 className="text-3xl font-bold mb-8 text-center flex items-center justify-center gap-2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
             <TrendingUp className="w-8 h-8 text-blue-500 animate-pulse" />
-            Admin Dashboard
+            Dashboard
           </h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
             {[
