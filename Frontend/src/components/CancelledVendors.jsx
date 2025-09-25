@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTheme } from "../context/ThemeContext";
-import LoadingOverlay from "./LoadingOverlay";
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useTheme } from '../context/ThemeContext';
+import LoadingOverlay from './LoadingOverlay';
 
 const Modal = ({ isOpen, onClose, title, children, submitLabel, cancelLabel, onSubmit, showActions = true }) => {
   if (!isOpen) return null;
@@ -41,9 +44,12 @@ const Modal = ({ isOpen, onClose, title, children, submitLabel, cancelLabel, onS
 
 const CancelledVendors = () => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
   const [cancelledVendors, setCancelledVendors] = useState([]);
-  const [loadingVendors, setLoadingVendors] = useState(true); // Renamed for clarity
-  const [actionLoading, setActionLoading] = useState(false); // Added for async actions
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingVendors, setLoadingVendors] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -58,6 +64,34 @@ const CancelledVendors = () => {
   const [paymentStatusError, setPaymentStatusError] = useState(null);
   const timeoutRef = useRef(null);
 
+  // Fetch user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      setLoadingUser(true);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/Auth/check`, {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            navigate('/login');
+            return;
+          }
+          throw new Error('Failed to fetch user');
+        }
+        const data = await response.json();
+        setUser(data.user);
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+        toast.error('Failed to load user data');
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
+  // Fetch cancelled vendors
   useEffect(() => {
     const fetchCancelledVendors = async () => {
       try {
@@ -85,8 +119,10 @@ const CancelledVendors = () => {
       }
     };
 
-    fetchCancelledVendors();
-  }, [page, search]);
+    if (user) {
+      fetchCancelledVendors();
+    }
+  }, [user, page, search]);
 
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
@@ -94,20 +130,20 @@ const CancelledVendors = () => {
   };
 
   const handleClearSearch = () => {
-    if (!actionLoading) {
+    if (!actionLoading && user?.role !== 'viewer') {
       setSearch('');
       setPage(1);
     }
   };
 
   const handlePageChange = (newPage) => {
-    if (!actionLoading && newPage >= 1 && newPage <= totalPages) {
+    if (!actionLoading && user?.role !== 'viewer' && newPage >= 1 && newPage <= totalPages) {
       setPage(newPage);
     }
   };
 
   const handleAddNote = (vendorId) => {
-    if (!actionLoading) {
+    if (!actionLoading && user?.role !== 'viewer') {
       setSelectedVendorId(vendorId);
       setNoteText('');
       setNoteError(null);
@@ -176,6 +212,7 @@ const CancelledVendors = () => {
   };
 
   const handlePaymentStatusChange = async (vendorId, newStatus) => {
+    if (user?.role === 'viewer') return;
     setActionLoading(true);
     try {
       setPaymentStatusError(null);
@@ -191,7 +228,7 @@ const CancelledVendors = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update payment status');
+        throw new Error(data.message || 'Failed to update payment status');
       }
 
       const fetchResponse = await fetch(
@@ -239,7 +276,7 @@ const CancelledVendors = () => {
   };
 
   const handleRetry = () => {
-    if (!actionLoading) {
+    if (!actionLoading && user?.role !== 'viewer') {
       setError(null);
       setPaymentStatusError(null);
       setLoadingVendors(true);
@@ -262,8 +299,8 @@ const CancelledVendors = () => {
           }
         `}
       </style>
-      <LoadingOverlay isLoading={loadingVendors || actionLoading} />
-      <div className={`${loadingVendors || actionLoading ? "blur-[1px]" : ""}`}>
+      <LoadingOverlay isLoading={loadingUser || loadingVendors || actionLoading} />
+      <div className={`${loadingUser || loadingVendors || actionLoading ? "blur-[1px]" : ""}`}>
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-white tracking-tight">
             Canceled Vendors
@@ -281,7 +318,7 @@ const CancelledVendors = () => {
                 aria-label="Search cancelled vendors"
                 disabled={actionLoading}
               />
-              {search && (
+              {search && user?.role !== 'viewer' && (
                 <button
                   onClick={handleClearSearch}
                   className="absolute right-3 text-gray-400 hover:text-gray-200 focus:outline-none"
@@ -299,14 +336,16 @@ const CancelledVendors = () => {
           {error || paymentStatusError ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="text-red-400 bg-red-900/30 p-4 rounded-lg mb-4">{error || paymentStatusError}</div>
-              <button
-                onClick={handleRetry}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                aria-label="Retry fetching data"
-                disabled={actionLoading}
-              >
-                Retry
-              </button>
+              {user?.role !== 'viewer' && (
+                <button
+                  onClick={handleRetry}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  aria-label="Retry fetching data"
+                  disabled={actionLoading}
+                >
+                  Retry
+                </button>
+              )}
             </div>
           ) : cancelledVendors.length === 0 ? (
             <p className="text-center text-gray-400 text-lg">No canceled vendors found.</p>
@@ -325,7 +364,7 @@ const CancelledVendors = () => {
                     <th className="px-6 py-4">Canceled At</th>
                     <th className="px-6 py-4">Payment Status</th>
                     <th className="px-6 py-4">Notes</th>
-                    <th className="px-6 py-4">Action</th>
+                    {user?.role !== 'viewer' && <th className="px-6 py-4">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -347,16 +386,20 @@ const CancelledVendors = () => {
                         {vendorData.canceledAt ? new Date(vendorData.canceledAt).toLocaleString() : 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <select
-                          value={vendorData.paymentStatus || 'pending'}
-                          onChange={(e) => !actionLoading && handlePaymentStatusChange(vendorData._id, e.target.value)}
-                          className="bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
-                          aria-label={`Payment status for vendor ${vendorData.vendor.businessName}`}
-                          disabled={actionLoading}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="paid">Paid</option>
-                        </select>
+                        {user?.role !== 'viewer' ? (
+                          <select
+                            value={vendorData.paymentStatus || 'pending'}
+                            onChange={(e) => !actionLoading && handlePaymentStatusChange(vendorData._id, e.target.value)}
+                            className="bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
+                            aria-label={`Payment status for vendor ${vendorData.vendor.businessName}`}
+                            disabled={actionLoading}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                          </select>
+                        ) : (
+                          <span className="text-sm">{vendorData.paymentStatus || 'pending'}</span>
+                        )}
                       </td>
                       <td
                         className="px-6 py-4 text-sm cursor-pointer hover:text-blue-400 transition-colors duration-200"
@@ -377,16 +420,18 @@ const CancelledVendors = () => {
                           <span className="text-gray-400">No notes</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleAddNote(vendorData._id)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
-                          aria-label={`Add note for vendor ${vendorData.vendor.businessName}`}
-                          disabled={actionLoading}
-                        >
-                          Add Note
-                        </button>
-                      </td>
+                      {user?.role !== 'viewer' && (
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => handleAddNote(vendorData._id)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
+                            aria-label={`Add note for vendor ${vendorData.vendor.businessName}`}
+                            disabled={actionLoading}
+                          >
+                            Add Note
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -395,7 +440,7 @@ const CancelledVendors = () => {
           )}
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
+          {totalPages > 1 && user?.role !== 'viewer' && (
             <div className="flex flex-wrap justify-center items-center mt-6 gap-2">
               <button
                 onClick={() => handlePageChange(page - 1)}
@@ -433,28 +478,30 @@ const CancelledVendors = () => {
           )}
 
           {/* Modal for Adding Notes */}
-          <Modal
-            isOpen={isAddNoteModalOpen}
-            onClose={handleCloseAddNoteModal}
-            onSubmit={handleNoteSubmit}
-            title="Add Note to Cancelled Vendor"
-          >
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              className="w-full p-3 rounded-lg bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
-              placeholder="Enter your note here..."
-              rows="4"
-              aria-label="Note input"
-              disabled={actionLoading}
-            />
-            {noteError && (
-              <div className="text-red-400 bg-red-900/30 p-2 mt-2 rounded-lg text-sm">{noteError}</div>
-            )}
-            {noteSuccess && (
-              <div className="text-green-400 bg-green-900/30 p-2 mt-2 rounded-lg text-sm">{noteSuccess}</div>
-            )}
-          </Modal>
+          {user?.role !== 'viewer' && (
+            <Modal
+              isOpen={isAddNoteModalOpen}
+              onClose={handleCloseAddNoteModal}
+              onSubmit={handleNoteSubmit}
+              title="Add Note to Cancelled Vendor"
+            >
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                className="w-full p-3 rounded-lg bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
+                placeholder="Enter your note here..."
+                rows="4"
+                aria-label="Note input"
+                disabled={actionLoading}
+              />
+              {noteError && (
+                <div className="text-red-400 bg-red-900/30 p-2 mt-2 rounded-lg text-sm">{noteError}</div>
+              )}
+              {noteSuccess && (
+                <div className="text-green-400 bg-green-900/30 p-2 mt-2 rounded-lg text-sm">{noteSuccess}</div>
+              )}
+            </Modal>
+          )}
 
           {/* Modal for Viewing Notes */}
           <Modal
