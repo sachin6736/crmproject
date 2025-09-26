@@ -673,6 +673,7 @@ const LeadDetailsModal = ({
   );
 };
 
+
 const OrderDetailsModal = ({
   isOpen,
   onClose,
@@ -739,7 +740,7 @@ const OrderDetailsModal = ({
     previousMonth: "#82ca9d",
     selectedMonth: "#ff7300",
     selectedYear: "#d81b60",
-    currentYear: "#00b7eb", // Added for current year line in chart
+    currentYear: "#00b7eb",
   };
 
   const statuses = [
@@ -756,12 +757,13 @@ const OrderDetailsModal = ({
     "Replacement",
     "Litigation",
     "ReplacementCancelled",
-    "TotalOrders",
   ];
 
   const calculateTotal = (data) => {
     if (!data) return 0;
-    return Object.values(data).reduce((sum, count) => sum + (count || 0), 0);
+    return Object.entries(data)
+      .filter(([key]) => key !== "TotalOrders")
+      .reduce((sum, [, count]) => sum + (count || 0), 0);
   };
 
   const calculateComparison = (current, selected, period) => {
@@ -793,7 +795,7 @@ const OrderDetailsModal = ({
 
   useEffect(() => {
     const fetchComparisonData = async () => {
-      setIsLoading(true); // Set loading to true
+      setIsLoading(true);
       try {
         const query = [];
         if (selectedMonth) query.push(`selectedMonth=${selectedMonth}`);
@@ -816,9 +818,7 @@ const OrderDetailsModal = ({
             `${
               import.meta.env.VITE_API_URL
             }/Admin/getOrderCounts${queryString}`,
-            {
-              credentials: "include",
-            }
+            { credentials: "include" }
           ),
         ]);
         if (!statusRes.ok || !amountRes.ok || !countsRes.ok) {
@@ -833,7 +833,6 @@ const OrderDetailsModal = ({
         setAmountTotals(amountData);
         setOrderCounts(countsData);
 
-        // Calculate comparison text
         const comparison = selectedMonth
           ? calculateComparison(
               statusData.currentMonth,
@@ -856,30 +855,34 @@ const OrderDetailsModal = ({
       } catch (error) {
         console.error("Error fetching order data:", error);
       } finally {
-        setIsLoading(false); // Set loading to false
+        setIsLoading(false);
       }
     };
 
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
-  const chartData = statuses.map((status) => ({
+
+  const chartData = statuses.concat("TotalOrders").map((status) => ({
     status:
       status === "TotalOrders"
         ? "Total Orders"
         : status.replace(/([A-Z])/g, " $1").trim(),
     currentMonth:
       status === "TotalOrders"
-        ? calculateTotal(statusComparison.currentMonth)
+        ? statusComparison.currentMonth?.TotalOrders ||
+          calculateTotal(statusComparison.currentMonth)
         : statusComparison.currentMonth?.[status] || 0,
     previousMonth:
       status === "TotalOrders"
-        ? calculateTotal(statusComparison.previousMonth)
+        ? statusComparison.previousMonth?.TotalOrders ||
+          calculateTotal(statusComparison.previousMonth)
         : statusComparison.previousMonth?.[status] || 0,
     ...(selectedMonth && statusComparison.selectedMonth
       ? {
           selectedMonth:
             status === "TotalOrders"
-              ? calculateTotal(statusComparison.selectedMonth)
+              ? statusComparison.selectedMonth?.TotalOrders ||
+                calculateTotal(statusComparison.selectedMonth)
               : statusComparison.selectedMonth[status] || 0,
         }
       : {}),
@@ -887,7 +890,8 @@ const OrderDetailsModal = ({
       ? {
           selectedYear:
             status === "TotalOrders"
-              ? calculateTotal(statusComparison.selectedYear)
+              ? statusComparison.selectedYear?.TotalOrders ||
+                calculateTotal(statusComparison.selectedYear)
               : statusComparison.selectedYear[status] || 0,
         }
       : {}),
@@ -895,7 +899,8 @@ const OrderDetailsModal = ({
       ? {
           currentYear:
             status === "TotalOrders"
-              ? calculateTotal(statusComparison.currentYear)
+              ? statusComparison.currentYear?.TotalOrders ||
+                calculateTotal(statusComparison.currentYear)
               : statusComparison.currentYear[status] || 0,
         }
       : {}),
@@ -1095,7 +1100,7 @@ const OrderDetailsModal = ({
                 value={selectedMonth}
                 onChange={(e) => {
                   setSelectedMonth(e.target.value);
-                  setSelectedYear(""); // Reset year when month is selected
+                  setSelectedYear("");
                 }}
               >
                 <option value="">Select Month to Compare</option>
@@ -1110,7 +1115,7 @@ const OrderDetailsModal = ({
                 value={selectedYear}
                 onChange={(e) => {
                   setSelectedYear(e.target.value);
-                  setSelectedMonth(""); // Reset month when year is selected
+                  setSelectedMonth("");
                 }}
               >
                 <option value="">Select Year to Compare</option>
@@ -1197,17 +1202,22 @@ const OrderDetailsModal = ({
                   className={`p-2 rounded-lg text-center ${statusColors[status]}`}
                 >
                   <span className="text-xs font-medium">
-                    {status === "TotalOrders"
-                      ? "Total Orders"
-                      : status.replace(/([A-Z])/g, " $1").trim()}
+                    {status.replace(/([A-Z])/g, " $1").trim()}
                   </span>
                   <div className="text-md font-bold">
-                    {status === "TotalOrders"
-                      ? calculateTotal(statusComparison.currentMonth)
-                      : statusComparison.currentMonth?.[status] || 0}
+                    {statusComparison.currentMonth?.[status] || 0}
                   </div>
                 </div>
               ))}
+              <div
+                className={`p-2 rounded-lg text-center ${statusColors.TotalOrders}`}
+              >
+                <span className="text-xs font-medium">Total Orders</span>
+                <div className="text-md font-bold">
+                  {statusComparison.currentMonth?.TotalOrders ||
+                    calculateTotal(statusComparison.currentMonth)}
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-3">
@@ -1223,6 +1233,7 @@ const OrderDetailsModal = ({
     </motion.div>
   );
 };
+
 
 const PoSentDetailsModal = ({
   isOpen,
