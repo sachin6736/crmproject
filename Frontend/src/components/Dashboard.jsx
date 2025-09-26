@@ -793,6 +793,40 @@ const OrderDetailsModal = ({
     };
   };
 
+  const normalizeStatusData = (data) => {
+    const keyMap = {
+      "locate pending": "LocatePending",
+      "locatepending": "LocatePending",
+      "Locate Pending": "LocatePending",
+      "po pending": "POPending",
+      "popending": "POPending",
+      "PO Pending": "POPending",
+      "posent": "POSent",
+      "poconfirmed": "POConfirmed",
+      "vendorpaymentpending": "VendorPaymentPending",
+      "vendorpaymentconfirmed": "VendorPaymentConfirmed",
+      "shippingpending": "ShippingPending",
+      "shipout": "ShipOut",
+      "intransit": "Intransit",
+      "delivered": "Delivered",
+      "replacement": "Replacement",
+      "litigation": "Litigation",
+      "replacementcancelled": "ReplacementCancelled",
+      "totalorders": "TotalOrders",
+    };
+
+    const normalized = {};
+    Object.keys(data).forEach((key) => {
+      const normalizedKey =
+        keyMap[key] || // Direct match first
+        keyMap[key.toLowerCase().replace(/\s+/g, "")] || // Match without spaces
+        key; // Fallback to original key
+      normalized[normalizedKey] = data[key];
+    });
+    console.log("Normalized data for:", data, "Result:", normalized); // Debug normalization
+    return normalized;
+  };
+
   useEffect(() => {
     const fetchComparisonData = async () => {
       setIsLoading(true);
@@ -829,20 +863,33 @@ const OrderDetailsModal = ({
           amountRes.json(),
           countsRes.json(),
         ]);
-        setStatusComparison(statusData);
+        console.log("Raw statusData:", statusData); // Debug raw API response
+        const normalizedStatusData = {
+          currentMonth: normalizeStatusData(statusData.currentMonth || {}),
+          previousMonth: normalizeStatusData(statusData.previousMonth || {}),
+          currentYear: normalizeStatusData(statusData.currentYear || {}),
+          ...(statusData.selectedMonth && {
+            selectedMonth: normalizeStatusData(statusData.selectedMonth),
+          }),
+          ...(statusData.selectedYear && {
+            selectedYear: normalizeStatusData(statusData.selectedYear),
+          }),
+        };
+        console.log("normalizedStatusData:", normalizedStatusData);
+        setStatusComparison(normalizedStatusData);
         setAmountTotals(amountData);
         setOrderCounts(countsData);
 
         const comparison = selectedMonth
           ? calculateComparison(
-              statusData.currentMonth,
-              statusData.selectedMonth,
+              normalizedStatusData.currentMonth,
+              normalizedStatusData.selectedMonth,
               "month"
             )
           : selectedYear
           ? calculateComparison(
-              statusData.currentYear,
-              statusData.selectedYear,
+              normalizedStatusData.currentYear,
+              normalizedStatusData.selectedYear,
               "year"
             )
           : { direction: "", percentage: 0, difference: 0, text: "" };
@@ -862,49 +909,54 @@ const OrderDetailsModal = ({
     fetchComparisonData();
   }, [selectedMonth, selectedYear]);
 
-  const chartData = statuses.concat("TotalOrders").map((status) => ({
-    status:
-      status === "TotalOrders"
-        ? "Total Orders"
-        : status.replace(/([A-Z])/g, " $1").trim(),
-    currentMonth:
-      status === "TotalOrders"
-        ? statusComparison.currentMonth?.TotalOrders ||
-          calculateTotal(statusComparison.currentMonth)
-        : statusComparison.currentMonth?.[status] || 0,
-    previousMonth:
-      status === "TotalOrders"
-        ? statusComparison.previousMonth?.TotalOrders ||
-          calculateTotal(statusComparison.previousMonth)
-        : statusComparison.previousMonth?.[status] || 0,
-    ...(selectedMonth && statusComparison.selectedMonth
-      ? {
-          selectedMonth:
-            status === "TotalOrders"
-              ? statusComparison.selectedMonth?.TotalOrders ||
-                calculateTotal(statusComparison.selectedMonth)
-              : statusComparison.selectedMonth[status] || 0,
-        }
-      : {}),
-    ...(selectedYear && statusComparison.selectedYear
-      ? {
-          selectedYear:
-            status === "TotalOrders"
-              ? statusComparison.selectedYear?.TotalOrders ||
-                calculateTotal(statusComparison.selectedYear)
-              : statusComparison.selectedYear[status] || 0,
-        }
-      : {}),
-    ...(selectedYear && statusComparison.currentYear
-      ? {
-          currentYear:
-            status === "TotalOrders"
-              ? statusComparison.currentYear?.TotalOrders ||
-                calculateTotal(statusComparison.currentYear)
-              : statusComparison.currentYear[status] || 0,
-        }
-      : {}),
-  }));
+  const chartData = statuses.concat("TotalOrders").map((status) => {
+    console.log(`Chart data for ${status}:`, {
+      currentMonth: statusComparison.currentMonth?.[status] || 0,
+    }); // Debug chart data
+    return {
+      status:
+        status === "TotalOrders"
+          ? "Total Orders"
+          : status.replace(/([A-Z])/g, " $1").trim(),
+      currentMonth:
+        status === "TotalOrders"
+          ? statusComparison.currentMonth?.TotalOrders ||
+            calculateTotal(statusComparison.currentMonth)
+          : statusComparison.currentMonth?.[status] || 0,
+      previousMonth:
+        status === "TotalOrders"
+          ? statusComparison.previousMonth?.TotalOrders ||
+            calculateTotal(statusComparison.previousMonth)
+          : statusComparison.previousMonth?.[status] || 0,
+      ...(selectedMonth && statusComparison.selectedMonth
+        ? {
+            selectedMonth:
+              status === "TotalOrders"
+                ? statusComparison.selectedMonth?.TotalOrders ||
+                  calculateTotal(statusComparison.selectedMonth)
+                : statusComparison.selectedMonth[status] || 0,
+          }
+        : {}),
+      ...(selectedYear && statusComparison.selectedYear
+        ? {
+            selectedYear:
+              status === "TotalOrders"
+                ? statusComparison.selectedYear?.TotalOrders ||
+                  calculateTotal(statusComparison.selectedYear)
+                : statusComparison.selectedYear[status] || 0,
+          }
+        : {}),
+      ...(selectedYear && statusComparison.currentYear
+        ? {
+            currentYear:
+              status === "TotalOrders"
+                ? statusComparison.currentYear?.TotalOrders ||
+                  calculateTotal(statusComparison.currentYear)
+                : statusComparison.currentYear[status] || 0,
+          }
+        : {}),
+    };
+  });
 
   const generateMonthOptions = () => {
     const options = [];
@@ -933,6 +985,10 @@ const OrderDetailsModal = ({
     return options;
   };
 
+  // Debug status grid data
+  console.log("Rendering status grid with currentMonth:", statusComparison.currentMonth);
+  console.log("isLoading:", isLoading);
+
   return (
     <motion.div
       className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4"
@@ -941,7 +997,7 @@ const OrderDetailsModal = ({
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto"
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
@@ -1195,22 +1251,25 @@ const OrderDetailsModal = ({
                 )}
               </LineChart>
             </ResponsiveContainer>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {statuses.map((status) => (
-                <div
-                  key={status}
-                  className={`p-2 rounded-lg text-center ${statusColors[status]}`}
-                >
-                  <span className="text-xs font-medium">
-                    {status.replace(/([A-Z])/g, " $1").trim()}
-                  </span>
-                  <div className="text-md font-bold">
-                    {statusComparison.currentMonth?.[status] || 0}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" key={JSON.stringify(statusComparison.currentMonth)}>
+              {statuses.map((status) => {
+                console.log(`Rendering ${status}: ${statusComparison.currentMonth?.[status] || 0}`); // Debug grid rendering
+                return (
+                  <div
+                    key={status}
+                    className={`p-2 rounded-lg text-center border ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}
+                  >
+                    <span className="text-xs font-medium">
+                      {status.replace(/([A-Z])/g, " $1").trim()}
+                    </span>
+                    <div className="text-md font-bold">
+                      {statusComparison.currentMonth?.[status] || 0}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div
-                className={`p-2 rounded-lg text-center ${statusColors.TotalOrders}`}
+                className={`p-2 rounded-lg text-center border  ${statusColors.TotalOrders}`}
               >
                 <span className="text-xs font-medium">Total Orders</span>
                 <div className="text-md font-bold">
@@ -1219,6 +1278,11 @@ const OrderDetailsModal = ({
                 </div>
               </div>
             </div>
+            {/* Temporary debug rendering to confirm data
+            <div className="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <h5 className="text-sm font-semibold">Debug Data</h5>
+              <pre>{JSON.stringify(statusComparison.currentMonth, null, 2)}</pre>
+            </div> */}
           </div>
           <div className="flex justify-end gap-2 mt-3">
             <button
