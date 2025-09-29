@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import LoadingOverlay from './LoadingOverlay';
 
 const Modal = ({ isOpen, onClose, title, children, submitLabel, cancelLabel, onSubmit, showActions = true }) => {
+  const { theme } = useTheme();
   if (!isOpen) return null;
   return (
     <div
@@ -14,14 +15,27 @@ const Modal = ({ isOpen, onClose, title, children, submitLabel, cancelLabel, onS
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto shadow-2xl animate-fade-in">
-        <h2 id="modal-title" className="text-xl font-semibold text-gray-100 mb-4">{title}</h2>
+      <div
+        className={`rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto shadow-2xl animate-fade-in ${
+          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+        }`}
+      >
+        <h2
+          id="modal-title"
+          className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
+        >
+          {title}
+        </h2>
         {children}
         {showActions && (
           <div className="mt-4 flex justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200"
+              className={`px-4 py-2 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'bg-gray-700 text-gray-100 focus:ring-gray-500 hover:bg-gray-600'
+                  : 'bg-gray-200 text-gray-900 focus:ring-gray-400 hover:bg-gray-300'
+              }`}
               aria-label={cancelLabel || 'Cancel'}
             >
               {cancelLabel || 'Cancel'}
@@ -29,7 +43,11 @@ const Modal = ({ isOpen, onClose, title, children, submitLabel, cancelLabel, onS
             {onSubmit && (
               <button
                 onClick={onSubmit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                className={`px-4 py-2 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  theme === 'dark'
+                    ? 'bg-blue-600 text-white focus:ring-blue-500 hover:bg-blue-500'
+                    : 'bg-blue-500 text-white focus:ring-blue-400 hover:bg-blue-600'
+                }`}
                 aria-label={submitLabel || 'Submit'}
               >
                 {submitLabel || 'Submit'}
@@ -63,6 +81,7 @@ const CancelledVendors = () => {
   const [noteSuccess, setNoteSuccess] = useState(null);
   const [paymentStatusError, setPaymentStatusError] = useState(null);
   const timeoutRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   // Fetch user data
   useEffect(() => {
@@ -80,10 +99,11 @@ const CancelledVendors = () => {
           throw new Error('Failed to fetch user');
         }
         const data = await response.json();
+        if (!data.user) throw new Error('No user data received');
         setUser(data.user);
       } catch (error) {
         console.error('Error fetching user info:', error);
-        toast.error('Failed to load user data');
+        toast.error(error.message || 'Failed to load user data');
       } finally {
         setLoadingUser(false);
       }
@@ -93,15 +113,21 @@ const CancelledVendors = () => {
 
   // Fetch cancelled vendors
   useEffect(() => {
+    if (!user) return;
+
     const fetchCancelledVendors = async () => {
+      abortControllerRef.current = new AbortController();
       try {
         setLoadingVendors(true);
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(search)}`,
+          `${import.meta.env.VITE_API_URL}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(
+            search
+          )}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
+            signal: abortControllerRef.current.signal,
           }
         );
         if (!response.ok) {
@@ -112,6 +138,7 @@ const CancelledVendors = () => {
         setCancelledVendors(data.cancelledVendors || []);
         setTotalPages(data.totalPages || 1);
       } catch (err) {
+        if (err.name === 'AbortError') return;
         setError(err.message || 'Failed to fetch cancelled vendors. Please check your network connection.');
         console.error('Fetch error:', err);
       } finally {
@@ -119,9 +146,13 @@ const CancelledVendors = () => {
       }
     };
 
-    if (user) {
-      fetchCancelledVendors();
-    }
+    fetchCancelledVendors();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [user, page, search]);
 
   const handleSearchChange = (e) => {
@@ -228,11 +259,13 @@ const CancelledVendors = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(data.message || 'Failed to update payment status');
+        throw new Error(errorData.message || 'Failed to update payment status');
       }
 
       const fetchResponse = await fetch(
-        `${import.meta.env.VITE_API_URL}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(search)}`,
+        `${import.meta.env.VITE_API_URL}/Order/cancelledvendorlist?page=${page}&search=${encodeURIComponent(
+          search
+        )}`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
@@ -286,8 +319,21 @@ const CancelledVendors = () => {
     }
   };
 
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6 lg:px-8 text-gray-100 relative">
+    <div
+      className={`min-h-screen py-8 px-4 sm:px-6 lg:px-8 relative ${
+        theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
+      }`}
+    >
       <style>
         {`
           @keyframes fadeIn {
@@ -300,9 +346,13 @@ const CancelledVendors = () => {
         `}
       </style>
       <LoadingOverlay isLoading={loadingUser || loadingVendors || actionLoading} />
-      <div className={`${loadingUser || loadingVendors || actionLoading ? "blur-[1px]" : ""}`}>
+      <div className={`${loadingUser || loadingVendors || actionLoading ? 'blur-[1px]' : ''}`}>
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-white tracking-tight">
+          <h1
+            className={`text-3xl sm:text-4xl font-bold text-center mb-8 tracking-tight ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}
+          >
             Canceled Vendors
           </h1>
 
@@ -314,16 +364,23 @@ const CancelledVendors = () => {
                 value={search}
                 onChange={handleSearchChange}
                 placeholder="Search by business name, phone, email, agent, or reason..."
-                className="w-full p-3 pr-10 rounded-lg bg-gray-800 text-gray-100 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm sm:text-base"
+                className={`w-full p-3 pr-10 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm sm:text-base ${
+                  theme === 'dark'
+                    ? 'bg-gray-800 text-gray-100 border-gray-700'
+                    : 'bg-white text-gray-900 border-gray-300'
+                }`}
                 aria-label="Search cancelled vendors"
                 disabled={actionLoading}
               />
               {search && user?.role !== 'viewer' && (
                 <button
                   onClick={handleClearSearch}
-                  className="absolute right-3 text-gray-400 hover:text-gray-200 focus:outline-none"
+                  className={`absolute right-3 focus:outline-none ${
+                    theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                   aria-label="Clear search"
                   disabled={actionLoading}
+                  aria-disabled={actionLoading}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -335,25 +392,46 @@ const CancelledVendors = () => {
 
           {error || paymentStatusError ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="text-red-400 bg-red-900/30 p-4 rounded-lg mb-4">{error || paymentStatusError}</div>
+              <div
+                className={`p-4 rounded-lg mb-4 ${
+                  theme === 'dark' ? 'text-red-400 bg-red-900/30' : 'text-red-600 bg-red-100'
+                }`}
+              >
+                {error || paymentStatusError}
+              </div>
               {user?.role !== 'viewer' && (
                 <button
                   onClick={handleRetry}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  className={`px-4 py-2 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-blue-600 text-white focus:ring-blue-500 hover:bg-blue-500'
+                      : 'bg-blue-500 text-white focus:ring-blue-400 hover:bg-blue-600'
+                  }`}
                   aria-label="Retry fetching data"
                   disabled={actionLoading}
+                  aria-disabled={actionLoading}
                 >
                   Retry
                 </button>
               )}
             </div>
           ) : cancelledVendors.length === 0 ? (
-            <p className="text-center text-gray-400 text-lg">No canceled vendors found.</p>
+            <p
+              className={`text-center text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+            >
+              No canceled vendors found.
+            </p>
           ) : (
             <div className="overflow-x-auto shadow-lg rounded-lg">
-              <table className="min-w-full bg-gray-800 text-gray-200">
-                <thead className="bg-gray-700 sticky top-0 z-10">
-                  <tr className="text-left text-sm uppercase font-medium text-gray-300">
+              <table
+                className={`min-w-full ${theme === 'dark' ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-900'}`}
+              >
+                <thead
+                  className={`sticky top-0 z-10 ${
+                    theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  <tr className="text-left text-sm uppercase font-medium">
                     <th className="px-6 py-4">Order ID</th>
                     <th className="px-6 py-4">Business Name</th>
                     <th className="px-6 py-4">Phone</th>
@@ -371,8 +449,10 @@ const CancelledVendors = () => {
                   {cancelledVendors.map((vendorData, index) => (
                     <tr
                       key={vendorData._id}
-                      className={`border-b border-gray-700 hover:bg-gray-700/50 transition-colors duration-200 ${
-                        index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'
+                      className={`border-b transition-colors duration-200 ${
+                        theme === 'dark'
+                          ? `border-gray-700 hover:bg-gray-700/50 ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`
+                          : `border-gray-200 hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`
                       }`}
                     >
                       <td className="px-6 py-4 text-sm">{vendorData.orderId?.order_id || 'N/A'}</td>
@@ -390,7 +470,11 @@ const CancelledVendors = () => {
                           <select
                             value={vendorData.paymentStatus || 'pending'}
                             onChange={(e) => !actionLoading && handlePaymentStatusChange(vendorData._id, e.target.value)}
-                            className="bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
+                            className={`border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
+                              theme === 'dark'
+                                ? 'bg-gray-700 text-gray-100 border-gray-600 focus:ring-blue-500'
+                                : 'bg-white text-gray-900 border-gray-300 focus:ring-blue-400'
+                            }`}
                             aria-label={`Payment status for vendor ${vendorData.vendor.businessName}`}
                             disabled={actionLoading}
                           >
@@ -402,12 +486,16 @@ const CancelledVendors = () => {
                         )}
                       </td>
                       <td
-                        className="px-6 py-4 text-sm cursor-pointer hover:text-blue-400 transition-colors duration-200"
+                        className={`px-6 py-4 text-sm cursor-pointer transition-colors duration-200 ${
+                          theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'
+                        }`}
                         onClick={() => !actionLoading && handleViewNotes(vendorData._id, vendorData.vendor.notes)}
                         role="button"
                         tabIndex={0}
                         aria-label={`View notes for vendor ${vendorData.vendor.businessName}`}
-                        onKeyDown={(e) => !actionLoading && e.key === 'Enter' && handleViewNotes(vendorData._id, vendorData.vendor.notes)}
+                        onKeyDown={(e) =>
+                          !actionLoading && e.key === 'Enter' && handleViewNotes(vendorData._id, vendorData.vendor.notes)
+                        }
                       >
                         {vendorData.vendor.notes?.length > 0 ? (
                           <span className="truncate block max-w-[200px]">
@@ -417,16 +505,23 @@ const CancelledVendors = () => {
                             {vendorData.vendor.notes.length > 1 && ` (+${vendorData.vendor.notes.length - 1} more)`}
                           </span>
                         ) : (
-                          <span className="text-gray-400">No notes</span>
+                          <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                            No notes
+                          </span>
                         )}
                       </td>
                       {user?.role !== 'viewer' && (
                         <td className="px-6 py-4">
                           <button
                             onClick={() => handleAddNote(vendorData._id)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
+                            className={`px-3 py-1 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
+                              theme === 'dark'
+                                ? 'bg-blue-600 text-white focus:ring-blue-500 hover:bg-blue-500'
+                                : 'bg-blue-500 text-white focus:ring-blue-400 hover:bg-blue-600'
+                            }`}
                             aria-label={`Add note for vendor ${vendorData.vendor.businessName}`}
                             disabled={actionLoading}
+                            aria-disabled={actionLoading}
                           >
                             Add Note
                           </button>
@@ -445,8 +540,13 @@ const CancelledVendors = () => {
               <button
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1 || actionLoading}
-                className="px-3 py-1 bg-gray-700 text-gray-100 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
+                className={`px-3 py-1 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 text-gray-100 focus:ring-blue-500 hover:bg-blue-600 disabled:bg-gray-500'
+                    : 'bg-gray-200 text-gray-900 focus:ring-blue-400 hover:bg-gray-300 disabled:bg-gray-300'
+                }`}
                 aria-label="Previous page"
+                aria-disabled={page === 1 || actionLoading}
               >
                 Previous
               </button>
@@ -456,12 +556,17 @@ const CancelledVendors = () => {
                   onClick={() => handlePageChange(i + 1)}
                   className={`px-3 py-1 rounded-lg text-sm ${
                     page === i + 1
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-100 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500'
-                  } transition-all duration-200`}
+                      ? theme === 'dark'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-blue-500 text-white'
+                      : theme === 'dark'
+                      ? 'bg-gray-700 text-gray-100 hover:bg-blue-600 focus:ring-blue-500'
+                      : 'bg-gray-200 text-gray-900 hover:bg-blue-500 focus:ring-blue-400'
+                  } focus:outline-none focus:ring-2 transition-all duration-200`}
                   aria-label={`Go to page ${i + 1}`}
                   aria-current={page === i + 1 ? 'page' : undefined}
                   disabled={actionLoading}
+                  aria-disabled={actionLoading}
                 >
                   {i + 1}
                 </button>
@@ -469,8 +574,13 @@ const CancelledVendors = () => {
               <button
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page === totalPages || actionLoading}
-                className="px-3 py-1 bg-gray-700 text-gray-100 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm"
+                className={`px-3 py-1 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 text-gray-100 focus:ring-blue-500 hover:bg-blue-600 disabled:bg-gray-500'
+                    : 'bg-gray-200 text-gray-900 focus:ring-blue-400 hover:bg-gray-300 disabled:bg-gray-300'
+                }`}
                 aria-label="Next page"
+                aria-disabled={page === totalPages || actionLoading}
               >
                 Next
               </button>
@@ -488,17 +598,33 @@ const CancelledVendors = () => {
               <textarea
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                className="w-full p-3 rounded-lg bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
+                className={`w-full p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 text-gray-100 border-gray-600'
+                    : 'bg-white text-gray-900 border-gray-300'
+                }`}
                 placeholder="Enter your note here..."
                 rows="4"
                 aria-label="Note input"
                 disabled={actionLoading}
               />
               {noteError && (
-                <div className="text-red-400 bg-red-900/30 p-2 mt-2 rounded-lg text-sm">{noteError}</div>
+                <div
+                  className={`text-sm p-2 mt-2 rounded-lg ${
+                    theme === 'dark' ? 'text-red-400 bg-red-900/30' : 'text-red-600 bg-red-100'
+                  }`}
+                >
+                  {noteError}
+                </div>
               )}
               {noteSuccess && (
-                <div className="text-green-400 bg-green-900/30 p-2 mt-2 rounded-lg text-sm">{noteSuccess}</div>
+                <div
+                  className={`text-sm p-2 mt-2 rounded-lg ${
+                    theme === 'dark' ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-100'
+                  }`}
+                >
+                  {noteSuccess}
+                </div>
               )}
             </Modal>
           )}
@@ -514,24 +640,36 @@ const CancelledVendors = () => {
             {selectedVendorNotes.length > 0 ? (
               <ul className="list-disc pl-5 space-y-2">
                 {selectedVendorNotes.map((note, noteIndex) => (
-                  <li key={noteIndex} className="text-sm leading-relaxed">
+                  <li
+                    key={noteIndex}
+                    className={`text-sm leading-relaxed ${
+                      theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                    }`}
+                  >
                     {note.text}
                     <br />
-                    <span className="text-xs text-gray-400">
+                    <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                       ({note.createdAt ? new Date(note.createdAt).toLocaleString() : 'N/A'})
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-400 text-sm">No notes available.</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                No notes available.
+              </p>
             )}
             <div className="mt-4 flex justify-end">
               <button
                 onClick={handleCloseViewNotesModal}
-                className="px-4 py-2 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200"
+                className={`px-4 py-2 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 text-gray-100 focus:ring-gray-500 hover:bg-gray-600'
+                    : 'bg-gray-200 text-gray-900 focus:ring-gray-400 hover:bg-gray-300'
+                }`}
                 aria-label="Close"
                 disabled={actionLoading}
+                aria-disabled={actionLoading}
               >
                 Close
               </button>
