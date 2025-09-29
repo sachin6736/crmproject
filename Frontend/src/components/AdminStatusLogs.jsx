@@ -222,7 +222,7 @@ const AdminStatusLogs = () => {
             </div>
           </form>
 
-          {/* Durations Display */}
+          {/* Durations Display */}     
           {Object.keys(durations).length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {statusCards.map(({ status, icon: Icon, color }) => (
@@ -244,7 +244,7 @@ const AdminStatusLogs = () => {
                 Select a user and date to view status insights.
               </p>
             </div>
-          )}
+          )}  
         </div>
       </div>
     </div>
