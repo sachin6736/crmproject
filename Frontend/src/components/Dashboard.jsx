@@ -2438,6 +2438,7 @@ const Dashboard = () => {
         }
 
         const leadData = await leadRes.json();
+        console.log("leadres",leadData)
         const statusData = await statusRes.json();
         const ordersData = await ordersRes.json();
         const usersData = await usersRes.json();
@@ -2833,8 +2834,8 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-8">
             {[
               {
-                title: "Ordered",
-                value: totalOrders,
+                title: "Current Month Ordered",
+                value: orderCounts.currentMonth,
                 onClick: () => setShowOrderDetailsModal(true),
                 icon: <CheckCircle className="w-5 h-5 text-green-500" />,
               },
@@ -2845,7 +2846,7 @@ const Dashboard = () => {
                 icon: <DollarSign className="w-5 h-5 text-yellow-500" />,
               },
               {
-                title: "Total Clients",
+                title: "Current Month Total Clients",
                 value: totalClients,
                 onClick: () => setShowLeadDetailsModal(true),
                 icon: <Users className="w-5 h-5 text-blue-500" />,

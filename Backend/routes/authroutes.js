@@ -5,7 +5,7 @@ import { protect } from "../middleware/authmiddleware.js";
 const router = express.Router();
 
 router.post('/signup',signup);//sihnup route
-router.post('/Createuser',protect,createuser);//creating user
+router.post('/Createuser',protect, createuser);//creating user
 router.post('/login',login);//login route
 router.post('/logout',logout);
 

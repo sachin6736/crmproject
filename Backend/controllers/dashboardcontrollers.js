@@ -3,14 +3,22 @@ import User from "../models/user.js";
 import { Order } from "../models/order.js";
 
 export const getleadcount = async (req, res, next) => {
-    console.log("getleadcountworking");     
-    try {
-        const leadcount = await Lead.countDocuments();
-        res.status(200).json({ leadcount });
-    } catch (error) {
-        console.log("error in getsingle", error);
-        res.status(500).json({ error: "Internal server error" });
-    }
+  console.log("getleadcount working");
+  try {
+    // Get the first day of the current month
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    // Get the first day of next month (exclusive end boundary)
+    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+
+    const leadcount = await Lead.countDocuments({
+      createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+    });
+
+    res.status(200).json({ leadcount });
+  } catch (error) {
+    console.error("Error in getleadcount:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 export const getcountbystatus = async (req, res, next) => {

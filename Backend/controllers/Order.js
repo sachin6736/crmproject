@@ -2170,7 +2170,7 @@ export const markShipmentDelivered = async (req, res) => {
 //Cancelvendor
 export const cancelVendor = async (req, res) => {
   const { orderId, cancellationReason } = req.body;
-  console.log("cancel vendor working")
+  console.log("cancel vendor working");
   try {
     // Validate input
     if (!cancellationReason || typeof cancellationReason !== "string") {
@@ -2205,7 +2205,6 @@ export const cancelVendor = async (req, res) => {
         email: vendorToCancel.email,
         agentName: vendorToCancel.agentName,
         totalCost: vendorToCancel.totalCost,
-        // notes: vendorToCancel.notes,
       },
       cancellationReason,
       canceledAt: new Date(),
@@ -2215,7 +2214,23 @@ export const cancelVendor = async (req, res) => {
     order.vendors[vendorIndex].isConfirmed = false;
     order.vendors[vendorIndex].poStatus = "PO Canceled";
 
-    // Add a note to the order
+    // Determine the new order status
+    const hasPoPendingVendor = order.vendors.some(
+      (vendor, index) => index !== vendorIndex && vendor.poStatus === "PO Pending"
+    );
+    const newStatus = hasPoPendingVendor ? "PO Pending" : "Locate Pending";
+
+    // Update order status and add a note if the status changes
+    if (order.status !== newStatus) {
+      const statusNote = `Order status changed from ${order.status} to ${newStatus} due to vendor cancellation`;
+      order.notes.push({
+        text: statusNote,
+        createdAt: new Date(),
+      });
+      order.status = newStatus;
+    }
+
+    // Add a note for vendor cancellation
     order.notes.push({
       text: `Vendor ${vendorToCancel.businessName} canceled: ${cancellationReason}`,
       createdAt: new Date(),
