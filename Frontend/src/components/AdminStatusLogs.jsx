@@ -235,7 +235,7 @@ const AdminStatusLogs = () => {
                     <h3 className="text-lg font-semibold">{status}</h3>
                     <p className="text-sm">{durations[status] || 0} hours</p>
                   </div>
-                </div>
+                </div> 
               ))}
             </div>
           ) : (

@@ -3,7 +3,7 @@ import User from "../models/user.js";
 import { Order } from "../models/order.js";
 
 export const getleadcount = async (req, res, next) => {
-    console.log("getleadcountworking");
+    console.log("getleadcountworking");     
     try {
         const leadcount = await Lead.countDocuments();
         res.status(200).json({ leadcount });
