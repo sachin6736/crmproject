@@ -54,6 +54,9 @@ const canceledVendorSchema = new mongoose.Schema({
     enum: ['pending', 'paid'],
     default: 'pending',
   },
+  paidAt: {
+    type: Date,
+  },
 });
 
 const CanceledVendor = mongoose.model("CanceledVendor", canceledVendorSchema);

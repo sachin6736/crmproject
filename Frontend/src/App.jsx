@@ -21,6 +21,7 @@ import AdminStatusLogs from './components/AdminStatusLogs';
 import CancelledVendor from './components/CancelledVendors';
 import LitigationOrders from './components/Litigationorders';
 import Litigationdetails from './components/Litigationdetails';
+import PaidVendors from './components/PaidVendors';
 
 function App() {
   const { theme } = useTheme();
@@ -49,6 +50,7 @@ function App() {
           <Route path='orders' element={<OrdersHistory />} />
           <Route path='litigation-orders' element={<ProtectedRoute><LitigationOrders /></ProtectedRoute>} />
           <Route path='cancelledvendors' element={<CancelledVendor />} />
+          <Route path='paidvendors' element={<PaidVendors />} />
           <Route path='order/details/:orderId' element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
           <Route path='litigation/details/:orderId' element={<ProtectedRoute><Litigationdetails /></ProtectedRoute>} />
           <Route path='dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

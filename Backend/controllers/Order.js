@@ -2415,6 +2415,13 @@ export const updateCancelledVendorPaymentStatus = async (req, res) => {
     // Update payment status
     cancelledVendor.paymentStatus = paymentStatus;
 
+    // Set paidAt if changing to 'paid'
+    if (paymentStatus === 'paid') {
+      cancelledVendor.paidAt = new Date();
+    } else {
+      cancelledVendor.paidAt = null;
+    }
+
     // Add a note to track the change
     const userName = req.user?.name || 'Unknown User';
     cancelledVendor.vendor.notes = cancelledVendor.vendor.notes || [];
@@ -2433,5 +2440,78 @@ export const updateCancelledVendorPaymentStatus = async (req, res) => {
   } catch (error) {
     console.error('Error updating cancelled vendor payment status:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+export const getAllPaidVendors = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '' } = req.query;
+    const query = {
+      paymentStatus: 'paid', // Filter for paid payment status
+    };
+
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { 'vendor.businessName': { $regex: search, $options: 'i' } },
+        { 'vendor.phoneNumber': { $regex: search, $options: 'i' } },
+        { 'vendor.email': { $regex: search, $options: 'i' } },
+        { 'vendor.agentName': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // Fetch paid vendors with pagination
+    const paidVendors = await CanceledVendor.find(query)
+      .populate('orderId', 'clientName make model year order_id')
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    // Get total count for pagination
+    const totalVendors = await CanceledVendor.countDocuments(query);
+    const totalPages = Math.ceil(totalVendors / limit);
+
+    res.status(200).json({
+      paidVendors,
+      totalPages,
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    console.error('Error fetching paid vendors:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+export const addNoteToPaidVendor = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const { note } = req.body;
+
+    // Validate note
+    if (!note || typeof note !== 'string' || note.trim() === '') {
+      return res.status(400).json({ message: 'Note is required and must be a non-empty string' });
+    }
+
+    // Find paid vendor
+    const paidVendor = await CanceledVendor.findById(vendorId);
+    if (!paidVendor) {
+      return res.status(404).json({ message: 'Paid vendor not found' });
+    }
+
+    // Add note to vendor
+    paidVendor.vendor.notes = paidVendor.vendor.notes || [];
+    paidVendor.vendor.notes.push({
+      text: note.trim(),
+      createdAt: new Date(),
+    });
+
+    await paidVendor.save();
+
+    res.status(201).json({ message: 'Note added successfully', paidVendor });
+  } catch (error) {
+    console.error('Error adding note to paid vendor:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

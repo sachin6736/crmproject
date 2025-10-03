@@ -23,34 +23,33 @@ mongoose
 
       let modifiedCount = 0;
 
-      // Update each canceled vendor to add paymentStatus field
+      // Update each canceled vendor to add paidAt field if missing
       for (const vendor of allCanceledVendors) {
-        try {
-          const result = await CanceledVendor.updateOne(
-            { _id: vendor._id },
-            { 
-              $set: { 
-                paymentStatus: 'pending' // Initialize as 'pending'
-              } 
-            },
-            { 
-              // Only update if field doesn't exist
-              $setOnInsert: { paymentStatus: 'pending' }
+        // Check if paidAt field is missing (undefined or null)
+        if (vendor.paidAt === undefined || vendor.paidAt === null) {
+          try {
+            const result = await CanceledVendor.updateOne(
+              { _id: vendor._id },
+              { 
+                $set: { 
+                  paidAt: null // Initialize as null
+                } 
+              }
+            );
+            if (result.modifiedCount > 0) {
+              modifiedCount++;
+              console.log(`✅ Updated canceled vendor _id: ${vendor._id} with paidAt field`);
             }
-          );
-          if (result.modifiedCount > 0) {
-            modifiedCount++;
-            console.log(`✅ Updated canceled vendor _id: ${vendor._id} with paymentStatus field`);
-          } else {
-            console.log(`ℹ️ Canceled vendor _id: ${vendor._id} already has paymentStatus field`);
+          } catch (err) {
+            console.error(`❌ Error updating canceled vendor _id: ${vendor._id}`, err);
           }
-        } catch (err) {
-          console.error(`❌ Error updating canceled vendor _id: ${vendor._id}`, err);
+        } else {
+          console.log(`ℹ️ Canceled vendor _id: ${vendor._id} already has paidAt field`);
         }
       }
 
       console.log(
-        `✅ Successfully updated ${modifiedCount} canceled vendors with paymentStatus field.`
+        `✅ Successfully updated ${modifiedCount} canceled vendors with paidAt field.`
       );
     } catch (err) {
       console.error("❌ Error updating canceled vendors", err);
