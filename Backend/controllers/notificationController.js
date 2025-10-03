@@ -29,3 +29,30 @@ export const markAsRead = async (req, res) => {
     res.status(500).json({ message: 'Error marking notification as read' });
   }
 };
+
+export const deleteNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const notification = await Notification.findById(id);
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    // Ensure the user is authorized to delete this notification
+    if (notification.recipient.toString() !== userId) {
+      return res.status(403).json({ message: "Forbidden: You can only delete your own notifications" });
+    }
+
+    await Notification.findByIdAndDelete(id);
+    return res.status(200).json({ message: "Notification deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

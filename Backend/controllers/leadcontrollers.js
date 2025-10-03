@@ -434,32 +434,46 @@ export const createnotes = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { text } = req.body;
-    console.log("req.body", req.body);
-    console.log("Updating notes for Lead ID:", id);
-    const newNote = {
-      text,
-      createdAt: new Date(),
-    };
-    console.log("newnote", newNote);
-    const updatedLead = await Lead.findByIdAndUpdate(
-      id,
-      { $push: { notes: newNote } },
-      { new: true }
-    );
 
-    if (!updatedLead) {
-      return res.status(404).json({ error: "Lead not found" });
+    // Log user details for debugging
+    console.log('req.user:', req.user);
+    const name = req.user?.name;
+    console.log('name:', name);
+
+    // Validate text
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+      return res.status(400).json({ message: 'Text is required and must be a non-empty string' });
     }
 
-    res.status(200).json({
-      message: "Note added successfully",
-      lead: updatedLead,
+    // Validate req.user and req.user.name
+    if (!req.user || !req.user.name) {
+      return res.status(401).json({ message: 'User not authenticated or name not provided' });
+    }
+
+    // Find lead
+    const lead = await Lead.findById(id);
+    if (!lead) {
+      return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    // Add note to lead with concatenated text including user's name
+    const noteText = `${text.trim()} [${req.user.name}]`; // Concatenate text with user's name in brackets
+    lead.notes.push({ 
+      text: noteText, 
+      createdAt: new Date() 
     });
+    await lead.save();
+
+    // Return the updated lead (add population if needed, similar to the order example)
+    const updatedLead = await Lead.findById(id)
+      // .populate('relevant fields if any'); // Uncomment and adjust as needed
+
+    res.status(201).json({ message: 'Note added successfully', lead: updatedLead });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Error updating notes" });
+    console.error('Error adding note to lead:', error);
+    res.status(500).json({ message: 'Server error while adding note' });
   }
-}; 
+};
 
 export const deletenotes = async (req, res, next) => {
   try {

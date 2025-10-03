@@ -19,15 +19,17 @@ export const getCustomerRelationsOrders = async (req, res) => {
       };
     }
 
-    const orders = await Order.find(query).populate('leadId salesPerson customerRelationsPerson procurementPerson');
+    const orders = await Order.find(query)
+      .populate('leadId salesPerson customerRelationsPerson procurementPerson')
+      .sort({ createdAt: -1 }) // Sort by createdAt in descending order (newest first)
+      .limit(4); // Limit to the latest 4 orders
     res.status(200).json(orders);
-    console.log("orders",orders)
+    console.log("orders", orders);
   } catch (error) {
     console.error('Error fetching customer relations orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 export const getCustomerRelationsOrderStatusComparison = async (req, res) => {
   try {
     const { selectedMonth, selectedYear, customerRelationsPerson } = req.query;

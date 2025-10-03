@@ -19,7 +19,10 @@ export const getProcurementOrders = async (req, res) => {
       };
     }
 
-    const orders = await Order.find(query).populate('leadId salesPerson customerRelationsPerson procurementPerson');
+    const orders = await Order.find(query)
+      .populate('leadId salesPerson customerRelationsPerson procurementPerson')
+      .sort({ createdAt: -1 }) // Sort by createdAt in descending order (newest first)
+      .limit(4); // Limit to the latest 4 orders
     res.status(200).json(orders);
   } catch (error) {
     console.error('Error fetching procurement orders:', error);

@@ -17,6 +17,7 @@ import {
   X,
   Clock,
   Gavel,
+  Trash2, // Added Trash2 icon for delete button
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -215,6 +216,21 @@ function Home() {
     }
   };
 
+  const deleteNotification = async (notificationId, e) => {
+    e.stopPropagation(); // Prevent triggering the navigation on click
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/Notification/${notificationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete notification');
+      setNotifications((prev) => prev.filter((notif) => notif._id !== notificationId));
+      toast.success('Notification deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete notification');
+    }
+  };
+
   const statusOptions = [
     {
       value: 'Available',
@@ -249,7 +265,7 @@ function Home() {
       icon: <HomeIcon className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         if (loading || !user) return;
-        if (user.role === 'admin'|| user.role === 'viewer') {
+        if (user.role === 'admin' || user.role === 'viewer') {
           navigate('/home/dashboard');
         } else if (user.role === 'procurement') {
           navigate('/home/procurementdashboard');
@@ -291,13 +307,6 @@ function Home() {
         setShowSidebar(false);
       },
     },
-    // {
-    //   label: 'Your Account',
-    //   icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
-    //   onClick: () => {
-    //     setShowSidebar(false);
-    //   },
-    // },
   ];
 
   if (loading) {
@@ -441,17 +450,25 @@ function Home() {
                             {formatDate(notification.createdAt)}
                           </p>
                         </div>
-                        {!notification.isRead && (
+                        <div className='flex items-center space-x-2'>
+                          {!notification.isRead && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markNotificationAsRead(notification._id);
+                              }}
+                              className='text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-500'
+                            >
+                              <CheckCircle className='w-4 h-4' />
+                            </button>
+                          )}
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markNotificationAsRead(notification._id);
-                            }}
-                            className='ml-2 text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-500'
+                            onClick={(e) => deleteNotification(notification._id, e)}
+                            className='text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600'
                           >
-                            <CheckCircle className='w-4 h-4' />
+                            <Trash2 className='w-4 h-4' />
                           </button>
-                        )}
+                        </div>
                       </div>
                     ))
                   )}

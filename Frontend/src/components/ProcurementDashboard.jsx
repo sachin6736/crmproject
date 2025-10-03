@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Trash2,
   TrendingUp,
   DollarSign,
   Send,
@@ -250,33 +249,6 @@ const ProcurementDashboard = () => {
     fetchComparisonData();
   }, [user, selectedMonth, selectedYear]);
 
-  const handleDeleteOrder = async (orderId) => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/Order/delete/${orderId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-      if (response.ok) {
-        toast.success("Order deleted successfully");
-        setOrders((prevOrders) =>
-          prevOrders.filter((order) => order.order_id !== orderId)
-        );
-        setPoSentOrders((prevOrders) =>
-          prevOrders.filter((order) => order.order_id !== orderId)
-        );
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Failed to delete order");
-      }
-    } catch (error) {
-      toast.error("Network error: Unable to delete order");
-      console.error("Error deleting order:", error);
-    }
-  };
-
   return (
     <div className="relative w-full min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <LoadingOverlay isLoading={loading || chartLoading} />
@@ -501,25 +473,9 @@ const ProcurementDashboard = () => {
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 overflow-x-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Recent Procurement Orders
-                </h2>
-                <div className="space-x-2 flex">
-                  <button
-                    className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    disabled={loading || chartLoading}
-                  >
-                    Filter
-                  </button>
-                  <button
-                    className="px-4 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    disabled={loading || chartLoading}
-                  >
-                    See all
-                  </button>
-                </div>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Recent Procurement Orders
+              </h2>
               <table className="min-w-full table-auto text-sm sm:text-base">
                 <thead>
                   <tr className="text-left text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
@@ -528,7 +484,6 @@ const ProcurementDashboard = () => {
                     <th className="p-2">Vendor Name</th>
                     <th className="p-2">PO Status</th>
                     <th className="p-2">Status</th>
-                    <th className="p-2">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -567,12 +522,6 @@ const ProcurementDashboard = () => {
                         >
                           {order.status.replace(/([A-Z])/g, " $1").trim()}
                         </span>
-                      </td>
-                      <td className="p-2">
-                        <Trash2
-                          className="w-4 h-4 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
-                          onClick={() => !(loading || chartLoading) && handleDeleteOrder(order.order_id)}
-                        />
                       </td>
                     </tr>
                   ))}
