@@ -68,15 +68,13 @@ const OrderDetails = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
-  const [showAssociateVendorModal, setShowAssociateVendorModal] =
-    useState(false);
+  const [showAssociateVendorModal, setShowAssociateVendorModal] = useState(false);
   const [showVendorDetailsModal, setShowVendorDetailsModal] = useState(false);
   const [showEditVendorModal, setShowEditVendorModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
-  const [showProcurementNotesModal, setShowProcurementNotesModal] =
-    useState(false);
+  const [showProcurementNotesModal, setShowProcurementNotesModal] = useState(false);
   const [showCostModal, setShowCostModal] = useState(false);
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
   const [showShipmentModal, setShowShipmentModal] = useState(false);
@@ -93,19 +91,19 @@ const OrderDetails = () => {
     rating: "",
   });
   const [isProcurementModalOpen, setIsProcurementModalOpen] = useState(false);
-const [procurementFormData, setProcurementFormData] = useState({
-  vendorInformedDate: "",
-  sentPicturesToVendor: false,
-  sentDiagnosticReportToVendor: false,
-  yardAgreedReturnShipping: false,
-  yardAgreedReplacement: false,
-  yardAgreedReplacementShippingCost: false,
-  replacementPartReadyDate: "",
-  additionalCostReplacementPart: "",
-  additionalCostReplacementShipping: "",
-});
+  const [procurementFormData, setProcurementFormData] = useState({
+    vendorInformedDate: "",
+    sentPicturesToVendor: false,
+    sentDiagnosticReportToVendor: false,
+    yardAgreedReturnShipping: false,
+    yardAgreedReplacement: false,
+    yardAgreedReplacementShippingCost: false,
+    replacementPartReadyDate: "",
+    additionalCostReplacementPart: "",
+    additionalCostReplacementShipping: "",
+  });
   const [isLitigationDropdownOpen, setIsLitigationDropdownOpen] = useState(false);
-const [litigationLoading, setLitigationLoading] = useState(false);
+  const [litigationLoading, setLitigationLoading] = useState(false);
   const [vendorDetailsForm, setVendorDetailsForm] = useState({
     businessName: "",
     phoneNumber: "",
@@ -178,7 +176,6 @@ const [litigationLoading, setLitigationLoading] = useState(false);
   const costButtonRef = useRef(null);
   const editOrderButtonRef = useRef(null);
   const shipmentButtonRef = useRef(null);
-  
 
   const fetchOrderData = async () => {
     setLoading(true);
@@ -237,9 +234,7 @@ const [litigationLoading, setLitigationLoading] = useState(false);
     const partCost = parseFloat(costForm.partCost) || 0;
     const shippingCost = parseFloat(costForm.shippingCost) || 0;
     const grossProfit = parseFloat(costForm.grossProfit) || 0;
-    const calculatedTotalCost = (partCost + shippingCost + grossProfit).toFixed(
-      2
-    );
+    const calculatedTotalCost = (partCost + shippingCost + grossProfit).toFixed(2);
     setCostForm((prev) => ({
       ...prev,
       totalCost: calculatedTotalCost,
@@ -380,7 +375,6 @@ const [litigationLoading, setLitigationLoading] = useState(false);
         closeShipmentForm();
       }
     };
-
     if (
       showNotesModal ||
       showProcurementNotesModal ||
@@ -401,7 +395,6 @@ const [litigationLoading, setLitigationLoading] = useState(false);
     showShipmentModal,
   ]);
 
-  // Vendor form handlers
   const handleVendorFormChange = (e) => {
     const { name, value } = e.target;
     setVendorForm((prev) => ({ ...prev, [name]: value }));
@@ -1540,6 +1533,23 @@ const closeProcurementModal = () => {
     if (!activeVendor || !activeVendor.totalCost || !order.amount) return "N/A";
     return calculateProfitMargin(activeVendor.totalCost, order.amount);
   };
+
+  // All your handler functions remain exactly the same
+  // (handleVendorFormChange, handleVendorFormSubmit, handleSendShipmentDetails, 
+  // openProcurementModal, handleProcurementFormChange, handleProcurementFormSubmit, 
+  // closeProcurementModal, handleLitigationClick, handleLitigationSelect, 
+  // handleUpdatePOStatus, handleCancelPO, handleVendorDetailsFormChange, 
+  // handleVendorDetailsFormSubmit, handleEditVendorClick, handleEditVendorFormChange, 
+  // handleEditVendorFormSubmit, handleSelectVendor, handleToggleVendorConfirmation, 
+  // confirmAction, handleConfirmPayment, handleCancelVendorWithReason, 
+  // handleSendPOClick, handlePOConfirmed, handlePictureReceived, handlePictureSent, 
+  // handleNotesFormChange, handleNotesFormSubmit, closeNotesForm, 
+  // handleProcurementNotesFormChange, handleProcurementNotesFormSubmit, closeProcurementNotesForm, 
+  // handleCostFormChange, handleCostFormSubmit, closeCostForm, 
+  // handleEditOrderFormChange, handleEditOrderFormSubmit, closeEditOrderForm, 
+  // handleShipmentFormChange, handleShipmentFormSubmit, closeShipmentForm, 
+  // handleShipmentDelivered, handleExportToExcel, calculateProfitMargin, getVendorBackgroundClass, getActiveVendorProfitMargin)
+  // ... (keep all of them unchanged from your original code)
 
   return (
     <div className="p-4 sm:p-6 min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -2690,117 +2700,111 @@ const closeProcurementModal = () => {
             </p>
           )}
         </div>
+
+        {/* Sidebar with Action Buttons */}
         <div className="lg:w-80 w-full">
           <div className="sticky top-6 space-y-4">
-            {["procurement", "admin"].includes(user?.role) && (
+            {/* All action buttons hidden when status is Delivered */}
+            {order?.status !== "Delivered" && (
               <>
-                <button
-                  onClick={() => setShowAddVendorModal(true)}
-                  className="w-full px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm sm:text-base"
-                >
-                  Add New Vendor
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAssociateVendorModal(true);
-                  }}
-                  className="w-full px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm sm:text-base"
-                >
-                  Associate Vendor
-                </button>
+                {["procurement", "admin"].includes(user?.role) && (
+                  <>
+                    <button
+                      onClick={() => setShowAddVendorModal(true)}
+                      className="w-full px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm sm:text-base"
+                    >
+                      Add New Vendor
+                    </button>
+                    <button
+                      onClick={() => setShowAssociateVendorModal(true)}
+                      className="w-full px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm sm:text-base"
+                    >
+                      Associate Vendor
+                    </button>
+                  </>
+                )}
+                {["procurement", "admin"].includes(user?.role) && (
+                  <button
+                    ref={notesButtonRef}
+                    onClick={() => setShowNotesModal(!showNotesModal)}
+                    className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
+                  >
+                    Add Note
+                  </button>
+                )}
+                {["procurement", "admin"].includes(user?.role) && (
+                  <button
+                    ref={procurementNotesButtonRef}
+                    onClick={() => setShowProcurementNotesModal(!showProcurementNotesModal)}
+                    className="w-full px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors text-sm sm:text-base"
+                  >
+                    Add Procurement Note
+                  </button>
+                )}
+                {["procurement", "admin"].includes(user?.role) && (
+                  <button
+                    ref={costButtonRef}
+                    onClick={() => setShowCostModal(!showCostModal)}
+                    className="w-full px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-md hover:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors text-sm sm:text-base"
+                  >
+                    Edit Costs
+                  </button>
+                )}
+                {["procurement", "admin"].includes(user?.role) && (
+                  <button
+                    ref={shipmentButtonRef}
+                    onClick={() => setShowShipmentModal(!showShipmentModal)}
+                    className="w-full px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-md hover:bg-orange-700 dark:hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm sm:text-base"
+                  >
+                    Add Shipment Details
+                  </button>
+                )}
+                {["customer_relations", "admin"].includes(user?.role) && (
+                  <button
+                    ref={editOrderButtonRef}
+                    onClick={() => setShowEditOrderModal(!showEditOrderModal)}
+                    className="w-full px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors text-sm sm:text-base"
+                  >
+                    Edit Order Details
+                  </button>
+                )}
+                {["procurement", "admin"].includes(user?.role) && order?.status === "Intransit" && (
+                  <button
+                    onClick={handleShipmentDelivered}
+                    className={`w-full px-4 py-2 text-white rounded-md transition-colors text-sm sm:text-base ${
+                      actionLoading || !order?.trackingNumber
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    }`}
+                    disabled={actionLoading || !order?.trackingNumber}
+                  >
+                    {actionLoading ? (
+                      <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-teal-200" />
+                    ) : (
+                      "Shipment Delivered"
+                    )}
+                  </button>
+                )}
               </>
             )}
-             {["procurement","admin"].includes(user?.role) && (
-            <button
-              ref={notesButtonRef}
-              onClick={() => setShowNotesModal(!showNotesModal)}
-              className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
-            >
-              Add Note
-            </button>
-            )}
-            {["procurement", "admin"].includes(user?.role) && (
+
+            {/* Export button stays visible after delivery */}
+            {user?.role === "admin" && (
               <button
-                ref={procurementNotesButtonRef}
-                onClick={() =>
-                  setShowProcurementNotesModal(!showProcurementNotesModal)
-                }
-                className="w-full px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors text-sm sm:text-base"
+                onClick={handleExportToExcel}
+                className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
+                disabled={loading || !order}
               >
-                Add Procurement Note
+                Download as Excel
               </button>
             )}
-            {["procurement", "admin"].includes(user?.role) && (
-              <button
-                ref={costButtonRef}
-                onClick={() => setShowCostModal(!showCostModal)}
-                className="w-full px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-md hover:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors text-sm sm:text-base"
-              >
-                Edit Costs
-              </button>
-            )}
-            {["procurement", "admin"].includes(user?.role) && (
-              <button
-                ref={shipmentButtonRef}
-                onClick={() => setShowShipmentModal(!showShipmentModal)}
-                className="w-full px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-md hover:bg-orange-700 dark:hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm sm:text-base"
-              >
-                Add Shipment Details
-              </button>
-            )}
-            {["customer_relations", "admin"].includes(user?.role) && (
-              <button
-                ref={editOrderButtonRef}
-                onClick={() => setShowEditOrderModal(!showEditOrderModal)}
-                className="w-full px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors text-sm sm:text-base"
-              >
-                Edit Order Details
-              </button>
-            )}
-            {["procurement", "admin"].includes(user?.role) &&
-              (order?.status === "Intransit" ||
-                order?.status === "Delivered") && (
-                <button
-                  onClick={handleShipmentDelivered}
-                  className={`w-full px-4 py-2 text-white rounded-md transition-colors text-sm sm:text-base ${
-                    actionLoading ||
-                    !order?.trackingNumber ||
-                    order.status === "Delivered"
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  }`}
-                  disabled={
-                    actionLoading ||
-                    !order?.trackingNumber ||
-                    order.status === "Delivered"
-                  }
-                  aria-label="Mark shipment as delivered"
-                >
-                  {actionLoading ? (
-                    <FullPageLoader
-                      size="w-4 h-4"
-                      color="text-white"
-                      fill="fill-teal-200"
-                    />
-                  ) : (
-                    "Shipment Delivered"
-                  )}
-                </button>
-              )}
-             {user?.role === "admin" && (
-            <button
-              onClick={handleExportToExcel}
-              className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
-              disabled={loading || !order}
-            >
-              Download as Excel
-            </button>
-             )}
           </div>
         </div>
       </div>
-      {/* Add Vendor Modal */}
-      <Modal
+
+      {/* All your modals (Add Vendor, Associate Vendor, etc.) remain unchanged */}
+      {/* ... (keep your original modal JSX) ... */}
+            <Modal
         isOpen={showAddVendorModal}
         onClose={() => setShowAddVendorModal(false)}
         title="Add New Vendor"
@@ -4047,3 +4051,11 @@ const closeProcurementModal = () => {
 };
 
 export default OrderDetails;
+
+
+
+
+
+
+
+
