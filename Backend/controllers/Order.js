@@ -779,28 +779,38 @@ export const updateVendorPOStatus = async (req, res) => {
         createdAt: new Date(),
       });
     } else if (poStatus === "PO Canceled") {
-      // Check if any other vendor has poStatus = "PO Pending"
       const hasPendingVendor = order.vendors.some(
         (v) => v._id.toString() !== vendorId && v.poStatus === "PO Pending"
       );
-      // Set order status
+    
       const newStatus = hasPendingVendor ? "PO Pending" : "Locate Pending";
       order.status = newStatus;
-      // Add notes for order status change
-      const statusNote = `Status changed to ${newStatus} due to PO cancelation from ${vendor.businessName} by ${userName}`;
-      order.procurementnotes.push({
-        text: statusNote,
-        createdAt: new Date(),
-      });
-      order.notes.push({
-        text: statusNote,
-        createdAt: new Date(),
-      });
+    
+      // Reset picture-related flags
+      order.picturesReceivedFromYard = false;
+      order.picturesSentToCustomer = false;
+    
+      const userName = req.user?.name || "Unknown User";
+    
+      // Status change note
+      const statusNote = `Status changed to ${newStatus} due to PO cancellation from ${vendor.businessName} by ${userName}`;
+      order.procurementnotes.push({ text: statusNote, createdAt: new Date() });
+      order.notes.push({ text: statusNote, createdAt: new Date() });
+    
+      // Picture reset note (very useful for traceability)
+      const pictureResetNote = `Picture flags reset → picturesReceivedFromYard: false, picturesSentToCustomer: false (PO canceled for ${vendor.businessName})`;
+      order.procurementnotes.push({ text: pictureResetNote, createdAt: new Date() });
+      // You can skip adding to general notes if you think it's too noisy
+      // order.notes.push({ text: pictureResetNote, createdAt: new Date() });
     }
-
+    
     // Save the order
     await order.save();
-    return res.status(200).json({ message: `Vendor PO updated to ${poStatus} successfully`, order });
+    
+    return res.status(200).json({
+      message: `Vendor PO updated to ${poStatus} successfully`,
+      order
+    });
   } catch (error) {
     console.error("Error updating vendor PO status:", error);
     return res.status(500).json({ message: "Failed to update vendor PO status", error: error.message });
@@ -2171,6 +2181,7 @@ export const markShipmentDelivered = async (req, res) => {
 export const cancelVendor = async (req, res) => {
   const { orderId, cancellationReason } = req.body;
   console.log("cancel vendor working");
+
   try {
     // Validate input
     if (!cancellationReason || typeof cancellationReason !== "string") {
@@ -2196,7 +2207,7 @@ export const cancelVendor = async (req, res) => {
     // Extract vendor details
     const vendorToCancel = order.vendors[vendorIndex];
 
-    // Create a new CanceledVendor document
+    // Create a new CanceledVendor document (assuming model exists)
     const canceledVendor = new CanceledVendor({
       orderId: order._id,
       vendor: {
@@ -2214,15 +2225,39 @@ export const cancelVendor = async (req, res) => {
     order.vendors[vendorIndex].isConfirmed = false;
     order.vendors[vendorIndex].poStatus = "PO Canceled";
 
+    // ────────────────────────────────────────────────
+    // Reset picture flags when vendor/PO is canceled
+    const wasPicturesReceived = order.picturesReceivedFromYard;
+    const wasPicturesSent = order.picturesSentToCustomer;
+
+    order.picturesReceivedFromYard = false;
+    order.picturesSentToCustomer = false;
+    // ────────────────────────────────────────────────
+
     // Determine the new order status
     const hasPoPendingVendor = order.vendors.some(
       (vendor, index) => index !== vendorIndex && vendor.poStatus === "PO Pending"
     );
     const newStatus = hasPoPendingVendor ? "PO Pending" : "Locate Pending";
 
-    // Update order status and add a note if the status changes
-    if (order.status !== newStatus) {
-      const statusNote = `Order status changed from ${order.status} to ${newStatus} due to vendor cancellation`;
+    // Prepare notes
+    const userName = req.user?.name || "System";
+    const cancellationNote = `Vendor ${vendorToCancel.businessName} canceled: ${cancellationReason} by ${userName}`;
+    const statusNote = order.status !== newStatus
+      ? `Order status changed from ${order.status} to ${newStatus} due to vendor cancellation`
+      : null;
+
+    const pictureResetNote = (wasPicturesReceived || wasPicturesSent)
+      ? `Picture flags reset → Received from Yard: false, Sent to Customer: false (previously ${wasPicturesReceived ? 'true' : 'false'}/${wasPicturesSent ? 'true' : 'false'}) due to vendor cancellation`
+      : null;
+
+    // Add notes
+    order.notes.push({
+      text: cancellationNote,
+      createdAt: new Date(),
+    });
+
+    if (statusNote) {
       order.notes.push({
         text: statusNote,
         createdAt: new Date(),
@@ -2230,25 +2265,32 @@ export const cancelVendor = async (req, res) => {
       order.status = newStatus;
     }
 
-    // Add a note for vendor cancellation
-    order.notes.push({
-      text: `Vendor ${vendorToCancel.businessName} canceled: ${cancellationReason}`,
-      createdAt: new Date(),
-    });
+    if (pictureResetNote) {
+      order.notes.push({
+        text: pictureResetNote,
+        createdAt: new Date(),
+      });
+      // Optional: also add to procurementnotes if you want separate tracking
+      order.procurementnotes.push({
+        text: pictureResetNote,
+        createdAt: new Date(),
+      });
+    }
 
-    // Save both the canceled vendor and the updated order
+    // Save both documents
     await Promise.all([canceledVendor.save(), order.save()]);
 
     return res.status(200).json({
       message: "Vendor canceled successfully",
       canceledVendor,
+      updatedOrderStatus: order.status,
+      picturesReset: true,
     });
   } catch (error) {
     console.error("Error canceling vendor:", error);
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 //AllCancelledVendors
 export const getAllCancelledVendors = async (req, res) => {
