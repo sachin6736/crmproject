@@ -192,19 +192,7 @@ export const reassign = async (req, res, next) => {
   }
 };
 
-export const getCurrentUser = async (req, res) => {
-  console.log("working")
-  try {
-    const user = await User.findById(req.user.id).select('-password'); // Exclude sensitive fields
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.status(200).json({ user });
-  } catch (error) {
-    console.log('Error fetching user:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+
 
 export const updateUserAccess = async (req, res, next) => {
   if (req.user.role !== "admin") {
@@ -258,5 +246,19 @@ export const updateEditCostAccess = async (req, res) => {
   } catch (error) {
     console.error("Error updating edit cost access:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getCurrentUser = async (req, res) => {
+  console.log("working")
+  try {
+    const user = await User.findById(req.user.id).select('-password'); // Exclude sensitive fields
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ user });
+  } catch (error) {
+    console.log('Error fetching user:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
