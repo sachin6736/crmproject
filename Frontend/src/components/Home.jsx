@@ -300,7 +300,7 @@ function Home() {
       },
     },
     {
-      label: 'Cancelled Vendors',
+      label: 'Pending Vendor Refund',
       icon: <PenTool className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         navigate('/home/cancelledvendors');
@@ -308,10 +308,18 @@ function Home() {
       },
     },
     {
-      label: 'Paid Vendors History',
+      label: 'Vendor Refund History',
       icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         navigate('/home/paidvendors');
+        setShowSidebar(false);
+      },
+    },
+    {
+      label: 'Paid Vendors History',
+      icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        navigate('/home/paidvendorshistory');
         setShowSidebar(false);
       },
     },

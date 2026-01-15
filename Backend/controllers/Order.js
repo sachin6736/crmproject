@@ -9,7 +9,8 @@ import sendEmail from '../sendEmail.js';
 import CustomerRelationsRoundRobinState from '../models/customerRelationsRoundRobinState.js';
 import ProcurementRoundRobinState from '../models/procurementRoundRobinState.js';
 import VendorSimple from '../models/VendorSimple.js.js';
-import CanceledVendor from '../models/cancelledVendor.js'
+import CanceledVendor from '../models/cancelledVendor.js';
+import PaidVendor from "../models/paidVendors.js"; // ← New import
 
 export const createOrder = async (req, res) => {
   try {
@@ -817,67 +818,105 @@ export const updateVendorPOStatus = async (req, res) => {
   }
 };
 
+
 export const confirmVendorPayment = async (req, res) => {
   try {
-    // Check user authorization
     if (!req.user || req.user.Access !== true) {
-      return res.status(403).json({ message: "Access denied: User does not have permission to confirm payment" });
+      return res.status(403).json({ message: "Access denied" });
     }
 
     const { orderId, vendorId } = req.params;
 
-    // Find the order
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    // Find the vendor
     const vendor = order.vendors.find((v) => v._id.toString() === vendorId);
     if (!vendor) {
-      return res.status(404).json({ message: "Vendor not found for this order" });
+      return res.status(404).json({ message: "Vendor not found" });
     }
 
-    // Check if the order status allows payment confirmation
     if (order.status !== "Vendor Payment Pending") {
-      return res.status(400).json({ message: "Payment can only be confirmed when order status is 'Vendor Payment Pending'" });
+      return res.status(400).json({
+        message: "Payment can only be confirmed when status is 'Vendor Payment Pending'",
+      });
     }
 
-    // Update order status to Vendor Payment Confirmed
-    order.status = "Vendor Payment Confirmed";
+    // Prevent duplicate entry (optional but safe)
+    const alreadyPaid = await PaidVendor.findOne({
+      orderId: order._id,
+      "vendor._id": vendor._id,
+    });
+    if (alreadyPaid) {
+      return res.status(400).json({ message: "This vendor payment was already recorded" });
+    }
 
-    // Set vendor isConfirmed to true
+    // Update order
+    order.status = "Vendor Payment Confirmed";
     vendor.isConfirmed = true;
 
-    // Add vendor note for payment confirmation
     const userName = req.user?.name || "Unknown User";
-    vendor.notes = vendor.notes || [];
+
     vendor.notes.push({
       text: `Payment confirmed by ${userName}`,
       createdAt: new Date(),
     });
 
-    // Add procurement note for payment confirmation
     order.procurementnotes.push({
       text: `Payment confirmed for ${vendor.businessName} by ${userName}`,
       createdAt: new Date(),
     });
 
-    // Add order note for payment confirmation
     order.notes.push({
       text: `Order status changed to Vendor Payment Confirmed for ${vendor.businessName} by ${userName}`,
       createdAt: new Date(),
     });
 
-    // Save the order
+    // ← NEW: Save to PaidVendor History
+    await PaidVendor.create({
+      orderId: order._id,
+      order_id: order.order_id,
+      clientName: order.clientName,
+      make: order.make,
+      model: order.model,
+      year: order.year,
+
+      vendor: {
+        businessName: vendor.businessName,
+        phoneNumber: vendor.phoneNumber,
+        email: vendor.email,
+        agentName: vendor.agentName,
+        costPrice: vendor.costPrice,
+        shippingCost: vendor.shippingCost,
+        corePrice: vendor.corePrice || 0,
+        totalCost: vendor.totalCost,
+        warranty: vendor.warranty,
+        mileage: vendor.mileage,
+        rating: vendor.rating || 0,
+        notes: vendor.notes, // Includes all notes up to now, including the new one
+      },
+
+      paidBy: {
+        userId: req.user._id,
+        name: userName,
+      },
+
+      paidAt: new Date(),
+    });
+
     await order.save();
 
-    return res.status(200).json({ message: "Vendor payment confirmed successfully", order });
+    return res.status(200).json({
+      message: "Vendor payment confirmed and recorded in history successfully",
+      order,
+    });
   } catch (error) {
     console.error("Error confirming vendor payment:", error);
     return res.status(500).json({ message: "Failed to confirm vendor payment", error: error.message });
   }
 };
+
 
 export const updateVendorDetails = async (req, res) => {
   try {
@@ -2557,3 +2596,56 @@ export const addNoteToPaidVendor = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
+// getpaidVendorsHistory
+
+
+export const getPaidVendorHistory = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    let query = {};
+
+    if (search.trim()) {
+      query.$text = { $search: search.trim() };
+    }
+
+    const paidVendors = await PaidVendor.find(query)
+      .sort({ paidAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    const totalVendors = await PaidVendor.countDocuments(query);
+    const totalPages = Math.ceil(totalVendors / limitNum);
+
+    // Format response to match your frontend expectations
+    const formattedVendors = paidVendors.map((pv) => ({
+      _id: pv._id,
+      orderId: {
+        order_id: pv.order_id,
+        clientName: pv.clientName,
+        make: pv.make,
+        model: pv.model,
+        year: pv.year,
+      },
+      vendor: pv.vendor,
+      paidAt: pv.paidAt,
+    }));
+
+    res.status(200).json({
+      paidVendors: formattedVendors,
+      totalPages,
+      currentPage: pageNum,
+      totalVendors,
+    });
+  } catch (error) {
+    console.error("Error fetching paid vendor history:", error);
+    res.status(500).json({ message: "Failed to fetch paid vendor history" });
+  }
+};
+

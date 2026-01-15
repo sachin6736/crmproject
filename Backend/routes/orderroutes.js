@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails,cancelVendor, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent,markShipmentDelivered,getAllCancelledVendors,addNoteToCancelledVendor,setOrderToLitigation,updateCancelledVendorPaymentStatus,getAllPaidVendors,addNoteToPaidVendor} from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails,cancelVendor, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent,markShipmentDelivered,getAllCancelledVendors,addNoteToCancelledVendor,setOrderToLitigation,updateCancelledVendorPaymentStatus,getAllPaidVendors,addNoteToPaidVendor,getPaidVendorHistory } from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -37,6 +37,8 @@ router.patch('/litigation/:orderId',protect,setOrderToLitigation);
 router.patch('/cancelledvendor/:vendorId/paymentStatus', protect, updateCancelledVendorPaymentStatus); // New route for payment status update
 router.get('/paidvendorlist', protect, getAllPaidVendors);
 router.post('/paidvendor/:vendorId/notes', protect, addNoteToPaidVendor);
+// routes/orderRoutes.js
+router.get('/paidvendorhistory', protect, getPaidVendorHistory);
 
 
 export default router;
