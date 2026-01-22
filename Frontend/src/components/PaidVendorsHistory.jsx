@@ -63,7 +63,7 @@ const PaidVendors = () => {
       } finally {
         setLoadingUser(false);
       }
-    };
+    }
     fetchUser();
   }, [navigate]);
 
