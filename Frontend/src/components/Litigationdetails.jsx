@@ -251,7 +251,7 @@ const LitigationDetails = () => {
               </div>
 
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
-                <h2 className="text-xl sm:text-2xl font-semibold mb-4">Customer Information</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold mb-4">Customereee Information</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="font-medium text-gray-700 dark:text-gray-300">Name:</p>
