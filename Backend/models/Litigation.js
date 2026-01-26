@@ -1,57 +1,65 @@
 import mongoose from "mongoose";
 
-const litigationSchema = new mongoose.Schema({
-    orderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Order',
-      required: true,
-      index: true
-    },
-    deliveryDate: {
-      type: Date,
-      required: false
-    },
-    installationDate: {
-      type: Date,
-      required: false
-    },
-    problemOccurredDate: {
-      type: Date,
-      required: false
-    },
-    problemInformedDate: {
-      type: Date,
-      required: false
-    },
-    receivedPictures: {
-      type: Boolean,
-      default: false
-    },
-    receivedDiagnosticReport: {
-      type: Boolean,
-      default: false
-    },
-    problemDescription: {
-      type: String,
-      trim: true,
-      required: false
-    },
-    resolutionNotes: {
-      type: String,
-      trim: true,
-      required: false
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }, {
-    timestamps: true // Automatically updates createdAt and updatedAt
-  });
+const litigationHistoryEntry = new mongoose.Schema({
+  // Snapshot of previous values
+  deliveryDate:          { type: Date },
+  installationDate:      { type: Date },
+  problemOccurredDate:   { type: Date },
+  problemInformedDate:   { type: Date },
+  receivedPictures:      { type: Boolean },
+  receivedDiagnosticReport: { type: Boolean },
+  problemDescription:    { type: String, trim: true },
+  resolutionNotes:       { type: String, trim: true },
 
-  const Litigation = mongoose.model("Litigation",litigationSchema);
-  export default Litigation;
+  // Who & when
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: false,           // not required → old entries won't break
+  },
+  updatedByName: {
+    type: String,
+    required: false,
+    default: "System",
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+
+  // Nice to have: quick summary of what changed
+  changeSummary: {
+    type: String,
+    trim: true,
+  },
+});
+
+const litigationSchema = new mongoose.Schema({
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order",
+    required: true,
+    index: true,
+  },
+
+  // Current (latest) values
+  deliveryDate:          { type: Date },
+  installationDate:      { type: Date },
+  problemOccurredDate:   { type: Date },
+  problemInformedDate:   { type: Date },
+  receivedPictures:      { type: Boolean, default: false },
+  receivedDiagnosticReport: { type: Boolean, default: false },
+  problemDescription:    { type: String, trim: true, default: "" },
+  resolutionNotes:       { type: String, trim: true, default: "" },
+
+  // History array
+  history: [litigationHistoryEntry],
+
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+}, {
+  timestamps: true,
+});
+
+const Litigation = mongoose.model("Litigation", litigationSchema);
+export default Litigation;

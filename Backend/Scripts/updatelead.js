@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Lead from "../models/lead.js"; // Adjust path to your Lead model
+import Litigation from "../models/Litigation.js"; // adjust path
 
 mongoose
   .connect(
@@ -7,48 +7,41 @@ mongoose
     { useNewUrlParser: true, useUnifiedTopology: true }
   )
   .then(async () => {
-    console.log("✅ Connected to MongoDB");
+    console.log("Connected to MongoDB");
 
     try {
-      // Find all leads where importantDates contains strings (old schema)
-      const leads = await Lead.find({
-        importantDates: { $elemMatch: { $type: "string" } },
+      // Find documents where history field is missing or null
+      const docsToUpdate = await Litigation.find({
+        $or: [
+          { history: { $exists: false } },
+          { history: null }
+        ]
       });
 
-      console.log(`Found ${leads.length} leads to update`);
+      console.log(`Found ${docsToUpdate.length} Litigation docs to migrate`);
 
-      // Update each lead
-      const updatePromises = leads.map(async (lead) => {
-        // Convert array of strings to array of objects
-        const updatedDates = lead.importantDates.map((date) => ({
-          date: date,
-          note: "", // Default to empty string for notes
-        }));
+      if (docsToUpdate.length === 0) {
+        console.log("All documents already have history field → nothing to do");
+        return;
+      }
 
-        // Update the lead with the new importantDates structure
-        return Lead.updateOne(
-          { _id: lead._id },
-          { $set: { importantDates: updatedDates } }
-        );
-      });
-
-      // Execute all updates
-      const results = await Promise.all(updatePromises);
-      const modifiedCount = results.reduce(
-        (sum, result) => sum + (result.modifiedCount || 0),
-        0
+      // Add history: [] to each
+      const promises = docsToUpdate.map(doc =>
+        Litigation.updateOne(
+          { _id: doc._id },
+          { $set: { history: [] } }
+        )
       );
 
-      console.log(
-        `✅ Updated ${modifiedCount} leads with new importantDates structure`
-      );
-    } catch (error) {
-      console.error("❌ Error updating leads:", error);
+      const results = await Promise.all(promises);
+      const modified = results.reduce((sum, r) => sum + (r.modifiedCount || 0), 0);
+
+      console.log(`Successfully added history: [] to ${modified} documents`);
+    } catch (err) {
+      console.error("Migration failed:", err);
     } finally {
       await mongoose.disconnect();
-      console.log("✅ Disconnected from MongoDB");
+      console.log("Disconnected");
     }
   })
-  .catch((err) => {
-    console.error("❌ Error connecting to MongoDB:", err);
-  });
+  .catch(err => console.error("Connection failed:", err));

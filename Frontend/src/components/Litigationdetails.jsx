@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "../context/ThemeContext";
-import { ArrowLeft, ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
 import LoadingOverlay from "./LoadingOverlay";
 
 const statusTextColors = {
@@ -24,6 +24,7 @@ const LitigationDetails = () => {
     vendorNotes: false,
     procurementNotes: false,
     orderNotes: false,
+    litigationHistory: false,   // ← NEW
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReplacementDropdownOpen, setIsReplacementDropdownOpen] = useState(false);
@@ -103,9 +104,7 @@ const LitigationDetails = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/send-rma/${orderId}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
 
@@ -116,7 +115,6 @@ const LitigationDetails = () => {
 
       toast.success("RMA form sent successfully");
     } catch (error) {
-      console.error("Error sending RMA form:", error);
       toast.error(error.message || "Failed to send RMA form");
     } finally {
       setActionLoading(false);
@@ -128,9 +126,7 @@ const LitigationDetails = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/updateStatus/${orderId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ status: "Replacement" }),
       });
@@ -145,12 +141,22 @@ const LitigationDetails = () => {
       toast.success("Order status updated to Replacement");
       setIsReplacementDropdownOpen(false);
     } catch (error) {
-      console.error("Error updating order status:", error);
       toast.error(error.message || "Failed to update order status");
     } finally {
       setActionLoading(false);
     }
   };
+
+  // NEW: Check if litigation form has meaningful data
+  const isLitigationFilled = litigationData && (
+    litigationData.problemDescription ||
+    litigationData.deliveryDate ||
+    litigationData.installationDate ||
+    litigationData.problemOccurredDate ||
+    litigationData.problemInformedDate ||
+    litigationData.receivedPictures ||
+    litigationData.receivedDiagnosticReport
+  );
 
   const formatAddress = (address, city, state, zip) => {
     if (!address && !city && !state && !zip) return "N/A";
@@ -159,15 +165,6 @@ const LitigationDetails = () => {
 
   const formatDate = (date) => {
     return date ? new Date(date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" }) : "N/A";
-  };
-
-  const maskCardNumber = (cardNumber) => {
-    if (!cardNumber) return "N/A";
-    return `**** **** **** ${cardNumber.slice(-4)}`;
-  };
-
-  const maskCVV = (cvv) => {
-    return cvv ? "****" : "N/A";
   };
 
   const toggleSection = (section) => {
@@ -192,9 +189,7 @@ const LitigationDetails = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/update-litigation/${orderId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(formData),
       });
@@ -217,7 +212,6 @@ const LitigationDetails = () => {
       toast.success("Litigation details updated successfully");
       setIsFormOpen(false);
     } catch (error) {
-      console.error("Error updating litigation details:", error);
       toast.error(error.message || "Failed to update litigation details");
     } finally {
       setActionLoading(false);
@@ -227,16 +221,6 @@ const LitigationDetails = () => {
   const closeForm = () => {
     if (actionLoading) return;
     setIsFormOpen(false);
-    setFormData({
-      deliveryDate: litigationData?.deliveryDate ? litigationData.deliveryDate.split('T')[0] : '',
-      installationDate: litigationData?.installationDate ? litigationData.installationDate.split('T')[0] : '',
-      problemOccurredDate: litigationData?.problemOccurredDate ? litigationData.problemOccurredDate.split('T')[0] : '',
-      problemInformedDate: litigationData?.problemInformedDate ? litigationData.problemInformedDate.split('T')[0] : '',
-      receivedPictures: litigationData?.receivedPictures || false,
-      receivedDiagnosticReport: litigationData?.receivedDiagnosticReport || false,
-      problemDescription: litigationData?.problemDescription || '',
-      resolutionNotes: litigationData?.resolutionNotes || '',
-    });
   };
 
   return (
@@ -250,8 +234,9 @@ const LitigationDetails = () => {
                 <h1 className="text-2xl sm:text-3xl font-bold">Order {order.order_id || "N/A"}</h1>
               </div>
 
+              {/* Customer Information */}
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
-                <h2 className="text-xl sm:text-2xl font-semibold mb-4">Customereee Information</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold mb-4">Customer Information</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="font-medium text-gray-700 dark:text-gray-300">Name:</p>
@@ -272,6 +257,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
+              {/* Order Information */}
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
                 <h2 className="text-xl sm:text-2xl font-semibold mb-4">Order Information</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -288,6 +274,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
+              {/* Team Information */}
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
                 <h2 className="text-xl sm:text-2xl font-semibold mb-4">Team Information</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -302,6 +289,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
+              {/* Billing & Shipping */}
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
                 <h2 className="text-xl sm:text-2xl font-semibold mb-4">Billing and Shipping Address</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -316,6 +304,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
+              {/* Part Information */}
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
                 <h2 className="text-xl sm:text-2xl font-semibold mb-4">Part Information</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -346,6 +335,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
+              {/* Active Vendor */}
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
                 <h2 className="text-xl sm:text-2xl font-semibold mb-4">Active Vendor</h2>
                 {order.vendors?.find((vendor) => vendor.isConfirmed && vendor.poStatus === "PO Confirmed") ? (
@@ -377,17 +367,9 @@ const LitigationDetails = () => {
                         disabled={actionLoading}
                       >
                         <p className="font-medium text-gray-700 dark:text-gray-300">Vendor Notes</p>
-                        {openSections.vendorNotes ? (
-                          <ChevronUp className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                        )}
+                        {openSections.vendorNotes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                       </button>
-                      <div
-                        className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${
-                          openSections.vendorNotes ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-                        }`}
-                      >
+                      <div className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${openSections.vendorNotes ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}>
                         {order.vendors.find((vendor) => vendor.isConfirmed && vendor.poStatus === "PO Confirmed")?.notes?.length > 0 ? (
                           <ul className="list-disc pl-5 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg max-h-60 overflow-y-auto">
                             {[...order.vendors.find((vendor) => vendor.isConfirmed && vendor.poStatus === "PO Confirmed").notes].reverse().map((note, index) => (
@@ -407,6 +389,7 @@ const LitigationDetails = () => {
                 )}
               </div>
 
+              {/* Procurement Notes */}
               <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
                 <button
                   onClick={() => toggleSection("procurementNotes")}
@@ -414,17 +397,9 @@ const LitigationDetails = () => {
                   disabled={actionLoading}
                 >
                   <h2 className="font-medium text-gray-700 dark:text-gray-300">Procurement Notes</h2>
-                  {openSections.procurementNotes ? (
-                    <ChevronUp className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                  )}
+                  {openSections.procurementNotes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </button>
-                <div
-                  className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${
-                    openSections.procurementNotes ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-                  }`}
-                >
+                <div className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${openSections.procurementNotes ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}>
                   {order.procurementnotes?.length > 0 ? (
                     <ul className="list-disc pl-5 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg max-h-60 overflow-y-auto">
                       {[...order.procurementnotes].reverse().map((note, index) => (
@@ -439,24 +414,17 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
-              <div className="mb-8">
+              {/* Order Notes */}
+              <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
                 <button
                   onClick={() => toggleSection("orderNotes")}
                   className="flex items-center justify-between w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={actionLoading}
                 >
                   <h2 className="font-medium text-gray-700 dark:text-gray-300">Order Notes</h2>
-                  {openSections.orderNotes ? (
-                    <ChevronUp className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                  )}
+                  {openSections.orderNotes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </button>
-                <div
-                  className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${
-                    openSections.orderNotes ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-                  }`}
-                >
+                <div className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${openSections.orderNotes ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}>
                   {order.notes?.length > 0 ? (
                     <ul className="list-disc pl-5 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg max-h-60 overflow-y-auto">
                       {[...order.notes].reverse().map((note, index) => (
@@ -470,8 +438,87 @@ const LitigationDetails = () => {
                   )}
                 </div>
               </div>
+
+              {/* ────────────────────────────────────────────────
+                  NEW: Litigation History Section (Button + Content)
+              ──────────────────────────────────────────────── */}
+              <div className="mb-8">
+                <button
+                  onClick={() => toggleSection("litigationHistory")}
+                  className="flex items-center justify-between w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={actionLoading}
+                >
+                  <h2 className="font-medium text-gray-700 dark:text-gray-300">Litigation History</h2>
+                  {openSections.litigationHistory ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+
+                <div
+                  className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${
+                    openSections.litigationHistory ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  {litigationData?.history?.length > 0 ? (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto space-y-6">
+                      {[...litigationData.history].reverse().map((entry, index) => (
+                        <div key={index} className="pb-5 border-b border-gray-200 dark:border-gray-600 last:border-b-0 last:pb-0">
+                          {/* Header: Who + When */}
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">
+                              {entry.updatedByName || "Unknown User"}
+                            </span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {formatDate(entry.updatedAt)}
+                            </span>
+                          </div>
+
+                          {/* Change Summary */}
+                          {entry.changeSummary && (
+                            <p className="text-sm text-blue-600 dark:text-blue-400 mb-3 font-medium">
+                              {entry.changeSummary}
+                            </p>
+                          )}
+
+                          {/* Old Values Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                            <div><strong>Delivery Date:</strong> {entry.deliveryDate ? new Date(entry.deliveryDate).toLocaleDateString("en-IN") : "—"}</div>
+                            <div><strong>Installation Date:</strong> {entry.installationDate ? new Date(entry.installationDate).toLocaleDateString("en-IN") : "—"}</div>
+                            <div><strong>Problem Occurred:</strong> {entry.problemOccurredDate ? new Date(entry.problemOccurredDate).toLocaleDateString("en-IN") : "—"}</div>
+                            <div><strong>Problem Informed:</strong> {entry.problemInformedDate ? new Date(entry.problemInformedDate).toLocaleDateString("en-IN") : "—"}</div>
+                            <div><strong>Pictures Received:</strong> {entry.receivedPictures ? "Yes" : "No"}</div>
+                            <div><strong>Diagnostic Report:</strong> {entry.receivedDiagnosticReport ? "Yes" : "No"}</div>
+                          </div>
+
+                          {/* Problem & Resolution (if existed before) */}
+                          {entry.problemDescription && (
+                            <div className="mt-4">
+                              <strong className="block text-sm mb-1">Previous Problem Description:</strong>
+                              <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap bg-gray-100 dark:bg-gray-900 p-3 rounded">
+                                {entry.problemDescription}
+                              </p>
+                            </div>
+                          )}
+                          {entry.resolutionNotes && (
+                            <div className="mt-4">
+                              <strong className="block text-sm mb-1">Previous Resolution Notes:</strong>
+                              <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap bg-gray-100 dark:bg-gray-900 p-3 rounded">
+                                {entry.resolutionNotes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-5 bg-gray-50 dark:bg-gray-800 rounded-lg text-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                      No previous updates yet
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
 
+            {/* Sidebar Actions */}
             <div className="ml-6 flex flex-col space-y-2">
               <button
                 onClick={openForm}
@@ -480,6 +527,7 @@ const LitigationDetails = () => {
               >
                 Litigation
               </button>
+
               <button
                 onClick={handleSendRMA}
                 className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -487,36 +535,48 @@ const LitigationDetails = () => {
               >
                 Send RMA Form
               </button>
-              <div className="relative">
+
+              {isLitigationFilled ? (
+                <div className="relative">
+                  <button
+                    onClick={() => !actionLoading && setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
+                    className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={actionLoading}
+                  >
+                    Replacement
+                  </button>
+                  {isReplacementDropdownOpen && (
+                    <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10 w-32">
+                      <button
+                        onClick={handleReplacement}
+                        className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        disabled={actionLoading}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => !actionLoading && setIsReplacementDropdownOpen(false)}
+                        className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        disabled={actionLoading}
+                      >
+                        No
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
                 <button
-                  onClick={() => !actionLoading && setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
-                  className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={actionLoading}
+                  className="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-gray-200 rounded-lg cursor-not-allowed text-sm font-medium"
+                  disabled
+                  title="Fill litigation details first"
                 >
                   Replacement
                 </button>
-                {isReplacementDropdownOpen && (
-                  <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10">
-                    <button
-                      onClick={handleReplacement}
-                      className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={actionLoading}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      onClick={() => !actionLoading && setIsReplacementDropdownOpen(false)}
-                      className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={actionLoading}
-                    >
-                      No
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}
+
         {!order && !isLoading && (
           <div className="flex justify-center items-center py-16 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <p className="text-lg">Order not found</p>
@@ -524,6 +584,7 @@ const LitigationDetails = () => {
         )}
       </div>
 
+      {/* Litigation Form Modal */}
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -531,7 +592,7 @@ const LitigationDetails = () => {
               <h2 className="text-xl sm:text-2xl font-semibold">Update Litigation Details</h2>
               <button
                 onClick={closeForm}
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                 disabled={actionLoading}
               >
                 <X className="w-6 h-6" />
@@ -630,21 +691,22 @@ const LitigationDetails = () => {
                   disabled={actionLoading}
                 />
               </div>
+
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-all text-sm font-medium"
                   disabled={actionLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium"
                   disabled={actionLoading}
                 >
-                  Save
+                  {actionLoading ? "Saving..." : "Save"}
                 </button>
               </div>
             </form>

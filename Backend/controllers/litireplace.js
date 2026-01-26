@@ -236,48 +236,150 @@ export const createLitigation = async (req, res) => {
 };
 
 // Update an existing litigation record
-export const updateLitigation = async(req, res) => {
+export const updateLitigation = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { deliveryDate, installationDate, problemOccurredDate, problemInformedDate, receivedPictures, receivedDiagnosticReport, problemDescription, resolutionNotes } = req.body;
+    const {
+      deliveryDate,
+      installationDate,
+      problemOccurredDate,
+      problemInformedDate,
+      receivedPictures,
+      receivedDiagnosticReport,
+      problemDescription,
+      resolutionNotes,
+    } = req.body;
 
-    // Validate orderId
+    // 1. Basic validation
     if (!orderId) {
-      return res.status(400).json({ message: 'Order ID is required' });
+      return res.status(400).json({ message: "Order ID is required" });
     }
 
-    // Check if order exists and is in Litigation status
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-    if (order.status !== 'Litigation') {
-      return res.status(400).json({ message: 'Order is not in Litigation status' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    // Prepare update object
-    const updateData = {
-      deliveryDate: deliveryDate || null,
-      installationDate: installationDate || null,
-      problemOccurredDate: problemOccurredDate || null,
-      problemInformedDate: problemInformedDate || null,
-      receivedPictures: receivedPictures || false,
-      receivedDiagnosticReport: receivedDiagnosticReport || false,
-      problemDescription: problemDescription || '',
-      resolutionNotes: resolutionNotes || ''
+    if (order.status !== "Litigation") {
+      return res.status(400).json({ message: "Order is not in Litigation status" });
+    }
+
+    // 2. Get current user (assuming auth middleware sets req.user)
+    const userId = req.user?._id;
+    const userName = req.user?.name || "Unknown User";
+
+    // 3. Safe date parser – prevents invalid date strings from crashing
+    const parseSafeDate = (val) => {
+      if (!val) return null;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d;
     };
 
-    // Update or create litigation record (upsert)
-    const litigation = await Litigation.findOneAndUpdate(
-      { orderId },
-      { $set: updateData },
-      { new: true, upsert: true }
-    );
+    // Parse incoming dates safely
+    const newDeliveryDate         = parseSafeDate(deliveryDate);
+    const newInstallationDate     = parseSafeDate(installationDate);
+    const newProblemOccurredDate  = parseSafeDate(problemOccurredDate);
+    const newProblemInformedDate  = parseSafeDate(problemInformedDate);
 
-    res.status(200).json({ message: 'Litigation updated successfully', litigation });
+    // 4. Find or create litigation document
+    let litigation = await Litigation.findOne({ orderId });
+
+    const changes = [];
+
+    if (!litigation) {
+      // First creation – no previous state to save
+      litigation = new Litigation({
+        orderId,
+        deliveryDate:         newDeliveryDate,
+        installationDate:     newInstallationDate,
+        problemOccurredDate:  newProblemOccurredDate,
+        problemInformedDate:  newProblemInformedDate,
+        receivedPictures:     receivedPictures !== undefined ? !!receivedPictures : false,
+        receivedDiagnosticReport: receivedDiagnosticReport !== undefined ? !!receivedDiagnosticReport : false,
+        problemDescription:   problemDescription ?? "",
+        resolutionNotes:      resolutionNotes ?? "",
+        history: [],
+      });
+    } else {
+      // Update existing → check what actually changed
+
+      // Helper to compare dates safely
+      const datesDiffer = (a, b) => {
+        const aStr = a ? a.toISOString() : null;
+        const bStr = b ? b.toISOString() : null;
+        return aStr !== bStr;
+      };
+
+      // Detect changes
+      if (deliveryDate         !== undefined && datesDiffer(newDeliveryDate,         litigation.deliveryDate))         changes.push("deliveryDate");
+      if (installationDate     !== undefined && datesDiffer(newInstallationDate,     litigation.installationDate))     changes.push("installationDate");
+      if (problemOccurredDate  !== undefined && datesDiffer(newProblemOccurredDate,  litigation.problemOccurredDate))  changes.push("problemOccurredDate");
+      if (problemInformedDate  !== undefined && datesDiffer(newProblemInformedDate,  litigation.problemInformedDate))  changes.push("problemInformedDate");
+
+      if (receivedPictures      !== undefined && !!receivedPictures      !== litigation.receivedPictures)      changes.push("receivedPictures");
+      if (receivedDiagnosticReport !== undefined && !!receivedDiagnosticReport !== litigation.receivedDiagnosticReport) changes.push("receivedDiagnosticReport");
+
+      if (problemDescription    !== undefined && problemDescription    !== litigation.problemDescription)    changes.push("problemDescription");
+      if (resolutionNotes       !== undefined && resolutionNotes       !== litigation.resolutionNotes)       changes.push("resolutionNotes");
+
+      // If something changed → save previous state to history
+      if (changes.length > 0) {
+        const previousState = {
+          deliveryDate:          litigation.deliveryDate,
+          installationDate:      litigation.installationDate,
+          problemOccurredDate:   litigation.problemOccurredDate,
+          problemInformedDate:   litigation.problemInformedDate,
+          receivedPictures:      litigation.receivedPictures,
+          receivedDiagnosticReport: litigation.receivedDiagnosticReport,
+          problemDescription:    litigation.problemDescription,
+          resolutionNotes:       litigation.resolutionNotes,
+
+          updatedBy:     userId || null,
+          updatedByName: userName,
+          updatedAt:     new Date(),
+          changeSummary: `Updated: ${changes.join(", ")}`
+        };
+
+        litigation.history.push(previousState);
+      }
+
+      // Apply new values (only if provided in request)
+      if (deliveryDate         !== undefined) litigation.deliveryDate         = newDeliveryDate;
+      if (installationDate     !== undefined) litigation.installationDate     = newInstallationDate;
+      if (problemOccurredDate  !== undefined) litigation.problemOccurredDate  = newProblemOccurredDate;
+      if (problemInformedDate  !== undefined) litigation.problemInformedDate  = newProblemInformedDate;
+      if (receivedPictures      !== undefined) litigation.receivedPictures      = !!receivedPictures;
+      if (receivedDiagnosticReport !== undefined) litigation.receivedDiagnosticReport = !!receivedDiagnosticReport;
+      if (problemDescription    !== undefined) litigation.problemDescription    = problemDescription;
+      if (resolutionNotes       !== undefined) litigation.resolutionNotes       = resolutionNotes;
+    }
+
+    // Always update timestamp
+    litigation.updatedAt = new Date();
+
+    await litigation.save();
+
+    // Optional: log change to order notes
+    if (changes.length > 0) {
+      const noteText = `Litigation details updated by ${userName} (${changes.join(", ")})`;
+      order.notes = order.notes || [];
+      order.notes.push({
+        text: noteText,
+        createdAt: new Date(),
+      });
+      await order.save();
+    }
+
+    return res.status(200).json({
+      message: "Litigation updated successfully",
+      litigation,
+    });
   } catch (error) {
-    console.error('Error updating litigation:', error);
-    res.status(500).json({ message: error.message || 'Failed to update litigation' });
+    console.error("Error updating litigation:", error);
+    return res.status(500).json({
+      message: "Failed to update litigation",
+      error: error.message,
+    });
   }
 };
 
