@@ -572,9 +572,15 @@ function Home() {
           </div>
         </div>
         {/* Main Content Area */}
-        <div className='flex-1 mt-16 md:mt-20 md:ml-20 overflow-y-auto p-4'>
+        {/* <div className='flex-1 mt-16 md:mt-20 md:ml-20 overflow-y-auto p-4'>
           <Outlet />
-        </div>
+        </div> */}
+        {/* Main Content Area */}
+<div className='flex-1 mt-16 md:mt-20 overflow-hidden'>
+  <div className='h-full overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900'>
+    <Outlet />
+  </div>
+</div>
       </div>
     </div>
   );
