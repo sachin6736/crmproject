@@ -562,3 +562,71 @@ export const updateProcurement = async (req, res) => {
   }
 };
 
+export const resolveLitigation = async (req, res) => {
+  try {
+    // Auth check
+    if (!req.user) {
+      return res.status(403).json({ message: "Access denied: User not authenticated" });
+    }
+
+    const { orderId } = req.params;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Only allow if currently in Litigation
+    if (order.status !== "Litigation") {
+      return res.status(400).json({ message: "Order is not in Litigation status" });
+    }
+
+    // Update status to Resolved
+    order.status = "Resolved";
+
+    // Add notes – consistent across all places
+    const userName = req.user?.name || "Unknown User";
+    const noteText = `Order resolved (no replacement needed) by ${userName}`;
+
+    // Order general notes
+    order.notes = order.notes || [];
+    order.notes.push({
+      text: noteText,
+      createdAt: new Date(),
+    });
+
+    // Procurement notes
+    order.procurementnotes = order.procurementnotes || [];
+    order.procurementnotes.push({
+      text: noteText,
+      createdAt: new Date(),
+    });
+
+    // Vendor notes (only for confirmed vendors)
+    if (order.vendors && order.vendors.length > 0) {
+      order.vendors.forEach((vendor) => {
+        if (vendor.isConfirmed && vendor.poStatus === "PO Confirmed") {
+          vendor.notes = vendor.notes || [];
+          vendor.notes.push({
+            text: noteText,
+            createdAt: new Date(),
+          });
+        }
+      });
+    }
+
+    await order.save();
+
+    return res.status(200).json({
+      message: "Order resolved successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Error resolving litigation:", error);
+    return res.status(500).json({
+      message: "Failed to resolve order",
+      error: error.message,
+    });
+  }
+};
