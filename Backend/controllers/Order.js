@@ -636,7 +636,9 @@ export const addVendorToOrder = async (req, res) => {
       shippingCost == null ||
       totalCost == null
     ) {
-      return res.status(400).json({ message: 'Required fields: businessName, phoneNumber, email, agentName, costPrice, shippingCost, totalCost' });
+      return res.status(400).json({ 
+        message: 'Required fields: businessName, phoneNumber, email, agentName, costPrice, shippingCost, totalCost' 
+      });
     }
 
     // Find the order
@@ -645,7 +647,28 @@ export const addVendorToOrder = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Get the authenticated user's name (assuming req.user is set by auth middleware)
+    // ────────────────────────────────────────────────
+    // NEW: Block adding vendor if order is already shipped or later
+    const blockedStatuses = [
+      "Ship Out",
+      "Intransit",
+      "Delivered",
+      "Replacement",
+      "Litigation",
+      "Replacement Cancelled",
+      "Resolved"
+    ];
+
+    if (blockedStatuses.includes(order.status)) {
+      return res.status(403).json({
+        message: `Cannot add or associate vendor after order has reached status "${order.status}"`,
+        currentStatus: order.status,
+        allowedUpTo: "Vendor Payment Confirmed / Shipping Pending"
+      });
+    }
+    // ────────────────────────────────────────────────
+
+    // Get the authenticated user's name
     const userName = req.user?.name || 'Unknown User';
 
     // Create procurement note
