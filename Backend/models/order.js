@@ -17,6 +17,12 @@ const orderSchema = new mongoose.Schema({
     ref: "Lead",
     required: true,
   },
+  litigationTrackId: {          // ← NEW FIELD
+    type: String,
+    required: false,            // optional, not required
+    trim: true,
+    index: true,                // good for fast lookup later
+  },
   salesPerson: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

@@ -1666,11 +1666,11 @@ const closeProcurementModal = () => {
 )}
   {order?.order_id?.toLowerCase().includes('r') && (
     <>
-      <button
+      {/* <button
         className="flex items-center px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-700 transition-all duration-200 text-sm font-medium"
       >
         View Litigation
-      </button>
+      </button> */}
       <button
         onClick={openProcurementModal}
         className="flex items-center px-6 py-3 bg-teal-600 dark:bg-teal-500 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-300 dark:focus:ring-teal-700 transition-all duration-200 text-sm font-medium"
@@ -4051,11 +4051,3 @@ const closeProcurementModal = () => {
 };
 
 export default OrderDetails;
-
-
-
-
-
-
-
-

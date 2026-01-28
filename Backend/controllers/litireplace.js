@@ -118,16 +118,28 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    // Update the status of the original order
-    order.status = status;
-    await order.save();
+    let replacementCreated = false;
+    let newOrder = null;
 
-    // If status is "Replacement", create a new order with order_id suffixed with "R" or "R<number>"
     if (status === "Replacement") {
+      // Check if replacement already exists
+      const existingReplacement = await Order.findOne({
+        litigationTrackId: order._id.toString(),
+      });
+
+      if (existingReplacement) {
+        return res.status(200).json({
+          message: "Replacement order already exists",
+          originalOrder: order,
+          replacementOrder: existingReplacement,
+          alreadyExists: true,
+        });
+      }
+
+      // Create new replacement order
       let newOrderId = `${order.order_id}R`;
       let suffix = 1;
 
-      // Check for existing replacement orders and increment suffix if needed
       while (await Order.findOne({ order_id: newOrderId })) {
         newOrderId = `${order.order_id}R${suffix}`;
         suffix++;
@@ -157,28 +169,46 @@ export const updateOrderStatus = async (req, res) => {
         shippingCity: order.shippingCity,
         shippingState: order.shippingState,
         shippingZip: order.shippingZip,
-        weightAndDimensions: { weight: null, height: null, width: null }, // Set to empty
-        carrierName: "", // Set to empty string
-        trackingNumber: "", // Set to empty string
-        bolNumber: "", // Set to empty string
-        trackingLink: "", // Set to empty string
-        amount: order.amount, // Set to default minimum value
+        weightAndDimensions: { weight: null, height: null, width: null },
+        carrierName: "",
+        trackingNumber: "",
+        bolNumber: "",
+        trackingLink: "",
+        amount: order.amount,
         status: "Locate Pending",
-        picturesReceivedFromYard: false, // Set to default false
-        picturesSentToCustomer: false, // Set to default false
-        vendors: [], // Set to empty array
-        notes: [], // Set to empty array
-        procurementnotes: [], // Set to empty array
+        picturesReceivedFromYard: false,
+        picturesSentToCustomer: false,
+        vendors: [],
+        notes: [],
+        procurementnotes: [],
+        litigationTrackId: order._id.toString(),
       };
 
-      const newOrder = new Order(newOrderData);
-      console.log('ananya',newOrder)
+      newOrder = new Order(newOrderData);
       await newOrder.save();
+      replacementCreated = true;
+
+      // Optional note on original order
+      order.notes = order.notes || [];
+      order.notes.push({
+        text: `Replacement order created: ${newOrder.order_id}`,
+        createdAt: new Date(),
+      });
     }
 
-    return res.status(200).json({
-      message: "Order status updated successfully",
-      order,
+    // Only update status if we're creating a new replacement or it's not Replacement
+    if (replacementCreated || status !== "Replacement") {
+      order.status = status;
+      await order.save();
+    }
+
+    return res.status(replacementCreated ? 201 : 200).json({
+      message: replacementCreated 
+        ? "Replacement order created successfully" 
+        : "Order status updated successfully",
+      originalOrder: order,
+      replacementOrder: newOrder,
+      alreadyExists: !replacementCreated && status === "Replacement",
     });
   } catch (error) {
     console.error("Error updating order status:", error);
