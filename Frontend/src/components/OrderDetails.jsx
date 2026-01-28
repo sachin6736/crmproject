@@ -2701,106 +2701,112 @@ const closeProcurementModal = () => {
           )}
         </div>
 
-        {/* Sidebar with Action Buttons */}
-        <div className="lg:w-80 w-full">
-          <div className="sticky top-6 space-y-4">
-            {/* All action buttons hidden when status is Delivered */}
-            {order?.status !== "Delivered" && (
-              <>
-                {["procurement", "admin"].includes(user?.role) && (
-                  <>
-                    <button
-                      onClick={() => setShowAddVendorModal(true)}
-                      className="w-full px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm sm:text-base"
-                    >
-                      Add New Vendor
-                    </button>
-                    <button
-                      onClick={() => setShowAssociateVendorModal(true)}
-                      className="w-full px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm sm:text-base"
-                    >
-                      Associate Vendor
-                    </button>
-                  </>
-                )}
-                {["procurement", "admin"].includes(user?.role) && (
-                  <button
-                    ref={notesButtonRef}
-                    onClick={() => setShowNotesModal(!showNotesModal)}
-                    className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
-                  >
-                    Add Note
-                  </button>
-                )}
-                {["procurement", "admin"].includes(user?.role) && (
-                  <button
-                    ref={procurementNotesButtonRef}
-                    onClick={() => setShowProcurementNotesModal(!showProcurementNotesModal)}
-                    className="w-full px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors text-sm sm:text-base"
-                  >
-                    Add Procurement Note
-                  </button>
-                )}
-                {["procurement", "admin"].includes(user?.role) && (
-                  <button
-                    ref={costButtonRef}
-                    onClick={() => setShowCostModal(!showCostModal)}
-                    className="w-full px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-md hover:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors text-sm sm:text-base"
-                  >
-                    Edit Costs
-                  </button>
-                )}
-                {["procurement", "admin"].includes(user?.role) && (
-                  <button
-                    ref={shipmentButtonRef}
-                    onClick={() => setShowShipmentModal(!showShipmentModal)}
-                    className="w-full px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-md hover:bg-orange-700 dark:hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm sm:text-base"
-                  >
-                    Add Shipment Details
-                  </button>
-                )}
-                {["customer_relations", "admin"].includes(user?.role) && (
-                  <button
-                    ref={editOrderButtonRef}
-                    onClick={() => setShowEditOrderModal(!showEditOrderModal)}
-                    className="w-full px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors text-sm sm:text-base"
-                  >
-                    Edit Order Details
-                  </button>
-                )}
-                {["procurement", "admin"].includes(user?.role) && order?.status === "Intransit" && (
-                  <button
-                    onClick={handleShipmentDelivered}
-                    className={`w-full px-4 py-2 text-white rounded-md transition-colors text-sm sm:text-base ${
-                      actionLoading || !order?.trackingNumber
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    }`}
-                    disabled={actionLoading || !order?.trackingNumber}
-                  >
-                    {actionLoading ? (
-                      <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-teal-200" />
-                    ) : (
-                      "Shipment Delivered"
-                    )}
-                  </button>
-                )}
-              </>
-            )}
+{/* Sidebar with Action Buttons */}
+<div className="lg:w-80 w-full">
+  <div className="sticky top-6 space-y-4">
+    {/* Hide all action buttons for these final/closed statuses */}
+    {!["Delivered", "Litigation", "Replacement", "Replacement Cancelled"].includes(order?.status) && (
+      <>
+        {["procurement", "admin"].includes(user?.role) && (
+          <>
+            <button
+              onClick={() => setShowAddVendorModal(true)}
+              className="w-full px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm sm:text-base"
+            >
+              Add New Vendor
+            </button>
+            <button
+              onClick={() => setShowAssociateVendorModal(true)}
+              className="w-full px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm sm:text-base"
+            >
+              Associate Vendor
+            </button>
+          </>
+        )}
 
-            {/* Export button stays visible after delivery */}
-            {user?.role === "admin" && (
-              <button
-                onClick={handleExportToExcel}
-                className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
-                disabled={loading || !order}
-              >
-                Download as Excel
-              </button>
+        {["procurement", "admin"].includes(user?.role) && (
+          <button
+            ref={notesButtonRef}
+            onClick={() => setShowNotesModal(!showNotesModal)}
+            className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
+          >
+            Add Note
+          </button>
+        )}
+
+        {["procurement", "admin"].includes(user?.role) && (
+          <button
+            ref={procurementNotesButtonRef}
+            onClick={() => setShowProcurementNotesModal(!showProcurementNotesModal)}
+            className="w-full px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors text-sm sm:text-base"
+          >
+            Add Procurement Note
+          </button>
+        )}
+
+        {["procurement", "admin"].includes(user?.role) && (
+          <button
+            ref={costButtonRef}
+            onClick={() => setShowCostModal(!showCostModal)}
+            className="w-full px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-md hover:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors text-sm sm:text-base"
+          >
+            Edit Costs
+          </button>
+        )}
+
+        {["procurement", "admin"].includes(user?.role) && (
+          <button
+            ref={shipmentButtonRef}
+            onClick={() => setShowShipmentModal(!showShipmentModal)}
+            className="w-full px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-md hover:bg-orange-700 dark:hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm sm:text-base"
+          >
+            Add Shipment Details
+          </button>
+        )}
+
+        {["customer_relations", "admin"].includes(user?.role) && (
+          <button
+            ref={editOrderButtonRef}
+            onClick={() => setShowEditOrderModal(!showEditOrderModal)}
+            className="w-full px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors text-sm sm:text-base"
+          >
+            Edit Order Details
+          </button>
+        )}
+
+        {["procurement", "admin"].includes(user?.role) && order?.status === "Intransit" && (
+          <button
+            onClick={handleShipmentDelivered}
+            className={`w-full px-4 py-2 text-white rounded-md transition-colors text-sm sm:text-base ${
+              actionLoading || !order?.trackingNumber
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            }`}
+            disabled={actionLoading || !order?.trackingNumber}
+          >
+            {actionLoading ? (
+              <FullPageLoader size="w-4 h-4" color="text-white" fill="fill-teal-200" />
+            ) : (
+              "Shipment Delivered"
             )}
-          </div>
-        </div>
-      </div>
+          </button>
+        )}
+      </>
+    )}
+
+    {/* Excel export remains visible for admins even in final statuses */}
+    {user?.role === "admin" && (
+      <button
+        onClick={handleExportToExcel}
+        className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
+        disabled={loading || !order}
+      >
+        Download as Excel
+      </button>
+    )}
+  </div>
+</div>
+</div>
 
       {/* All your modals (Add Vendor, Associate Vendor, etc.) remain unchanged */}
       {/* ... (keep your original modal JSX) ... */}
