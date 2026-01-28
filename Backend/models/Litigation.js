@@ -1,5 +1,26 @@
 import mongoose from "mongoose";
 
+const litigationNoteSchema = new mongoose.Schema({
+  text: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: false,
+  },
+  createdByName: {
+    type: String,
+    required: false,
+    default: "System",
+  },
+});
+
 const litigationHistoryEntry = new mongoose.Schema({
   // Snapshot of previous values
   deliveryDate:          { type: Date },
@@ -54,6 +75,7 @@ const litigationSchema = new mongoose.Schema({
 
   // History array
   history: [litigationHistoryEntry],
+  litigationNotes: [litigationNoteSchema],
 
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

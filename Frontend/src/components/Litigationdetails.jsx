@@ -24,7 +24,8 @@ const LitigationDetails = () => {
     vendorNotes: false,
     procurementNotes: false,
     orderNotes: false,
-    litigationHistory: false,   // ← NEW
+    litigationHistory: false,
+    litigationNotes: false,     // ← NEW
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReplacementDropdownOpen, setIsReplacementDropdownOpen] = useState(false);
@@ -147,7 +148,6 @@ const LitigationDetails = () => {
     }
   };
 
-  // NEW: Check if litigation form has meaningful data
   const isLitigationFilled = litigationData && (
     litigationData.problemDescription ||
     litigationData.deliveryDate ||
@@ -439,9 +439,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
-              {/* ────────────────────────────────────────────────
-                  NEW: Litigation History Section (Button + Content)
-              ──────────────────────────────────────────────── */}
+              {/* Litigation History */}
               <div className="mb-8">
                 <button
                   onClick={() => toggleSection("litigationHistory")}
@@ -461,7 +459,6 @@ const LitigationDetails = () => {
                     <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto space-y-6">
                       {[...litigationData.history].reverse().map((entry, index) => (
                         <div key={index} className="pb-5 border-b border-gray-200 dark:border-gray-600 last:border-b-0 last:pb-0">
-                          {/* Header: Who + When */}
                           <div className="flex justify-between items-center mb-3">
                             <span className="font-semibold text-gray-800 dark:text-gray-200">
                               {entry.updatedByName || "Unknown User"}
@@ -470,15 +467,11 @@ const LitigationDetails = () => {
                               {formatDate(entry.updatedAt)}
                             </span>
                           </div>
-
-                          {/* Change Summary */}
                           {entry.changeSummary && (
                             <p className="text-sm text-blue-600 dark:text-blue-400 mb-3 font-medium">
                               {entry.changeSummary}
                             </p>
                           )}
-
-                          {/* Old Values Grid */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
                             <div><strong>Delivery Date:</strong> {entry.deliveryDate ? new Date(entry.deliveryDate).toLocaleDateString("en-IN") : "—"}</div>
                             <div><strong>Installation Date:</strong> {entry.installationDate ? new Date(entry.installationDate).toLocaleDateString("en-IN") : "—"}</div>
@@ -487,8 +480,6 @@ const LitigationDetails = () => {
                             <div><strong>Pictures Received:</strong> {entry.receivedPictures ? "Yes" : "No"}</div>
                             <div><strong>Diagnostic Report:</strong> {entry.receivedDiagnosticReport ? "Yes" : "No"}</div>
                           </div>
-
-                          {/* Problem & Resolution (if existed before) */}
                           {entry.problemDescription && (
                             <div className="mt-4">
                               <strong className="block text-sm mb-1">Previous Problem Description:</strong>
@@ -516,113 +507,156 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
+              {/* ────────────────────────────────────────────────
+                  NEW: Litigation Notes Section
+              ──────────────────────────────────────────────── */}
+              <div className="mb-8">
+                <button
+                  onClick={() => toggleSection("litigationNotes")}
+                  className="flex items-center justify-between w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={actionLoading}
+                >
+                  <h2 className="font-medium text-gray-700 dark:text-gray-300">Litigation Notes</h2>
+                  {openSections.litigationNotes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+
+                <div
+                  className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${
+                    openSections.litigationNotes ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  {litigationData?.litigationNotes?.length > 0 ? (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto space-y-4">
+                      {[...litigationData.litigationNotes].reverse().map((note, index) => (
+                        <div
+                          key={index}
+                          className="pb-3 border-b border-gray-200 dark:border-gray-600 last:border-b-0 last:pb-0"
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                              {note.createdByName || "System"}
+                            </span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {formatDate(note.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 dark:text-gray-300">
+                            {note.text}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-5 bg-gray-50 dark:bg-gray-800 rounded-lg text-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                      No litigation notes yet
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
 
             {/* Sidebar Actions */}
             <div className="ml-6 flex flex-col space-y-2">
-  {/* Litigation Form Button */}
-  <button
-    onClick={openForm}
-    className="flex items-center px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-    disabled={actionLoading}
-  >
-    Litigation
-  </button>
+              <button
+                onClick={openForm}
+                className="flex items-center px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={actionLoading}
+              >
+                Litigation
+              </button>
 
-  {/* Send RMA Form Button */}
-  <button
-    onClick={handleSendRMA}
-    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-    disabled={actionLoading}
-  >
-    Send RMA Form
-  </button>
+              <button
+                onClick={handleSendRMA}
+                className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={actionLoading}
+              >
+                Send RMA Form
+              </button>
 
-  {/* Replacement Button (only enabled if form filled) */}
-  {isLitigationFilled ? (
-    <div className="relative">
-      <button
-        onClick={() => !actionLoading && setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
-        className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={actionLoading}
-      >
-        Replacement
-      </button>
-      {isReplacementDropdownOpen && (
-        <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10 w-32">
-          <button
-            onClick={handleReplacement}
-            className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-            disabled={actionLoading}
-          >
-            Yes
-          </button>
-          <button
-            onClick={() => !actionLoading && setIsReplacementDropdownOpen(false)}
-            className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-            disabled={actionLoading}
-          >
-            No
-          </button>
-        </div>
-      )}
-    </div>
-  ) : (
-    <button
-      className="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-gray-200 rounded-lg cursor-not-allowed text-sm font-medium"
-      disabled
-      title="Fill litigation details first"
-    >
-      Replacement
-    </button>
-  )}
+              {isLitigationFilled ? (
+                <div className="relative">
+                  <button
+                    onClick={() => !actionLoading && setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
+                    className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={actionLoading}
+                  >
+                    Replacement
+                  </button>
+                  {isReplacementDropdownOpen && (
+                    <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10 w-32">
+                      <button
+                        onClick={handleReplacement}
+                        className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        disabled={actionLoading}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => !actionLoading && setIsReplacementDropdownOpen(false)}
+                        className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        disabled={actionLoading}
+                      >
+                        No
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  className="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-gray-200 rounded-lg cursor-not-allowed text-sm font-medium"
+                  disabled
+                  title="Fill litigation details first"
+                >
+                  Replacement
+                </button>
+              )}
 
-  {/* Resolve Button – ALWAYS visible */}
-  <button
-    onClick={async () => {
-      if (actionLoading) return;
+              {/* Resolve Button – always visible */}
+              <button
+                onClick={async () => {
+                  if (actionLoading) return;
 
-      // Safety check: only allow if currently in Litigation
-      if (order?.status !== "Litigation") {
-        toast.warn("This order is no longer in Litigation status. Cannot resolve now.");
-        return;
-      }
+                  if (order?.status !== "Litigation") {
+                    toast.warn("This order is no longer in Litigation status. Cannot resolve now.");
+                    return;
+                  }
 
-      if (!window.confirm("Are you sure you want to mark this order as Resolved (problem solved without replacement)?")) return;
+                  if (!window.confirm("Are you sure you want to mark this order as Resolved (problem solved without replacement)?")) return;
 
-      setActionLoading(true);
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/resolve-litigation/${orderId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
+                  setActionLoading(true);
+                  try {
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/resolve-litigation/${orderId}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                    });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to resolve order");
-        }
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.message || "Failed to resolve order");
+                    }
 
-        const updatedOrder = await response.json();
-        setOrder(updatedOrder.order);
-        toast.success("Order resolved successfully");
-      } catch (error) {
-        toast.error(error.message || "Failed to resolve order");
-      } finally {
-        setActionLoading(false);
-      }
-    }}
-    className={`flex items-center px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-4 transition-all duration-200 text-sm font-medium ${
-      order?.status === "Litigation"
-        ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-300 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-700"
-        : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70"
-    }`}
-    disabled={actionLoading || order?.status !== "Litigation"}
-    title={order?.status !== "Litigation" ? "Only available when order is in Litigation" : ""}
-  >
-    Resolve
-  </button>
-</div>
+                    const updatedOrder = await response.json();
+                    setOrder(updatedOrder.order);
+                    toast.success("Order resolved successfully");
+                  } catch (error) {
+                    toast.error(error.message || "Failed to resolve order");
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+                className={`flex items-center px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-4 transition-all duration-200 text-sm font-medium ${
+                  order?.status === "Litigation"
+                    ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-300 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-700"
+                    : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70"
+                }`}
+                disabled={actionLoading || order?.status !== "Litigation"}
+                title={order?.status !== "Litigation" ? "Only available when order is in Litigation" : ""}
+              >
+                Resolve
+              </button>
+            </div>
           </div>
         )}
 
@@ -633,6 +667,7 @@ const LitigationDetails = () => {
         )}
       </div>
 
+      {/* Litigation Form Modal */}
       {/* Litigation Form Modal */}
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
