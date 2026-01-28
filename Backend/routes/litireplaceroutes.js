@@ -9,8 +9,8 @@ router.patch("/updateStatus/:orderId", protect, updateOrderStatus);//changing or
 router.post('/litigation', createLitigation);//creating litigation form
 router.patch('/update-litigation/:orderId',protect ,updateLitigation);//updating litigation form
 router.get('/litigation/:orderId', getLitigation);//getting existing litigation form
-router.post('/send-rma/:id', sendRMAForm);//senting rma through mail
+router.post('/send-rma/:id',protect, sendRMAForm);//senting rma through mail
 router.post('/add-procurement/:id', addProcurement);
 router.patch('/update-procurement/:id', updateProcurement);
-router.patch("/resolve-litigation/:orderId", resolveLitigation);
+router.patch("/resolve-litigation/:orderId", protect ,resolveLitigation);
 export default router;

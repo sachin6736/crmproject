@@ -250,7 +250,6 @@ export const updateLitigation = async (req, res) => {
       resolutionNotes,
     } = req.body;
 
-    // 1. Basic validation
     if (!orderId) {
       return res.status(400).json({ message: "Order ID is required" });
     }
@@ -264,30 +263,25 @@ export const updateLitigation = async (req, res) => {
       return res.status(400).json({ message: "Order is not in Litigation status" });
     }
 
-    // 2. Get current user (assuming auth middleware sets req.user)
     const userId = req.user?._id;
     const userName = req.user?.name || "Unknown User";
 
-    // 3. Safe date parser – prevents invalid date strings from crashing
     const parseSafeDate = (val) => {
       if (!val) return null;
       const d = new Date(val);
       return isNaN(d.getTime()) ? null : d;
     };
 
-    // Parse incoming dates safely
     const newDeliveryDate         = parseSafeDate(deliveryDate);
     const newInstallationDate     = parseSafeDate(installationDate);
     const newProblemOccurredDate  = parseSafeDate(problemOccurredDate);
     const newProblemInformedDate  = parseSafeDate(problemInformedDate);
 
-    // 4. Find or create litigation document
     let litigation = await Litigation.findOne({ orderId });
 
     const changes = [];
 
     if (!litigation) {
-      // First creation – no previous state to save
       litigation = new Litigation({
         orderId,
         deliveryDate:         newDeliveryDate,
@@ -299,18 +293,16 @@ export const updateLitigation = async (req, res) => {
         problemDescription:   problemDescription ?? "",
         resolutionNotes:      resolutionNotes ?? "",
         history: [],
+        litigationNotes: [], // initialize empty
       });
     } else {
-      // Update existing → check what actually changed
-
-      // Helper to compare dates safely
+      // Detect changes (your existing logic)
       const datesDiffer = (a, b) => {
         const aStr = a ? a.toISOString() : null;
         const bStr = b ? b.toISOString() : null;
         return aStr !== bStr;
       };
 
-      // Detect changes
       if (deliveryDate         !== undefined && datesDiffer(newDeliveryDate,         litigation.deliveryDate))         changes.push("deliveryDate");
       if (installationDate     !== undefined && datesDiffer(newInstallationDate,     litigation.installationDate))     changes.push("installationDate");
       if (problemOccurredDate  !== undefined && datesDiffer(newProblemOccurredDate,  litigation.problemOccurredDate))  changes.push("problemOccurredDate");
@@ -322,7 +314,7 @@ export const updateLitigation = async (req, res) => {
       if (problemDescription    !== undefined && problemDescription    !== litigation.problemDescription)    changes.push("problemDescription");
       if (resolutionNotes       !== undefined && resolutionNotes       !== litigation.resolutionNotes)       changes.push("resolutionNotes");
 
-      // If something changed → save previous state to history
+      // Save previous state to history if changed
       if (changes.length > 0) {
         const previousState = {
           deliveryDate:          litigation.deliveryDate,
@@ -333,17 +325,15 @@ export const updateLitigation = async (req, res) => {
           receivedDiagnosticReport: litigation.receivedDiagnosticReport,
           problemDescription:    litigation.problemDescription,
           resolutionNotes:       litigation.resolutionNotes,
-
           updatedBy:     userId || null,
           updatedByName: userName,
           updatedAt:     new Date(),
           changeSummary: `Updated: ${changes.join(", ")}`
         };
-
         litigation.history.push(previousState);
       }
 
-      // Apply new values (only if provided in request)
+      // Apply new values
       if (deliveryDate         !== undefined) litigation.deliveryDate         = newDeliveryDate;
       if (installationDate     !== undefined) litigation.installationDate     = newInstallationDate;
       if (problemOccurredDate  !== undefined) litigation.problemOccurredDate  = newProblemOccurredDate;
@@ -354,19 +344,30 @@ export const updateLitigation = async (req, res) => {
       if (resolutionNotes       !== undefined) litigation.resolutionNotes       = resolutionNotes;
     }
 
-    // Always update timestamp
+    // ────────────────────────────────────────────────
+    // NEW: ALWAYS add a note to litigationNotes on update
+    // ────────────────────────────────────────────────
+    litigation.litigationNotes = litigation.litigationNotes || [];
+
+    const noteText = `Litigation form updated by ${userName} on ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`;
+
+    litigation.litigationNotes.push({
+      text: noteText,
+      createdBy: userId || null,
+      createdByName: userName,
+      createdAt: new Date(),
+    });
+    // ────────────────────────────────────────────────
+
     litigation.updatedAt = new Date();
 
     await litigation.save();
 
-    // Optional: log change to order notes
+    // Optional: also log to order notes (your existing code)
     if (changes.length > 0) {
-      const noteText = `Litigation details updated by ${userName} (${changes.join(", ")})`;
+      const orderNote = `Litigation details updated by ${userName} (${changes.join(", ")})`;
       order.notes = order.notes || [];
-      order.notes.push({
-        text: noteText,
-        createdAt: new Date(),
-      });
+      order.notes.push({ text: orderNote, createdAt: new Date() });
       await order.save();
     }
 
@@ -397,12 +398,13 @@ export const getLitigation = async (req, res) => {
     res.status(500).json({ message: error.message || 'Failed to fetch litigation' });
   }
 };
-
 export const sendRMAForm = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Access denied: User not authenticated" });
+  }
   const { id } = req.params; // orderId
 
   try {
-    // Fetch the order to get leadId
     const order = await Order.findById(id).populate('leadId');
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -412,6 +414,22 @@ export const sendRMAForm = async (req, res) => {
       return res.status(400).json({ message: "Customer email is missing" });
     }
 
+    // Get user who sent it
+    const userName = req.user?.name || "Unknown User";
+    const noteText = `RMA form sent by ${userName} on ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`;
+
+    // Find the related Litigation document
+    const litigation = await Litigation.findOne({ orderId: id });
+    if (litigation) {
+      litigation.litigationNotes = litigation.litigationNotes || [];
+      litigation.litigationNotes.push({
+        text: noteText,
+        createdBy: req.user?._id || null,
+        createdByName: userName,
+        createdAt: new Date(),
+      });
+      await litigation.save();
+    }
     // Email content for RMA form
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e2e2; padding: 20px; background-color: #ffffff;">
