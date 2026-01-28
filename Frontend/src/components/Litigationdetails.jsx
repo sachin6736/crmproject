@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "../context/ThemeContext";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import LoadingOverlay from "./LoadingOverlay";
+import ConfirmationModal from "./ConfirmationModal";
 
 const statusTextColors = {
   Litigation: "text-green-600 dark:text-green-400",
@@ -25,10 +26,15 @@ const LitigationDetails = () => {
     procurementNotes: false,
     orderNotes: false,
     litigationHistory: false,
-    litigationNotes: false,     // ← NEW
+    litigationNotes: false,
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReplacementDropdownOpen, setIsReplacementDropdownOpen] = useState(false);
+
+  // Modal for Resolve confirmation
+  const [showResolveConfirm, setShowResolveConfirm] = useState(false);
+  const [resolveConfirmAction, setResolveConfirmAction] = useState(null);
+
   const [formData, setFormData] = useState({
     deliveryDate: "",
     installationDate: "",
@@ -40,48 +46,57 @@ const LitigationDetails = () => {
     resolutionNotes: "",
   });
 
-  useEffect(() => {
-    const fetchOrderAndLitigation = async () => {
-      setIsLoading(true);
-      try {
-        const orderResponse = await fetch(`${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`, {
-          credentials: "include",
-        });
-        if (!orderResponse.ok) {
-          if (orderResponse.status === 401) {
-            navigate("/login");
-            return;
-          }
-          const errorData = await orderResponse.json();
-          throw new Error(errorData.message || "Failed to fetch order");
+  // Fetch order + litigation
+  const fetchOrderAndLitigation = async () => {
+    setIsLoading(true);
+    try {
+      const orderResponse = await fetch(`${import.meta.env.VITE_API_URL}/Order/orderbyid/${orderId}`, {
+        credentials: "include",
+      });
+      if (!orderResponse.ok) {
+        if (orderResponse.status === 401) {
+          navigate("/login");
+          return;
         }
-        const orderData = await orderResponse.json();
-        setOrder(orderData);
-
-        const litigationResponse = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/litigation/${orderId}`, {
-          credentials: "include",
-        });
-        if (litigationResponse.ok) {
-          const litigationData = await litigationResponse.json();
-          setLitigationData(litigationData);
-          setFormData({
-            deliveryDate: litigationData.deliveryDate ? litigationData.deliveryDate.split('T')[0] : '',
-            installationDate: litigationData.installationDate ? litigationData.installationDate.split('T')[0] : '',
-            problemOccurredDate: litigationData.problemOccurredDate ? litigationData.problemOccurredDate.split('T')[0] : '',
-            problemInformedDate: litigationData.problemInformedDate ? litigationData.problemInformedDate.split('T')[0] : '',
-            receivedPictures: litigationData.receivedPictures || false,
-            receivedDiagnosticReport: litigationData.receivedDiagnosticReport || false,
-            problemDescription: litigationData.problemDescription || '',
-            resolutionNotes: litigationData.resolutionNotes || '',
-          });
+        if (orderResponse.status === 404) {
+          setOrder(null);
+          toast.info("Order not found");
+          return;
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error(error.message || "Failed to load data");
-      } finally {
-        setIsLoading(false);
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.message || "Failed to fetch order");
       }
-    };
+      const orderData = await orderResponse.json();
+      setOrder(orderData);
+
+      const litigationResponse = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/litigation/${orderId}`, {
+        credentials: "include",
+      });
+      if (litigationResponse.ok) {
+        const litigationData = await litigationResponse.json();
+        setLitigationData(litigationData);
+        setFormData({
+          deliveryDate: litigationData.deliveryDate ? litigationData.deliveryDate.split('T')[0] : '',
+          installationDate: litigationData.installationDate ? litigationData.installationDate.split('T')[0] : '',
+          problemOccurredDate: litigationData.problemOccurredDate ? litigationData.problemOccurredDate.split('T')[0] : '',
+          problemInformedDate: litigationData.problemInformedDate ? litigationData.problemInformedDate.split('T')[0] : '',
+          receivedPictures: litigationData.receivedPictures || false,
+          receivedDiagnosticReport: litigationData.receivedDiagnosticReport || false,
+          problemDescription: litigationData.problemDescription || '',
+          resolutionNotes: litigationData.resolutionNotes || '',
+        });
+      } else {
+        setLitigationData(null);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error(error.message || "Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOrderAndLitigation();
   }, [orderId, navigate]);
 
@@ -137,9 +152,16 @@ const LitigationDetails = () => {
         throw new Error(errorData.message || "Failed to update order status");
       }
 
-      const updatedOrder = await response.json();
-      setOrder(updatedOrder.order);
-      toast.success("Order status updated to Replacement");
+      const data = await response.json();
+
+      if (data.alreadyExists) {
+        toast.info(`Replacement already exists: ${data.replacementOrder?.order_id || "N/A"}`);
+      } else {
+        toast.success("Order status updated to Replacement");
+        // Force re-fetch fresh data to avoid stale state
+        await fetchOrderAndLitigation();
+      }
+
       setIsReplacementDropdownOpen(false);
     } catch (error) {
       toast.error(error.message || "Failed to update order status");
@@ -148,14 +170,16 @@ const LitigationDetails = () => {
     }
   };
 
-  const isLitigationFilled = litigationData && (
-    litigationData.problemDescription ||
+  // Stricter check: litigation exists AND has meaningful data
+  const hasMeaningfulLitigation = litigationData && (
     litigationData.deliveryDate ||
     litigationData.installationDate ||
     litigationData.problemOccurredDate ||
     litigationData.problemInformedDate ||
     litigationData.receivedPictures ||
-    litigationData.receivedDiagnosticReport
+    litigationData.receivedDiagnosticReport ||
+    litigationData.problemDescription?.trim() ||
+    litigationData.resolutionNotes?.trim()
   );
 
   const formatAddress = (address, city, state, zip) => {
@@ -185,6 +209,23 @@ const LitigationDetails = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+
+    // Block submit if form is completely empty/default
+    const isFormEmpty =
+      !formData.deliveryDate &&
+      !formData.installationDate &&
+      !formData.problemOccurredDate &&
+      !formData.problemInformedDate &&
+      !formData.receivedPictures &&
+      !formData.receivedDiagnosticReport &&
+      !formData.problemDescription?.trim() &&
+      !formData.resolutionNotes?.trim();
+
+    if (isFormEmpty) {
+      toast.warn("Cannot save empty litigation form. Please fill at least one field.");
+      return;
+    }
+
     setActionLoading(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/update-litigation/${orderId}`, {
@@ -221,6 +262,47 @@ const LitigationDetails = () => {
   const closeForm = () => {
     if (actionLoading) return;
     setIsFormOpen(false);
+  };
+
+  // Handle Resolve with Confirmation Modal
+  const handleResolveClick = () => {
+    if (actionLoading) return;
+
+    if (order?.status !== "Litigation") {
+      toast.warn("This order is no longer in Litigation status. Cannot resolve now.");
+      return;
+    }
+
+    if (!hasMeaningfulLitigation) {
+      toast.warn("Please fill at least one field in the Litigation form first");
+      return;
+    }
+
+    setResolveConfirmAction(() => async () => {
+      setActionLoading(true);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/resolve-litigation/${orderId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to resolve order");
+        }
+
+        const data = await response.json();
+        setOrder(data.order);
+        toast.success("Order resolved successfully");
+      } catch (error) {
+        toast.error(error.message || "Failed to resolve order");
+      } finally {
+        setActionLoading(false);
+      }
+    });
+
+    setShowResolveConfirm(true);
   };
 
   return (
@@ -507,9 +589,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
-              {/* ────────────────────────────────────────────────
-                  NEW: Litigation Notes Section
-              ──────────────────────────────────────────────── */}
+              {/* Litigation Notes */}
               <div className="mb-8">
                 <button
                   onClick={() => toggleSection("litigationNotes")}
@@ -553,7 +633,6 @@ const LitigationDetails = () => {
                   )}
                 </div>
               </div>
-
             </div>
 
             {/* Sidebar Actions */}
@@ -566,15 +645,28 @@ const LitigationDetails = () => {
                 Litigation
               </button>
 
+              {/* Send RMA Form */}
               <button
-                onClick={handleSendRMA}
-                className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={actionLoading}
+                onClick={() => {
+                  if (!hasMeaningfulLitigation) {
+                    toast.warn("Please fill at least one field in the Litigation form first");
+                    return;
+                  }
+                  handleSendRMA();
+                }}
+                className={`flex items-center px-4 py-2 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                  hasMeaningfulLitigation
+                    ? "bg-blue-600 dark:bg-blue-500"
+                    : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                }`}
+                disabled={actionLoading || !hasMeaningfulLitigation}
+                title={!hasMeaningfulLitigation ? "Litigation form must have at least one field filled" : ""}
               >
                 Send RMA Form
               </button>
 
-              {isLitigationFilled ? (
+              {/* Replacement */}
+              {hasMeaningfulLitigation ? (
                 <div className="relative">
                   <button
                     onClick={() => !actionLoading && setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
@@ -604,55 +696,41 @@ const LitigationDetails = () => {
                 </div>
               ) : (
                 <button
+                  onClick={() => toast.warn("Please fill at least one field in the Litigation form first")}
                   className="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-gray-200 rounded-lg cursor-not-allowed text-sm font-medium"
                   disabled
-                  title="Fill litigation details first"
+                  title="Litigation form must have at least one field filled"
                 >
                   Replacement
                 </button>
               )}
 
-              {/* Resolve Button – always visible */}
+              {/* Resolve */}
               <button
-                onClick={async () => {
-                  if (actionLoading) return;
-
+                onClick={() => {
+                  if (!hasMeaningfulLitigation) {
+                    toast.warn("Please fill at least one field in the Litigation form first");
+                    return;
+                  }
                   if (order?.status !== "Litigation") {
                     toast.warn("This order is no longer in Litigation status. Cannot resolve now.");
                     return;
                   }
-
-                  if (!window.confirm("Are you sure you want to mark this order as Resolved (problem solved without replacement)?")) return;
-
-                  setActionLoading(true);
-                  try {
-                    const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/resolve-litigation/${orderId}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      credentials: "include",
-                    });
-
-                    if (!response.ok) {
-                      const errorData = await response.json();
-                      throw new Error(errorData.message || "Failed to resolve order");
-                    }
-
-                    const updatedOrder = await response.json();
-                    setOrder(updatedOrder.order);
-                    toast.success("Order resolved successfully");
-                  } catch (error) {
-                    toast.error(error.message || "Failed to resolve order");
-                  } finally {
-                    setActionLoading(false);
-                  }
+                  handleResolveClick();
                 }}
                 className={`flex items-center px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-4 transition-all duration-200 text-sm font-medium ${
-                  order?.status === "Litigation"
+                  hasMeaningfulLitigation && order?.status === "Litigation"
                     ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-300 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-700"
                     : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70"
                 }`}
-                disabled={actionLoading || order?.status !== "Litigation"}
-                title={order?.status !== "Litigation" ? "Only available when order is in Litigation" : ""}
+                disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation"}
+                title={
+                  !hasMeaningfulLitigation
+                    ? "Litigation form must have at least one field filled"
+                    : order?.status !== "Litigation"
+                    ? "Only available when order is in Litigation"
+                    : ""
+                }
               >
                 Resolve
               </button>
@@ -667,7 +745,6 @@ const LitigationDetails = () => {
         )}
       </div>
 
-      {/* Litigation Form Modal */}
       {/* Litigation Form Modal */}
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -797,6 +874,24 @@ const LitigationDetails = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal for Resolve */}
+      <ConfirmationModal
+        isOpen={showResolveConfirm}
+        onClose={() => setShowResolveConfirm(false)}
+        onConfirm={resolveConfirmAction}
+        title="Confirm Resolve"
+        message="Are you sure you want to mark this order as Resolved (problem solved without replacement)?"
+        confirmText="Yes, Resolve"
+        cancelText="Cancel"
+        confirmButtonProps={{
+          className: "bg-green-600 hover:bg-green-700 focus:ring-green-500 dark:bg-green-500 dark:hover:bg-green-600",
+          disabled: actionLoading,
+        }}
+        cancelButtonProps={{
+          disabled: actionLoading,
+        }}
+      />
     </div>
   );
 };

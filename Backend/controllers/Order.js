@@ -952,8 +952,8 @@ export const updateVendorDetails = async (req, res) => {
     }
 
     // ────────────────────────────────────────────────
-    // NEW: Block updates in final / shipping / post-delivery stages
-    const blockedStatuses = [
+    // BLOCK 1: Full vendor update blocked in FINAL stages
+    const finalBlockedStatuses = [
       "Ship Out",
       "Intransit",
       "Delivered",
@@ -962,11 +962,35 @@ export const updateVendorDetails = async (req, res) => {
       "Replacement Cancelled"
     ];
 
-    if (blockedStatuses.includes(order.status)) {
+    if (finalBlockedStatuses.includes(order.status)) {
       return res.status(403).json({
         message: `Cannot update vendor details after order has reached status: "${order.status}"`,
         currentStatus: order.status,
-        allowedUpTo: "Vendor Payment Confirmed / Shipping Pending"
+        hint: "Updates are only allowed up to Vendor Payment Confirmed"
+      });
+    }
+    // ────────────────────────────────────────────────
+
+    // ────────────────────────────────────────────────
+    // BLOCK 2: COST FIELDS blocked starting from Vendor Payment Confirmed
+    const costBlockedStatuses = [
+      "Vendor Payment Confirmed",
+      ...finalBlockedStatuses // include final stages too
+    ];
+
+    const attemptedCostChanges = [
+      costPrice !== undefined,
+      shippingCost !== undefined,
+      corePrice !== undefined,
+      totalCost !== undefined
+    ].some(Boolean);
+
+    if (attemptedCostChanges && costBlockedStatuses.includes(order.status)) {
+      return res.status(403).json({
+        message: `Cannot modify cost-related fields (costPrice, shippingCost, corePrice, totalCost) after order has reached "${order.status}"`,
+        currentStatus: order.status,
+        blockedFields: ["costPrice", "shippingCost", "corePrice", "totalCost"],
+        hint: "These fields are locked after Vendor Payment Confirmed"
       });
     }
     // ────────────────────────────────────────────────
@@ -977,12 +1001,11 @@ export const updateVendorDetails = async (req, res) => {
       return res.status(404).json({ message: 'Vendor not found in order' });
     }
 
-    // Get the authenticated user's name
     const userName = req.user?.name || 'Unknown User';
-
-    // Track changes for notes
     const changes = [];
 
+    // ────────────────────────────────────────────────
+    // Update non-cost fields (always allowed until final block)
     if (businessName && businessName !== vendor.businessName) {
       changes.push(`businessName: "${vendor.businessName}" → "${businessName}"`);
       vendor.businessName = businessName;
@@ -999,6 +1022,21 @@ export const updateVendorDetails = async (req, res) => {
       changes.push(`agentName: "${vendor.agentName}" → "${agentName}"`);
       vendor.agentName = agentName;
     }
+    if (rating != null && rating !== vendor.rating) {
+      changes.push(`rating: ${vendor.rating} → ${rating}`);
+      vendor.rating = rating;
+    }
+    if (warranty != null && warranty !== vendor.warranty) {
+      changes.push(`warranty: "${vendor.warranty || '—'}" → "${warranty}"`);
+      vendor.warranty = warranty;
+    }
+    if (mileage != null && mileage !== vendor.mileage) {
+      changes.push(`mileage: ${vendor.mileage} → ${mileage}`);
+      vendor.mileage = mileage;
+    }
+
+    // ────────────────────────────────────────────────
+    // Update COST fields ONLY if not blocked
     if (costPrice != null && costPrice !== vendor.costPrice) {
       changes.push(`costPrice: $${vendor.costPrice?.toFixed(2) ?? '—'} → $${costPrice.toFixed(2)}`);
       vendor.costPrice = costPrice;
@@ -1015,20 +1053,9 @@ export const updateVendorDetails = async (req, res) => {
       changes.push(`totalCost: $${vendor.totalCost?.toFixed(2) ?? '—'} → $${totalCost.toFixed(2)}`);
       vendor.totalCost = totalCost;
     }
-    if (rating != null && rating !== vendor.rating) {
-      changes.push(`rating: ${vendor.rating} → ${rating}`);
-      vendor.rating = rating;
-    }
-    if (warranty != null && warranty !== vendor.warranty) {
-      changes.push(`warranty: "${vendor.warranty || '—'}" → "${warranty}"`);
-      vendor.warranty = warranty;
-    }
-    if (mileage != null && mileage !== vendor.mileage) {
-      changes.push(`mileage: ${vendor.mileage} → ${mileage}`);
-      vendor.mileage = mileage;
-    }
+    // ────────────────────────────────────────────────
 
-    // If there are changes → create note
+    // If any changes were made → add note
     if (changes.length > 0) {
       const changeText = `Vendor details updated by ${userName}: ${changes.join(', ')}`;
       const note = {
@@ -1040,9 +1067,6 @@ export const updateVendorDetails = async (req, res) => {
       vendor.notes = vendor.notes || [];
       vendor.notes.push(note);
       order.procurementnotes.push(note);
-    } else {
-      // Optional: you can return early if nothing changed
-      // return res.status(200).json({ message: 'No changes detected', order });
     }
 
     await order.save();
