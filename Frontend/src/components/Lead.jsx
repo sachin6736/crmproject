@@ -883,8 +883,8 @@ const Lead = () => {
         type={item.type}
         value={item.value === "0" ? "" : item.value}
         onChange={(e) => item.setter(e.target.value)}
-        onWheel={(e) => e.target.blur()}
-        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        onWheel={(e) => e.target.blur()}appearance-none
+        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         placeholder=""
         step="0.01"
         min="0"

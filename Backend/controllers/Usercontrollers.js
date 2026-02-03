@@ -6,32 +6,51 @@ import { io } from '../socket.js'
 
 export const resetpassword = async (req, res, next) => {
   console.log("Reset password request received for user ID:", req.params.id);
+
   try {
+    // Only admin can reset passwords
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
+
     const { id } = req.params;
     const { newpassword } = req.body;
+
     if (!newpassword) {
       return res.status(400).json({ message: "New password is required." });
     }
+
     if (newpassword.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters long." });
     }
+
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const hashedPassword = await bcrypt.hash(newpassword, 10);
-    user.password = hashedPassword;
+
+    // Save password in plain text (no hashing)
+    user.password = newpassword;
+
     await user.save();
+
     console.log("Password reset successfully for user ID:", id);
-    res.status(200).json({ message: "Password reset successfully." });
+    console.log("New password set to:", newpassword); // Log for admin/debug
+
+    // Return success + new password (so admin knows what it is)
+    res.status(200).json({
+      message: "Password reset successfully.",
+      userId: user._id,
+      email: user.email,
+      newPassword: newpassword,  // ← admin can copy this
+      note: "Password is plain text and shown here for convenience."
+    });
+
   } catch (error) {
     console.error("Password reset error:", error);
     res.status(500).json({ message: "Something went wrong." });
   }
-}; ///resetting password by admin
+};
 
 export const pauseandresume = async(req,res,next)=>{
     console.log("pauser and resume working")

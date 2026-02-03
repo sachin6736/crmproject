@@ -41,83 +41,94 @@ export const signup = async(req,res,next)=>{
 
 export const createuser = async (req, res, next) => {
   console.log("createuser working");
-  
+
   try {
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
+
     const { name, email, role } = req.body;
-    console.log("name",name);
-    console.log("email",email);
-    console.log("role",role);
-    
-    const allowedRoles = ["admin", "sales", "customer_relations", "procurement","viewer"];
+    console.log("name:", name);
+    console.log("email:", email);
+    console.log("role:", role);
+
+    const allowedRoles = ["admin", "sales", "customer_relations", "procurement", "viewer"];
+
     if (!name || !email || !role || !allowedRoles.includes(role)) {
-      return res.status(400).json({ message: "Name, email, and valid role are required." });
+      return res.status(400).json({ 
+        message: "Name, email, and valid role are required." 
+      });
     }
-    const existing = await User.findOne({ email: email });
+
+    const existing = await User.findOne({ email });
     if (existing) {
-      return res.status(409).json({ message: "User with email already exists." });
+      return res.status(409).json({ message: "User with this email already exists." });
     }
+
+    // Generate simple password (no hashing)
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
     const plainPassword = `equivise${randomDigits}`;
-    const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
     const newUser = new User({
       name,
       email,
+      password: plainPassword,        // ← stored in plain text (as requested)
       role,
-      password: hashedPassword,
-      status: "LoggedOut", // Explicitly set status to "LoggedOut"
+      status: "LoggedOut",
     });
+
     await newUser.save();
 
-    // Log the created user to verify the status
-    console.log("Created user:", newUser);
+    console.log("Created user:", {
+      id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      password: newUser.password,     // logged for admin/debug
+      status: newUser.status
+    });
 
-    const subject = "Your Equivise CRM Account Details";
-    const emailcontent = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2 style="color: #4A90E2;">Welcome to Equivise CRM 🚀</h2>
-        <p>Hi <strong>${name}</strong>,</p>
-        <p>Your account has been successfully created in the Equivise CRM system.</p>
-        <p>Here are your login details:</p>
-        <ul style="list-style: none; padding-left: 0;">
-          <li><strong>Login Email:</strong> ${email}</li>
-          <li><strong>Password:</strong> <span style="color: #d6336c;">${plainPassword}</span></li>
-          <li><strong>Status:</strong> LoggedOut</li>
-        </ul>
-        <p>Need help? Feel free to reach out to our support team.</p>
-        <br/>
-        <p style="color: #888;">– The Equivise Team</p>
-        <p style="font-size: 0.9em;">This is an automated message. Please do not reply directly to this email.</p>
-      </div>
-    `;
-
-    await sendEmail(email, subject, emailcontent);
     console.log(`User created: ${email} with role ${role}, status: ${newUser.status}`);
-    res.status(201).json(newUser);
+
+    // Return the user + plain password so admin can see/copy it
+    // (Never do this in production if security matters — but per your request)
+    res.status(201).json({
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      status: newUser.status,
+      generatedPassword: plainPassword,  // ← only way admin gets the password
+      message: "User created successfully. Password is shown below (copy it manually)."
+    });
+
   } catch (error) {
     console.error("Create user error:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
-
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+    // Direct plain-text comparison (NO bcrypt)
+    if (password !== user.password) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
+    // Update status to Available
     const updatedUser = await User.findByIdAndUpdate(
       user._id,
       { status: "Available" },
       { new: true }
     ).select("name email role status");
 
+    // Log status change
     const statusLog = new StatusLog({
       userId: user._id,
       status: "Available",
@@ -125,27 +136,41 @@ export const login = async (req, res, next) => {
     });
     await statusLog.save();
 
+    // Generate JWT
     const token = jwt.sign(
-      { id: user._id, name: user.name, role: user.role, status: "Available", Access: user.Access },
+      { 
+        id: user._id, 
+        name: user.name, 
+        role: user.role, 
+        status: "Available", 
+        Access: user.Access 
+      },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
+    // Set cookie
     res
-    .cookie("token", token, {
-      httpOnly: true,
-      secure: true, // Must be true for SameSite=None
-      sameSite: "none", // Allow cross-origin cookie sending
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    })
-    .status(200)
-    .json({
-      message: "Login successful",
-      user: { name: updatedUser.name, email: updatedUser.email, role: updatedUser.role, status: updatedUser.status },
-    });
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: true,           // Must be true in production with HTTPS
+        sameSite: "none",       // Required for cross-origin
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .status(200)
+      .json({
+        message: "Login successful",
+        user: { 
+          name: updatedUser.name, 
+          email: updatedUser.email, 
+          role: updatedUser.role, 
+          status: updatedUser.status 
+        },
+      });
+
   } catch (error) {
-    console.log("Error", error);
-    res.status(500).json({ message: "Error during login", error });
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Error during login", error: error.message });
   }
 };
 
