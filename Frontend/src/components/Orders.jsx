@@ -10,6 +10,7 @@ const OrderForm = () => {
   const { id } = useParams(); // leadId
   const navigate = useNavigate();
   const { theme } = useTheme();
+
   const [formData, setFormData] = useState({
     make: "",
     model: "",
@@ -32,6 +33,7 @@ const OrderForm = () => {
     amount: "",
     partRequested: "",
   });
+
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(false);
@@ -45,14 +47,19 @@ const OrderForm = () => {
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmText, setConfirmText] = useState("Confirm");
 
+  // NEW: Store lead data (including paymentDetails)
+  const [leadData, setLeadData] = useState(null);
+
   useEffect(() => {
     const checkOrderAndFetchLead = async () => {
       setIsLoading(true);
       try {
+        // 1. Check if order already exists for this lead
         const orderResponse = await fetch(
           `${import.meta.env.VITE_API_URL}/Order/checkorderbylead/${id}`,
           { credentials: "include" }
         );
+
         if (orderResponse.ok) {
           const orderData = await orderResponse.json();
           setOrderExists(true);
@@ -83,35 +90,40 @@ const OrderForm = () => {
           return;
         }
 
+        // 2. If no order → fetch lead data (including paymentDetails)
         const leadResponse = await fetch(
           `${import.meta.env.VITE_API_URL}/Lead/getleadbyid/${id}`,
           { credentials: "include" }
         );
+
         if (!leadResponse.ok) {
           throw new Error("Failed to fetch lead data");
         }
-        const leadData = await leadResponse.json();
+
+        const lead = await leadResponse.json();
+        setLeadData(lead); // ← store full lead (with paymentDetails)
+
         setFormData({
-          make: leadData.make || "",
-          model: leadData.model || "",
-          year: String(leadData.year || ""),
-          clientName: leadData.clientName || "",
-          phone: leadData.phoneNumber || "",
-          email: leadData.email || "",
+          make: lead.make || "",
+          model: lead.model || "",
+          year: String(lead.year || ""),
+          clientName: lead.clientName || "",
+          phone: lead.phoneNumber || "",
+          email: lead.email || "",
           cardNumber: "",
           cardMonth: "",
           cardYear: "",
           cvv: "",
-          billingAddress: leadData.billingAddress || "",
-          city: leadData.city || "",
-          state: leadData.state || "",
-          zip: leadData.zip || "",
-          shippingAddress: leadData.shippingAddress || "",
-          shippingCity: leadData.shippingCity || "",
-          shippingState: leadData.shippingState || "",
-          shippingZip: leadData.shippingZip || "",
-          amount: leadData.totalCost?.toString() || "",
-          partRequested: leadData.partRequested || "",
+          billingAddress: lead.billingAddress || "",
+          city: lead.city || "",
+          state: lead.state || "",
+          zip: lead.zip || "",
+          shippingAddress: lead.shippingAddress || "",
+          shippingCity: lead.shippingCity || "",
+          shippingState: lead.shippingState || "",
+          shippingZip: lead.shippingZip || "",
+          amount: lead.totalCost?.toString() || "",
+          partRequested: lead.partRequested || "",
         });
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -126,7 +138,6 @@ const OrderForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Restrict numeric fields to digits only
     if (
       [
         "cardNumber",
@@ -137,7 +148,7 @@ const OrderForm = () => {
         "shippingZip",
       ].includes(name)
     ) {
-      if (!/^\d*$/.test(value)) return; // Allow only digits
+      if (!/^\d*$/.test(value)) return;
     }
     if (name === "cardNumber" && value.length > 16) return;
     if (name === "cardMonth" && value.length > 2) return;
@@ -145,6 +156,7 @@ const OrderForm = () => {
     if (name === "cvv" && value.length > 4) return;
     if (name === "zip" && value.length > 5) return;
     if (name === "shippingZip" && value.length > 5) return;
+
     setFormData({ ...formData, [name]: value });
     setHasUnsavedChanges(true);
   };
@@ -217,9 +229,22 @@ const OrderForm = () => {
     return true;
   };
 
+  // NEW: Check if payment is confirmed before proceeding
+  const checkPaymentBeforeSubmit = (isUpdate = false) => {
+    if (!leadData?.paymentDetails?.confirmed) {
+      toast.error("Please confirm payment before creating/updating the order.");
+      return false;
+    }
+    return true;
+  };
+
   const showSubmitConfirmation = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+
+    // Check payment confirmation
+    if (!checkPaymentBeforeSubmit(false)) return;
+
     setConfirmTitle("Confirm Order Submission");
     setConfirmMessage("Are you sure you want to submit this order?");
     setConfirmText("Submit Order");
@@ -233,6 +258,10 @@ const OrderForm = () => {
   const showUpdateConfirmation = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+
+    // Check payment confirmation
+    if (!checkPaymentBeforeSubmit(true)) return;
+
     setConfirmTitle("Confirm Order Update");
     setConfirmMessage("Are you sure you want to update this order?");
     setConfirmText("Update Order");
@@ -275,6 +304,7 @@ const OrderForm = () => {
         credentials: "include",
         body: JSON.stringify({ ...formData, leadId: id }),
       });
+
       if (response.ok) {
         toast.success("Order submitted successfully");
         setHasUnsavedChanges(false);
@@ -303,6 +333,7 @@ const OrderForm = () => {
           body: JSON.stringify(formData),
         }
       );
+
       if (response.ok) {
         toast.success("Order updated successfully");
         setIsEditing(false);
@@ -334,6 +365,8 @@ const OrderForm = () => {
         {orderExists && !isEditing && existingOrder ? (
           <div className="max-w-4xl mx-auto space-y-8 text-gray-900 dark:text-gray-100">
             <h1 className="text-3xl font-bold">Order Details</h1>
+
+            {/* Order Information */}
             <section>
               <h2 className="text-2xl font-bold">Order Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
@@ -396,6 +429,7 @@ const OrderForm = () => {
               </div>
             </section>
 
+            {/* Payment Information */}
             <section>
               <h2 className="text-2xl font-bold">Payment Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -426,6 +460,7 @@ const OrderForm = () => {
               </div>
             </section>
 
+            {/* Billing Address */}
             <section>
               <h2 className="text-2xl font-bold">Billing Address</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -464,6 +499,7 @@ const OrderForm = () => {
               </div>
             </section>
 
+            {/* Shipping Address */}
             <section>
               <h2 className="text-2xl font-bold">Shipping Address</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -527,6 +563,8 @@ const OrderForm = () => {
             <h1 className="text-3xl font-bold">
               {isEditing ? "Edit Order" : "Create Order"}
             </h1>
+
+            {/* Order Information */}
             <section>
               <h2 className="text-2xl font-bold">Order Information</h2>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
@@ -599,6 +637,7 @@ const OrderForm = () => {
               </div>
             </section>
 
+            {/* Payment Information */}
             <section>
               <h2 className="text-2xl font-bold">Payment Information</h2>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
@@ -644,6 +683,7 @@ const OrderForm = () => {
               </div>
             </section>
 
+            {/* Billing Address */}
             <section>
               <h2 className="text-2xl font-bold">Billing Address</h2>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
@@ -689,6 +729,7 @@ const OrderForm = () => {
               </div>
             </section>
 
+            {/* Shipping Address */}
             <section>
               <h2 className="text-2xl font-bold">Shipping Address</h2>
               <p className="mb-4 text-gray-600 dark:text-gray-400">
@@ -750,6 +791,7 @@ const OrderForm = () => {
               </div>
             </section>
 
+            {/* Amount */}
             <section>
               <label className="block font-semibold text-lg mt-4 mb-2">Amount $:</label>
               <input
@@ -768,6 +810,7 @@ const OrderForm = () => {
               >
                 {isEditing ? "Update Order" : "Submit Now"}
               </button>
+
               {isEditing && (
                 <button
                   type="button"
@@ -778,6 +821,7 @@ const OrderForm = () => {
                   Cancel
                 </button>
               )}
+
               <button
                 type="button"
                 onClick={() => !isLoading && !actionLoading && (hasUnsavedChanges ? showBackConfirmation() : navigate("/home/orders"))}
@@ -789,6 +833,7 @@ const OrderForm = () => {
             </div>
           </form>
         )}
+
         <ConfirmationModal
           isOpen={showConfirmModal}
           onClose={() => setShowConfirmModal(false)}
