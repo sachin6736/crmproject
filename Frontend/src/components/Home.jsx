@@ -18,7 +18,10 @@ import {
   Clock,
   Gavel,
   Trash2,
-  DollarSign, // Added Trash2 icon for delete button
+  DollarSign,
+  BadgeDollarSign,
+  DollarSignIcon,
+  CircleDollarSignIcon, // Added Trash2 icon for delete button
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -310,7 +313,7 @@ function Home() {
     },
     {
       label: 'Pending Vendor Refund',
-      icon: <PenTool className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      icon: <BadgeDollarSign className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         navigate('/home/cancelledvendors');
         setShowSidebar(false);
@@ -318,7 +321,7 @@ function Home() {
     },
     {
       label: 'Vendor Refund History',
-      icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      icon: <DollarSignIcon className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         navigate('/home/paidvendors');
         setShowSidebar(false);
@@ -326,7 +329,7 @@ function Home() {
     },
     {
       label: 'Paid Vendors History',
-      icon: <User className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      icon: <CircleDollarSignIcon className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         navigate('/home/paidvendorshistory');
         setShowSidebar(false);
