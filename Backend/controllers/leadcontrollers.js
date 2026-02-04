@@ -957,3 +957,39 @@ export const changeowner = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+// leadcontrollers.js
+export const confirmPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    const lead = await Lead.findById(id);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+
+    if (lead.paymentDetails?.confirmed) {
+      return res.status(400).json({ message: "Payment already confirmed" });
+    }
+
+    lead.paymentDetails = {
+      confirmed: true,
+      paymentDate: new Date(),
+      amount: parseFloat(amount) || lead.totalCost || 0,
+    };
+
+    const userIdentity = req.user?.name || req.user?.id || "System";
+    lead.notes.push({
+      text: `Payment confirmed for $${lead.paymentDetails.amount.toFixed(2)} by ${userIdentity}`,
+      addedBy: userIdentity,
+      createdAt: new Date(),
+    });
+
+    await lead.save();
+
+    res.status(200).json(lead);
+  } catch (error) {
+    console.error("Error confirming payment:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

@@ -6,6 +6,7 @@ import {
   Trash2,
   ChevronDown,
   Check,
+  DollarSign,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
@@ -50,6 +51,7 @@ const Lead = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
+
   const [singleLead, setSingleLead] = useState(null);
   const [user, setUser] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -83,6 +85,9 @@ const Lead = () => {
   const [profitRatio, setProfitRatio] = useState(null);
   const [showQuotationPreviewModal, setShowQuotationPreviewModal] = useState(false);
   const [emailContent, setEmailContent] = useState("");
+
+  // Payment confirmation loading
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -317,6 +322,63 @@ const Lead = () => {
     setSecondaryConfirmAction(null);
     setSecondaryOverrideClass("");
     setShowConfirmModal(true);
+  };
+
+  // NEW: Confirm Payment handler
+  const handleConfirmPayment = () => {
+  setConfirmTitle("Confirm Payment");
+  setConfirmMessage(
+    `Are you sure you want to mark this lead as PAID?\n\n` +
+    `Amount: $${Number(singleLead?.paymentDetails?.amount || totalCost || 0).toFixed(2)}\n` +
+    `This action cannot be undone.`
+  );
+  setConfirmText("Yes, Confirm Payment");
+  
+  // Main confirm action
+  setConfirmAction(() => async () => {
+    await confirmPaymentAPI();
+    setShowConfirmModal(false);
+  });
+  
+  setConfirmOverrideClass("!bg-green-600 !hover:bg-green-700");
+  
+  // IMPORTANT: Do NOT set secondary button for this modal
+  setSecondaryConfirmText("");           // ← empty = no secondary button
+  setSecondaryConfirmAction(null);
+  setSecondaryOverrideClass("");
+  
+  setShowConfirmModal(true);
+};
+
+  const confirmPaymentAPI = async () => {
+    setIsConfirmingPayment(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/Lead/confirm-payment/${id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            amount: parseFloat(totalCost) || 0,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Failed to confirm payment");
+      }
+
+      const updatedLead = await response.json();
+      setSingleLead(updatedLead);
+      toast.success("Payment confirmed successfully!");
+    } catch (err) {
+      console.error("Payment confirmation failed:", err);
+      toast.error(err.message || "Failed to confirm payment");
+    } finally {
+      setIsConfirmingPayment(false);
+    }
   };
 
   const handleSaveNotes = async () => {
@@ -592,8 +654,8 @@ const Lead = () => {
 
   return (
     <div className="p-4 md:p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
-      <LoadingOverlay isLoading={isLoading || actionLoading} />
-      <div className={`${isLoading || actionLoading ? "blur-[1px]" : ""}`}>
+      <LoadingOverlay isLoading={isLoading || actionLoading || isConfirmingPayment} />
+      <div className={`${isLoading || actionLoading || isConfirmingPayment ? "blur-[1px]" : ""}`}>
         {/* Action Buttons */}
         <div className="flex justify-end mb-4">
           <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 rounded-full shadow-md p-2 z-[900]">
@@ -604,6 +666,19 @@ const Lead = () => {
             >
               {isSendingQuote ? "Sending..." : "Send Quote"}
             </button>
+
+            {/* Confirm Payment Button */}
+            {singleLead && !singleLead?.paymentDetails?.confirmed && (
+              <button
+                onClick={() => !actionLoading && !isConfirmingPayment && handleConfirmPayment()}
+                className="px-4 py-2 text-green-600 dark:text-green-400 text-sm border-r border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-green-700 dark:hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                disabled={actionLoading || isConfirmingPayment || !totalCost}
+              >
+                <DollarSign size={16} />
+                {isConfirmingPayment ? "Confirming..." : "Confirm Payment"}
+              </button>
+            )}
+
             {user?.role === "admin" && (
               <button
                 onClick={handleDownload}
@@ -613,6 +688,7 @@ const Lead = () => {
                 Download
               </button>
             )}
+
             {singleLead?.status === "Ordered" && (
               <button
                 onClick={handleGoToOrder}
@@ -834,65 +910,66 @@ const Lead = () => {
                   View Costs →
                 </button>
               </div>
+
               <div className="w-full flex-shrink-0 flex flex-col items-center justify-center gap-3">
-{[
-  { label: "Part Cost", value: partCost, setter: setPartCost, type: "number" },
-  {
-    label: "Shipping Cost",
-    value: shippingCost,
-    setter: setShippingCost,
-    type: "number",
-  },
-  {
-    label: "Gross Profit",
-    value: grossProfit,
-    setter: setGrossProfit,
-    type: "number",
-  },
-  { label: "Warranty", value: warranty, setter: setWarranty, type: "select" },
-  { label: "Total Cost", value: totalCost, readonly: true },
-].map((item, index) => (
-  <div
-    key={index}
-    className="w-full h-20 bg-gray-100 dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
-  >
-    <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-      {item.label}
-    </p>
-    {item.readonly ? (
-      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
-        {item.value ? `$${item.value}` : "-"}
-      </p>
-    ) : item.type === "select" ? (
-      <select
-        value={warranty}
-        onChange={(e) => setWarranty(e.target.value)}
-        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-        disabled={actionLoading}
-      >
-        {["0 months", "3 months", "6 months", "12 months", "24 months"].map(
-          (option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          )
-        )}
-      </select>
-    ) : (
-      <input
-        type={item.type}
-        value={item.value === "0" ? "" : item.value}
-        onChange={(e) => item.setter(e.target.value)}
-        onWheel={(e) => e.target.blur()}
-        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        placeholder=""
-        step="0.01"
-        min="0"
-        disabled={actionLoading}
-      />
-    )}
-  </div>
-))}
+                {[
+                  { label: "Part Cost", value: partCost, setter: setPartCost, type: "number" },
+                  {
+                    label: "Shipping Cost",
+                    value: shippingCost,
+                    setter: setShippingCost,
+                    type: "number",
+                  },
+                  {
+                    label: "Gross Profit",
+                    value: grossProfit,
+                    setter: setGrossProfit,
+                    type: "number",
+                  },
+                  { label: "Warranty", value: warranty, setter: setWarranty, type: "select" },
+                  { label: "Total Cost", value: totalCost, readonly: true },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="w-full h-20 bg-gray-100 dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
+                  >
+                    <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+                      {item.label}
+                    </p>
+                    {item.readonly ? (
+                      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                        {item.value ? `$${item.value}` : "-"}
+                      </p>
+                    ) : item.type === "select" ? (
+                      <select
+                        value={warranty}
+                        onChange={(e) => setWarranty(e.target.value)}
+                        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                        disabled={actionLoading}
+                      >
+                        {["0 months", "3 months", "6 months", "12 months", "24 months"].map(
+                          (option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    ) : (
+                      <input
+                        type={item.type}
+                        value={item.value === "0" ? "" : item.value}
+                        onChange={(e) => item.setter(e.target.value)}
+                        onWheel={(e) => e.target.blur()}
+                        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder=""
+                        step="0.01"
+                        min="0"
+                        disabled={actionLoading}
+                      />
+                    )}
+                  </div>
+                ))}
                 <div className="flex justify-end w-full pr-6">
                   <button
                     onClick={() => !actionLoading && showSubmitCostsConfirmation()}
@@ -932,6 +1009,68 @@ const Lead = () => {
           </div>
         </div>
 
+        {/* NEW: Payment Details Section */}
+        {singleLead && (
+          <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <DollarSign size={24} className="text-green-600 dark:text-green-400" />
+              Payment Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                <p className="text-lg font-medium mt-1 flex items-center gap-2">
+                  {singleLead.paymentDetails?.confirmed ? (
+                    <>
+                      <Check size={18} className="text-green-600 dark:text-green-400" />
+                      <span className="text-green-600 dark:text-green-400">Paid</span>
+                    </>
+                  ) : (
+                    <span className="text-yellow-600 dark:text-yellow-400">Pending</span>
+                  )}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Amount Paid</p>
+                <p className="text-lg font-medium mt-1">
+                  ${Number(singleLead.paymentDetails?.amount || 0).toFixed(2)}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Payment Date</p>
+                <p className="text-lg font-medium mt-1">
+                  {singleLead.paymentDetails?.paymentDate
+                    ? new Date(singleLead.paymentDetails.paymentDate).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })
+                    : "Not yet paid"}
+                </p>
+              </div>
+            </div>
+
+            {/* Confirm Payment Button (if not confirmed) */}
+            {!singleLead.paymentDetails?.confirmed && (
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={handleConfirmPayment}
+                  disabled={actionLoading || isConfirmingPayment || !totalCost}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <DollarSign size={18} />
+                  {isConfirmingPayment ? "Confirming..." : "Confirm Payment"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Confirmation Modal for Actions */}
         <ConfirmationModal
           isOpen={showConfirmModal}
@@ -944,16 +1083,16 @@ const Lead = () => {
           secondaryText={secondaryConfirmText}
           secondaryOnClick={secondaryConfirmAction}
           confirmButtonProps={{
-            disabled: actionLoading,
-            className: `${confirmOverrideClass} ${actionLoading ? "opacity-50 cursor-not-allowed" : ""}`,
+            disabled: actionLoading || isConfirmingPayment,
+            className: `${confirmOverrideClass} ${actionLoading || isConfirmingPayment ? "opacity-50 cursor-not-allowed" : ""}`,
           }}
           cancelButtonProps={{
-            disabled: actionLoading,
-            className: `${actionLoading ? "opacity-50 cursor-not-allowed" : ""}`,
+            disabled: actionLoading || isConfirmingPayment,
+            className: `${actionLoading || isConfirmingPayment ? "opacity-50 cursor-not-allowed" : ""}`,
           }}
           secondaryButtonProps={{
-            disabled: actionLoading,
-            className: `${secondaryOverrideClass} ${actionLoading ? "opacity-50 cursor-not-allowed" : ""}`,
+            disabled: actionLoading || isConfirmingPayment,
+            className: `${secondaryOverrideClass} ${actionLoading || isConfirmingPayment ? "opacity-50 cursor-not-allowed" : ""}`,
           }}
         />
 

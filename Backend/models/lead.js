@@ -5,11 +5,12 @@ const leadSchema = new mongoose.Schema({
   phoneNumber: { type: String, required: true },
   email: { type: String, required: true },
   zip: { type: String, required: true },
-  partRequested: { type: String, required: false }, // Changed to required: false
+  partRequested: { type: String, required: false },
   make: { type: String, required: true },
   model: { type: String, required: true },
-  year: { type: String, required: false }, // Changed to required: false
-  trim: { type: String, required: false }, // Already changed to required: false
+  year: { type: String, required: false },
+  trim: { type: String, required: false },
+
   status: {
     type: String,
     enum: [
@@ -23,8 +24,10 @@ const leadSchema = new mongoose.Schema({
     ],
     default: "Quoted",
   },
+
   salesPerson: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   createdBy: { type: Boolean, default: false },
+
   notes: [
     {
       text: String,
@@ -32,17 +35,44 @@ const leadSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now },
     },
   ],
+
   importantDates: [
     {
       date: { type: String, required: true },
       note: { type: String, default: "" },
     },
   ],
+
+  // ────────────────────────────────────────────────
+  //           Recommended Payment Details
+  // ────────────────────────────────────────────────
+  paymentDetails: {
+    confirmed: {
+      type: Boolean,
+      default: false,
+    },
+    paymentDate: {
+      type: Date,
+      default: null,
+    },
+    amount: {
+      type: Number,
+      default: 0,
+      min: [0, "Payment amount cannot be negative"],
+    },
+    // Optional but very useful fields (you can add later if needed)
+    // method: { type: String, enum: ["Credit Card", "Bank Transfer", "Cash", "Other"] },
+    // transactionId: { type: String, trim: true },
+    // notes: { type: String },
+  },
+
   partCost: { type: Number, default: 0 },
   shippingCost: { type: Number, default: 0 },
   grossProfit: { type: Number, default: 0 },
   totalCost: { type: Number, default: 0 },
+
   warranty: { type: String, default: "0 months" },
+
   createdAt: { type: Date, default: Date.now },
 });
 
