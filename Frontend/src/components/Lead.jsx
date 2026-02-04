@@ -912,6 +912,7 @@ const Lead = () => {
               </div>
 
               <div className="w-full flex-shrink-0 flex flex-col items-center justify-center gap-3">
+<<<<<<< HEAD
                 {[
                   { label: "Part Cost", value: partCost, setter: setPartCost, type: "number" },
                   {
@@ -970,6 +971,66 @@ const Lead = () => {
                     )}
                   </div>
                 ))}
+=======
+{[
+  { label: "Part Cost", value: partCost, setter: setPartCost, type: "number" },
+  {
+    label: "Shipping Cost",
+    value: shippingCost,
+    setter: setShippingCost,
+    type: "number",
+  },
+  {
+    label: "Gross Profit",
+    value: grossProfit,
+    setter: setGrossProfit,
+    type: "number",
+  },
+  { label: "Warranty", value: warranty, setter: setWarranty, type: "select" },
+  { label: "Total Cost", value: totalCost, readonly: true },
+].map((item, index) => (
+  <div
+    key={index}
+    className="w-full h-20 bg-gray-100 dark:bg-gray-700 flex items-center justify-between px-6 rounded-lg"
+  >
+    <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+      {item.label}
+    </p>
+    {item.readonly ? (
+      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+        {item.value ? `$${item.value}` : "-"}
+      </p>
+    ) : item.type === "select" ? (
+      <select
+        value={warranty}
+        onChange={(e) => setWarranty(e.target.value)}
+        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+        disabled={actionLoading}
+      >
+        {["0 months", "3 months", "6 months", "12 months", "24 months"].map(
+          (option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          )
+        )}
+      </select>
+    ) : (
+      <input
+        type={item.type}
+        value={item.value === "0" ? "" : item.value}
+        onChange={(e) => item.setter(e.target.value)}
+        onWheel={(e) => e.target.blur()}appearance-none
+        className="border p-2 rounded w-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        placeholder=""
+        step="0.01"
+        min="0"
+        disabled={actionLoading}
+      />
+    )}
+  </div>
+))}
+>>>>>>> b13687342eae2db6c0308afbdaf29ae209bae834
                 <div className="flex justify-end w-full pr-6">
                   <button
                     onClick={() => !actionLoading && showSubmitCostsConfirmation()}

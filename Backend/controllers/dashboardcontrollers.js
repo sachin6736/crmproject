@@ -48,7 +48,7 @@ export const getorders = async (req, res, next) => {
 export const getmyteam = async (req, res, next) => {
   console.log("getusers controller working");
   try {
-    const team = await User.find({}, "name email role isPaused status createdAt Access Editcost");
+    const team = await User.find({}, "name email password role isPaused status createdAt Access Editcost");
     res.status(200).json(team);
   } catch (error) {
     console.log("error in getting team", error);
