@@ -23,6 +23,7 @@ import LitigationOrders from './components/Litigationorders';
 import Litigationdetails from './components/Litigationdetails';
 import PaidVendors from './components/PaidVendors';
 import PaidVendorshistory from './components/PaidVendorsHistory';
+import CustomerPaymentHistory from './components/CustomerPaymentHistory';
 
 function App() {
   const { theme } = useTheme();
@@ -51,6 +52,7 @@ function App() {
           <Route path='orders' element={<OrdersHistory />} />
           <Route path='litigation-orders' element={<ProtectedRoute><LitigationOrders /></ProtectedRoute>} />
           <Route path='cancelledvendors' element={<CancelledVendor />} />
+          <Route path="customer-payments" element={<CustomerPaymentHistory />} />
           <Route path='paidvendors' element={<PaidVendors />} />
           <Route path='paidvendorshistory' element={<PaidVendorshistory />} />
           <Route path='order/details/:orderId' element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />

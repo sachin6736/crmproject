@@ -17,7 +17,8 @@ import {
   X,
   Clock,
   Gavel,
-  Trash2, // Added Trash2 icon for delete button
+  Trash2,
+  DollarSign, // Added Trash2 icon for delete button
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -280,6 +281,14 @@ function Home() {
       icon: <LineChart className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
       onClick: () => {
         navigate('/home/sales');
+        setShowSidebar(false);
+      },
+    },
+    {
+      label: 'Customer Payment History',
+      icon: <DollarSign className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        navigate('/home/customer-payments');
         setShowSidebar(false);
       },
     },

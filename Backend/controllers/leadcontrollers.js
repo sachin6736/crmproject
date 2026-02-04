@@ -993,3 +993,49 @@ export const confirmPayment = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+// ... getConfirmedPaymentLeads
+
+export const getConfirmedPaymentLeads = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search?.trim() || "";
+
+    const query = {
+      "paymentDetails.confirmed": true,
+    };
+
+    // Search filter (name, email, phone)
+    if (search) {
+      query.$or = [
+        { clientName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phoneNumber: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const totalLeads = await Lead.countDocuments(query);
+
+    const leads = await Lead.find(query)
+      .select(
+        "clientName phoneNumber email paymentDetails partRequested make model year totalCost notes createdAt"
+      )
+      .sort({ "paymentDetails.paymentDate": -1 }) // newest payments first
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    res.status(200).json({
+      confirmedLeads: leads,
+      totalPages: Math.ceil(totalLeads / limit),
+      currentPage: page,
+      total: totalLeads,
+    });
+  } catch (error) {
+    console.error("Error fetching confirmed payment leads:", error);
+    res.status(500).json({ message: "Server error while fetching payment history" });
+  }
+};
