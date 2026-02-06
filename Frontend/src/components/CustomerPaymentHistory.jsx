@@ -28,22 +28,22 @@ const Modal = ({ isOpen, onClose, title, children, submitLabel, cancelLabel, onS
         </h2>
         {children}
         {showActions && (
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-6 flex justify-end gap-3">
             <button
               onClick={onClose}
-              className={`px-4 py-2 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 ${
+              className={`px-5 py-2.5 rounded-lg font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 transition-all duration-200 ${
                 theme === 'dark'
                   ? 'bg-gray-700 text-gray-100 focus:ring-gray-500 hover:bg-gray-600'
                   : 'bg-gray-200 text-gray-900 focus:ring-gray-400 hover:bg-gray-300'
               }`}
-              aria-label={cancelLabel || 'Cancel'}
+              aria-label={cancelLabel || 'Close'}
             >
-              {cancelLabel || 'Cancel'}
+              {cancelLabel || 'Close'}
             </button>
             {onSubmit && (
               <button
                 onClick={onSubmit}
-                className={`px-4 py-2 rounded-lg hover:bg-opacity-80 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`px-5 py-2.5 rounded-lg font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 transition-all duration-200 ${
                   theme === 'dark'
                     ? 'bg-blue-600 text-white focus:ring-blue-500 hover:bg-blue-500'
                     : 'bg-blue-500 text-white focus:ring-blue-400 hover:bg-blue-600'
@@ -194,25 +194,41 @@ const CustomerPaymentHistory = () => {
     setActionLoading(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/Lead/${selectedLeadId}/notes`,
+        `${import.meta.env.VITE_API_URL}/Lead/updateNotes/${selectedLeadId}`,
         {
-          method: 'POST',
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({ text: noteText }),
         }
       );
 
-      if (!res.ok) throw new Error('Failed to add note');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to add note');
+      }
 
-      // Refresh list (or optimistically update if you prefer)
+      const updatedData = await res.json();
+      const updatedLead = updatedData.lead;
+
+      // Optimistic update in the list
+      setConfirmedLeads((prev) =>
+        prev.map((lead) =>
+          lead._id === selectedLeadId
+            ? { ...lead, notes: updatedLead.notes || lead.notes }
+            : lead
+        )
+      );
+
       setNoteSuccess('Note added successfully');
       timeoutRef.current = setTimeout(() => {
         setIsAddNoteModalOpen(false);
         setNoteSuccess(null);
+        setNoteText('');
       }, 1500);
     } catch (err) {
       setNoteError(err.message || 'Failed to add note');
+      console.error(err);
     } finally {
       setActionLoading(false);
     }
@@ -224,6 +240,7 @@ const CustomerPaymentHistory = () => {
       setIsAddNoteModalOpen(false);
       setNoteSuccess(null);
       setNoteError(null);
+      setNoteText('');
     }
   };
 
@@ -248,7 +265,7 @@ const CustomerPaymentHistory = () => {
             Customer Payment History
           </h1>
 
-          {/* Search */}
+          {/* Search Bar */}
           <div className="mb-6 max-w-lg mx-auto relative">
             <input
               type="text"
@@ -276,7 +293,7 @@ const CustomerPaymentHistory = () => {
               <p className={`text-lg ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
               <button
                 onClick={() => { setError(null); setPage(1); }}
-                className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 disabled={actionLoading}
               >
                 Retry
@@ -324,18 +341,20 @@ const CustomerPaymentHistory = () => {
                           : 'N/A'}
                       </td>
                       <td
-                        className={`px-6 py-4 cursor-pointer hover:text-blue-500 ${
+                        className={`px-6 py-4 cursor-pointer hover:text-blue-500 transition-colors ${
                           theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                         }`}
                         onClick={() => handleViewNotes(lead._id, lead.notes)}
                       >
-                        {lead.notes?.length > 0 ? `${lead.notes.length} note${lead.notes.length > 1 ? 's' : ''}` : 'No notes'}
+                        {lead.notes?.length > 0 
+                          ? `${lead.notes.length} note${lead.notes.length > 1 ? 's' : ''}` 
+                          : 'No notes'}
                       </td>
                       {user?.role !== 'viewer' && (
                         <td className="px-6 py-4">
                           <button
                             onClick={() => handleAddNote(lead._id)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
                             disabled={actionLoading}
                           >
                             Add Note
@@ -351,21 +370,31 @@ const CustomerPaymentHistory = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center mt-6 gap-2 flex-wrap">
+            <div className="flex justify-center mt-8 gap-3 flex-wrap">
               <button
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1 || actionLoading}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                className={`px-5 py-2.5 rounded-lg font-medium ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 disabled:bg-gray-800'
+                    : 'bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:bg-gray-300'
+                } disabled:opacity-50`}
               >
                 Previous
               </button>
-              <span className="px-4 py-2">
+
+              <span className={`px-5 py-2.5 font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                 Page {page} of {totalPages}
               </span>
+
               <button
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page === totalPages || actionLoading}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                className={`px-5 py-2.5 rounded-lg font-medium ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 disabled:bg-gray-800'
+                    : 'bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:bg-gray-300'
+                } disabled:opacity-50`}
               >
                 Next
               </button>
@@ -378,41 +407,55 @@ const CustomerPaymentHistory = () => {
           isOpen={isAddNoteModalOpen}
           onClose={handleCloseAddNoteModal}
           onSubmit={handleNoteSubmit}
-          title="Add Note to Customer Payment"
+          title="Add Note to Payment Record"
           submitLabel="Save Note"
+          cancelLabel="Cancel"
         >
           <textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
-            className={`w-full p-3 rounded border ${theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-black border-gray-300'}`}
-            rows={4}
-            placeholder="Enter note here..."
+            className={`w-full p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] text-sm ${
+              theme === 'dark'
+                ? 'bg-gray-700 text-gray-100 border-gray-600'
+                : 'bg-white text-gray-900 border-gray-300'
+            }`}
+            placeholder="Enter your note here..."
             disabled={actionLoading}
           />
-          {noteError && <p className="text-red-500 mt-2">{noteError}</p>}
-          {noteSuccess && <p className="text-green-500 mt-2">{noteSuccess}</p>}
+          {noteError && <p className="text-red-500 mt-2 text-sm">{noteError}</p>}
+          {noteSuccess && <p className="text-green-500 mt-2 text-sm">{noteSuccess}</p>}
         </Modal>
 
         {/* View Notes Modal */}
         <Modal
           isOpen={isViewNotesModalOpen}
           onClose={handleCloseViewNotesModal}
-          title="Payment Notes"
-          showActions={false}
+          title="Payment Record Notes"
+          showActions={true}
+          cancelLabel="Close"
         >
           {selectedLeadNotes.length > 0 ? (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {selectedLeadNotes.map((note, i) => (
-                <div key={i} className={`p-3 rounded ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                  <p>{note.text}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+              {selectedLeadNotes.map((note, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border ${
+                    theme === 'dark'
+                      ? 'bg-gray-700 border-gray-600'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{note.text}</p>
+                  <p className={`text-xs mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                     {new Date(note.createdAt).toLocaleString()}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-center text-gray-500">No notes yet</p>
+            <p className={`text-center py-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              No notes have been added yet.
+            </p>
           )}
         </Modal>
       </div>
