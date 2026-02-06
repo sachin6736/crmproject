@@ -678,3 +678,56 @@ export const resolveLitigation = async (req, res) => {
     });
   }
 };
+
+
+export const markAsRefund = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "Access denied: User not authenticated" });
+    }
+
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "Litigation") {
+      return res.status(400).json({ message: "Can only mark Refund from Litigation status" });
+    }
+
+    // Update status
+    order.status = "Refund";
+
+    // Add note to litigationNotes
+    const userName = req.user?.name || "Unknown User";
+    const noteText = `Order marked as Refund by ${userName} on ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`;
+
+    const litigation = await Litigation.findOne({ orderId });
+    if (litigation) {
+      litigation.litigationNotes = litigation.litigationNotes || [];
+      litigation.litigationNotes.push({
+        text: noteText,
+        createdBy: req.user?._id || null,
+        createdByName: userName,
+        createdAt: new Date(),
+      });
+      await litigation.save();           // Save litigation notes
+    }
+
+    // IMPORTANT: Save the updated order status!
+    await order.save();
+
+    return res.status(200).json({
+      message: "Order marked as Refund successfully",
+      order,   // Return updated order so frontend gets new status
+    });
+  } catch (error) {
+    console.error("Error marking as Refund:", error);
+    return res.status(500).json({
+      message: "Failed to mark as Refund",
+      error: error.message,
+    });
+  }
+};

@@ -155,7 +155,8 @@ const orderSchema = new mongoose.Schema({
       "Replacement",
       "Litigation",
       "Replacement Cancelled",
-      "Resolved"
+      "Resolved",
+      "Refund"
     ],
     default: "Locate Pending",
   },

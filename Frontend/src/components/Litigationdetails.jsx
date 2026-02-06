@@ -30,6 +30,8 @@ const LitigationDetails = () => {
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReplacementDropdownOpen, setIsReplacementDropdownOpen] = useState(false);
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+const [refundConfirmAction, setRefundConfirmAction] = useState(null);
 
   // Modal for Resolve confirmation
   const [showResolveConfirm, setShowResolveConfirm] = useState(false);
@@ -734,6 +736,60 @@ const LitigationDetails = () => {
               >
                 Resolve
               </button>
+              <button
+  onClick={() => {
+    if (!hasMeaningfulLitigation) {
+      toast.warn("Please fill at least one field in the Litigation form first");
+      return;
+    }
+    if (order?.status !== "Litigation") {
+      toast.warn("Can only mark Refund from Litigation status");
+      return;
+    }
+
+    // Show confirmation modal
+    setRefundConfirmAction(() => async () => {
+      setActionLoading(true);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/refund/${orderId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to mark as Refund");
+        }
+
+        const data = await response.json();
+        setOrder(data.order);
+        toast.success("Order marked as Refund successfully");
+      } catch (error) {
+        toast.error(error.message || "Failed to mark as Refund");
+      } finally {
+        setActionLoading(false);
+      }
+    });
+
+    setShowRefundConfirm(true);
+  }}
+  className={`flex items-center px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-4 transition-all duration-200 text-sm font-medium ${
+    hasMeaningfulLitigation && order?.status === "Litigation"
+      ? "bg-red-600 hover:bg-red-700 focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-700"
+      : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70"
+  }`}
+  disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation"}
+  title={
+    !hasMeaningfulLitigation
+      ? "Litigation form must have at least one field filled"
+      : order?.status !== "Litigation"
+      ? "Only available from Litigation status"
+      : ""
+  }
+>
+  Refund
+</button>
             </div>
           </div>
         )}
@@ -892,6 +948,22 @@ const LitigationDetails = () => {
           disabled: actionLoading,
         }}
       />
+      <ConfirmationModal
+  isOpen={showRefundConfirm}
+  onClose={() => setShowRefundConfirm(false)}
+  onConfirm={refundConfirmAction}
+  title="Confirm Refund"
+  message="Are you sure you want to mark this order as Refund? This action cannot be undone."
+  confirmText="Yes, Refund"
+  cancelText="Cancel"
+  confirmButtonProps={{
+    className: "bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600",
+    disabled: actionLoading,
+  }}
+  cancelButtonProps={{
+    disabled: actionLoading,
+  }}
+/>
     </div>
   );
 };
