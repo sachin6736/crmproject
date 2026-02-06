@@ -3361,69 +3361,73 @@ const [selectedUserForView, setSelectedUserForView] = useState(null);
               onClose={() => setShowDeliveredDetailsModal(false)}
               deliveredMetrics={deliveredMetrics}
             />
-            {showPasswordViewModal && selectedUserForView && (
+  {showPasswordViewModal && selectedUserForView && (
+  <motion.div
+    className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
     <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md"
+      initial={{ scale: 0.9, y: 50, opacity: 0 }}
+      animate={{ scale: 1, y: 0, opacity: 1 }}
+      exit={{ scale: 0.9, y: 50, opacity: 0 }}
     >
-      <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md"
-        initial={{ scale: 0.9, y: 50, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.9, y: 50, opacity: 0 }}
-      >
-        <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Eye className="w-6 h-6 text-blue-500" />
-          User Password
-        </h3>
+      <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+        <Eye className="w-6 h-6 text-blue-500" />
+        User Password
+      </h3>
 
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Name:</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">
-              {selectedUserForView.name}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Email:</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">
-              {selectedUserForView.email}
-            </p>
-          </div>
-          <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Password:</p>
-            <p className="text-2xl font-mono font-bold tracking-wider text-red-600 dark:text-red-400">
-              {selectedUserForView.password}
-            </p>
-          </div>
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Name:</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">
+            {selectedUserForView.name}
+          </p>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={() => {
-              setShowPasswordViewModal(false);
-              setSelectedUserForView(null);
-            }}
-            className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
-          >
-            Close
-          </button>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(selectedUserForView.password);
-              toast.success("Password copied to clipboard!");
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <Copy className="w-4 h-4" />
-            Copy Password
-          </button>
+        <div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Email:</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">
+            {selectedUserForView.email}
+          </p>
         </div>
-      </motion.div>
+
+        {/* Updated Password Display - now safely contained */}
+        <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center border border-gray-300 dark:border-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Password:</p>
+          <div className="font-mono font-bold tracking-wider text-red-600 dark:text-red-400 text-lg md:text-xl break-all overflow-hidden overflow-x-auto max-w-full px-2 py-1">
+            {selectedUserForView.password}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          onClick={() => {
+            setShowPasswordViewModal(false);
+            setSelectedUserForView(null);
+          }}
+          className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+        >
+          Close
+        </button>
+
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(selectedUserForView.password);
+            toast.success("Password copied to clipboard!");
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Copy className="w-4 h-4" />
+          Copy Password
+        </button>
+      </div>
     </motion.div>
-  )}
+  </motion.div>
+)}
           </AnimatePresence>
         </div>
       </div>
