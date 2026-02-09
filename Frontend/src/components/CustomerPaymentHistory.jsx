@@ -1,64 +1,10 @@
+// src/components/CustomerPaymentHistory.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from '../context/ThemeContext';
 import LoadingOverlay from './LoadingOverlay';
-
-const Modal = ({ isOpen, onClose, title, children, submitLabel, cancelLabel, onSubmit, showActions = true }) => {
-  const { theme } = useTheme();
-  if (!isOpen) return null;
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-    >
-      <div
-        className={`rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto shadow-2xl animate-fade-in ${
-          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-        }`}
-      >
-        <h2
-          id="modal-title"
-          className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-        >
-          {title}
-        </h2>
-        {children}
-        {showActions && (
-          <div className="mt-6 flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className={`px-5 py-2.5 rounded-lg font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 transition-all duration-200 ${
-                theme === 'dark'
-                  ? 'bg-gray-700 text-gray-100 focus:ring-gray-500 hover:bg-gray-600'
-                  : 'bg-gray-200 text-gray-900 focus:ring-gray-400 hover:bg-gray-300'
-              }`}
-              aria-label={cancelLabel || 'Close'}
-            >
-              {cancelLabel || 'Close'}
-            </button>
-            {onSubmit && (
-              <button
-                onClick={onSubmit}
-                className={`px-5 py-2.5 rounded-lg font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 transition-all duration-200 ${
-                  theme === 'dark'
-                    ? 'bg-blue-600 text-white focus:ring-blue-500 hover:bg-blue-500'
-                    : 'bg-blue-500 text-white focus:ring-blue-400 hover:bg-blue-600'
-                }`}
-                aria-label={submitLabel || 'Submit'}
-              >
-                {submitLabel || 'Submit'}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const CustomerPaymentHistory = () => {
   const { theme } = useTheme();
@@ -69,20 +15,21 @@ const CustomerPaymentHistory = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
 
-  const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
-  const [isViewNotesModalOpen, setIsViewNotesModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 10;
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Note modals
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
+  const [showViewNotesModal, setShowViewNotesModal] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState(null);
-  const [selectedLeadNotes, setSelectedLeadNotes] = useState([]);
+  const [selectedNotes, setSelectedNotes] = useState([]);
   const [noteText, setNoteText] = useState('');
   const [noteError, setNoteError] = useState(null);
-  const [noteSuccess, setNoteSuccess] = useState(null);
 
-  const timeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
 
   // Fetch user
@@ -109,83 +56,59 @@ const CustomerPaymentHistory = () => {
     fetchUser();
   }, [navigate]);
 
-  // Fetch confirmed payment leads
+  // Fetch confirmed payments
   useEffect(() => {
     if (!user) return;
 
-    const fetchConfirmedLeads = async () => {
-      abortControllerRef.current = new AbortController();
-      setLoadingLeads(true);
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/Lead/confirmed-payments?page=${page}&search=${encodeURIComponent(search)}`,
-          {
-            credentials: 'include',
-            signal: abortControllerRef.current.signal,
-          }
-        );
+    abortControllerRef.current = new AbortController();
+    setLoadingLeads(true);
 
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.message || 'Failed to fetch payment history');
-        }
+    const fetchData = async () => {
+      try {
+        const url = `${import.meta.env.VITE_API_URL}/Lead/confirmed-payments?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`;
+
+        const res = await fetch(url, {
+          credentials: 'include',
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch payment history');
 
         const data = await res.json();
         setConfirmedLeads(data.confirmedLeads || []);
         setTotalPages(data.totalPages || 1);
+        setCurrentPage(data.currentPage || 1);
       } catch (err) {
-        if (err.name === 'AbortError') return;
-        setError(err.message || 'Failed to load payment history');
-        console.error(err);
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          toast.error('Failed to load payment history');
+        }
       } finally {
         setLoadingLeads(false);
       }
     };
 
-    fetchConfirmedLeads();
+    fetchData();
 
-    return () => {
-      if (abortControllerRef.current) abortControllerRef.current.abort();
-    };
-  }, [user, page, search]);
-
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
-
-  const handleClearSearch = () => {
-    if (!actionLoading) {
-      setSearch('');
-      setPage(1);
-    }
-  };
-
-  const handlePageChange = (newPage) => {
-    if (!actionLoading && newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
-    }
-  };
+    return () => abortControllerRef.current?.abort();
+  }, [user, currentPage, searchQuery]);
 
   const handleAddNote = (leadId) => {
-    if (!actionLoading) {
-      setSelectedLeadId(leadId);
-      setNoteText('');
-      setNoteError(null);
-      setNoteSuccess(null);
-      setIsAddNoteModalOpen(true);
-    }
+    if (actionLoading) return;
+    setSelectedLeadId(leadId);
+    setNoteText('');
+    setNoteError(null);
+    setShowAddNoteModal(true);
   };
 
   const handleViewNotes = (leadId, notes) => {
-    if (!actionLoading) {
-      setSelectedLeadId(leadId);
-      setSelectedLeadNotes(notes || []);
-      setIsViewNotesModalOpen(true);
-    }
+    if (actionLoading) return;
+    setSelectedLeadId(leadId);
+    setSelectedNotes(notes || []);
+    setShowViewNotesModal(true);
   };
 
-  const handleNoteSubmit = async () => {
+  const handleSubmitNote = async () => {
     if (!noteText.trim()) {
       setNoteError('Note cannot be empty');
       return;
@@ -203,15 +126,11 @@ const CustomerPaymentHistory = () => {
         }
       );
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to add note');
-      }
+      if (!res.ok) throw new Error('Failed to add note');
 
       const updatedData = await res.json();
       const updatedLead = updatedData.lead;
 
-      // Optimistic update in the list
       setConfirmedLeads((prev) =>
         prev.map((lead) =>
           lead._id === selectedLeadId
@@ -220,245 +139,238 @@ const CustomerPaymentHistory = () => {
         )
       );
 
-      setNoteSuccess('Note added successfully');
-      timeoutRef.current = setTimeout(() => {
-        setIsAddNoteModalOpen(false);
-        setNoteSuccess(null);
-        setNoteText('');
-      }, 1500);
+      toast.success('Note added');
+      setShowAddNoteModal(false);
+      setNoteText('');
     } catch (err) {
-      setNoteError(err.message || 'Failed to add note');
+      toast.error('Failed to add note');
       console.error(err);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleCloseAddNoteModal = () => {
-    if (!actionLoading) {
-      clearTimeout(timeoutRef.current);
-      setIsAddNoteModalOpen(false);
-      setNoteSuccess(null);
-      setNoteError(null);
-      setNoteText('');
-    }
-  };
-
-  const handleCloseViewNotesModal = () => {
-    if (!actionLoading) {
-      setIsViewNotesModalOpen(false);
-      setSelectedLeadId(null);
-      setSelectedLeadNotes([]);
-    }
-  };
-
-  useEffect(() => {
-    return () => clearTimeout(timeoutRef.current);
-  }, []);
+  const isViewer = user?.role === 'viewer';
 
   return (
-    <div className={`min-h-screen py-8 px-4 sm:px-6 lg:px-8 relative ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+    <div className="p-4 md:p-6 min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
       <LoadingOverlay isLoading={loadingUser || loadingLeads || actionLoading} />
-      <div className={`${loadingUser || loadingLeads || actionLoading ? 'blur-[1px]' : ''}`}>
-        <div className="max-w-7xl mx-auto">
-          <h1 className={`text-3xl sm:text-4xl font-bold text-center mb-8 tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Customer Payment History
-          </h1>
 
-          {/* Search Bar */}
-          <div className="mb-6 max-w-lg mx-auto relative">
+      <div className={`${loadingUser || loadingLeads || actionLoading ? 'blur-[1px]' : ''}`}>
+        {/* Filters */}
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+          <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-auto rounded-md">
+            {/* You can add buttons here later if needed (like in leads page) */}
+          </div>
+
+          <div className="flex items-center space-x-4">
             <input
               type="text"
-              value={search}
-              onChange={handleSearchChange}
               placeholder="Search by name, email, phone..."
-              className={`w-full p-3 pr-10 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base ${
-                theme === 'dark' ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900 border-gray-300'
-              }`}
+              className="px-3 py-2 border rounded w-64 md:w-80 focus:outline-none focus:ring focus:border-blue-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:focus:border-blue-500"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               disabled={actionLoading}
             />
-            {search && (
+          </div>
+        </div>
+
+        {/* Table Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-md shadow-md overflow-x-auto flex-grow relative">
+          <table className="w-full text-left text-sm md:text-base">
+            <thead className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+              <tr>
+                {[
+                  'Client Name',
+                  'Email',
+                  'Phone',
+                  'Part Requested',
+                  'Amount Paid',
+                  'Paid On',
+                  'Notes',
+                  ...(!isViewer ? ['Action'] : []),
+                ].map((header, i) => (
+                  <th
+                    key={i}
+                    className="px-3 md:px-4 py-2 border-b border-gray-300 dark:border-gray-600 whitespace-nowrap"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {confirmedLeads.length > 0 ? (
+                confirmedLeads.map((lead) => (
+                  <tr
+                    key={lead._id}
+                    className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.clientName || 'N/A'}</td>
+                    <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.email || 'N/A'}</td>
+                    <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.phoneNumber || 'N/A'}</td>
+                    <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.partRequested || 'N/A'}</td>
+                    <td className="px-3 md:px-4 py-2 whitespace-nowrap font-medium">
+                      ${Number(lead.paymentDetails?.amount || 0).toFixed(2)}
+                    </td>
+                    <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                      {lead.paymentDetails?.paymentDate
+                        ? new Date(lead.paymentDetails.paymentDate).toLocaleString()
+                        : 'N/A'}
+                    </td>
+                    <td
+                      className="px-3 md:px-4 py-2 cursor-pointer hover:underline"
+                      onClick={() => lead.notes?.length > 0 && handleViewNotes(lead._id, lead.notes)}
+                    >
+                      {lead.notes?.length || 0}
+                    </td>
+
+                    {!isViewer && (
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                        <button
+                          onClick={() => handleAddNote(lead._id)}
+                          disabled={actionLoading}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm disabled:opacity-50 transition"
+                        >
+                          Add Note
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={!isViewer ? 8 : 7}
+                    className="text-center py-6 text-gray-500 dark:text-gray-400"
+                  >
+                    No confirmed payments found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination – matched exactly with leads page */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center mt-6 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 py-3 rounded-md">
+            <button
+              onClick={() => !actionLoading && setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1 || actionLoading}
+              className="px-4 py-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Prev
+            </button>
+
+            {[...Array(totalPages)].map((_, idx) => {
+              const pageNum = idx + 1;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => !actionLoading && setCurrentPage(pageNum)}
+                  className={`px-4 py-2 border rounded min-w-[40px] text-center ${
+                    currentPage === pageNum
+                      ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  disabled={actionLoading}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => !actionLoading && setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages || actionLoading}
+              className="px-4 py-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Add Note Modal – simple inline for now (can extract later) */}
+      {showAddNoteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Add Note
+            </h2>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              className="w-full p-3 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+              placeholder="Enter note here..."
+              disabled={actionLoading}
+            />
+            {noteError && <p className="text-red-600 mt-2 text-sm">{noteError}</p>}
+
+            <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                onClick={() => setShowAddNoteModal(false)}
                 disabled={actionLoading}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitNote}
+                disabled={actionLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                Save Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Notes Modal */}
+      {showViewNotesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg shadow-xl max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Notes
+              </h2>
+              <button
+                onClick={() => setShowViewNotesModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none"
               >
                 ×
               </button>
+            </div>
+
+            {selectedNotes.length > 0 ? (
+              <div className="space-y-4">
+                {selectedNotes.map((note, i) => (
+                  <div
+                    key={i}
+                    className={`p-4 rounded border ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{note.text}</p>
+                    <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                      {new Date(note.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-gray-500 dark:text-gray-400">
+                No notes available.
+              </p>
             )}
           </div>
-
-          {error ? (
-            <div className="text-center py-12">
-              <p className={`text-lg ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
-              <button
-                onClick={() => { setError(null); setPage(1); }}
-                className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                disabled={actionLoading}
-              >
-                Retry
-              </button>
-            </div>
-          ) : confirmedLeads.length === 0 ? (
-            <p className={`text-center text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              No confirmed payments found.
-            </p>
-          ) : (
-            <div className="overflow-x-auto shadow-lg rounded-lg">
-              <table className={`min-w-full ${theme === 'dark' ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-900'}`}>
-                <thead className={`sticky top-0 z-10 ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                  <tr className="text-left text-sm uppercase font-medium">
-                    <th className="px-6 py-4">Client Name</th>
-                    <th className="px-6 py-4">Email</th>
-                    <th className="px-6 py-4">Phone</th>
-                    <th className="px-6 py-4">Part Requested</th>
-                    <th className="px-6 py-4">Amount Paid</th>
-                    <th className="px-6 py-4">Paid On</th>
-                    <th className="px-6 py-4">Notes</th>
-                    {user?.role !== 'viewer' && <th className="px-6 py-4">Action</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {confirmedLeads.map((lead) => (
-                    <tr
-                      key={lead._id}
-                      className={`border-b ${
-                        theme === 'dark'
-                          ? 'border-gray-700 hover:bg-gray-700/50'
-                          : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <td className="px-6 py-4">{lead.clientName || 'N/A'}</td>
-                      <td className="px-6 py-4">{lead.email || 'N/A'}</td>
-                      <td className="px-6 py-4">{lead.phoneNumber || 'N/A'}</td>
-                      <td className="px-6 py-4">{lead.partRequested || 'N/A'}</td>
-                      <td className="px-6 py-4 font-medium">
-                        ${Number(lead.paymentDetails?.amount || 0).toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {lead.paymentDetails?.paymentDate
-                          ? new Date(lead.paymentDetails.paymentDate).toLocaleString()
-                          : 'N/A'}
-                      </td>
-                      <td
-                        className={`px-6 py-4 cursor-pointer hover:text-blue-500 transition-colors ${
-                          theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                        }`}
-                        onClick={() => handleViewNotes(lead._id, lead.notes)}
-                      >
-                        {lead.notes?.length > 0 
-                          ? `${lead.notes.length} note${lead.notes.length > 1 ? 's' : ''}` 
-                          : 'No notes'}
-                      </td>
-                      {user?.role !== 'viewer' && (
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleAddNote(lead._id)}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
-                            disabled={actionLoading}
-                          >
-                            Add Note
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-8 gap-3 flex-wrap">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1 || actionLoading}
-                className={`px-5 py-2.5 rounded-lg font-medium ${
-                  theme === 'dark'
-                    ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 disabled:bg-gray-800'
-                    : 'bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:bg-gray-300'
-                } disabled:opacity-50`}
-              >
-                Previous
-              </button>
-
-              <span className={`px-5 py-2.5 font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                Page {page} of {totalPages}
-              </span>
-
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages || actionLoading}
-                className={`px-5 py-2.5 rounded-lg font-medium ${
-                  theme === 'dark'
-                    ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 disabled:bg-gray-800'
-                    : 'bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:bg-gray-300'
-                } disabled:opacity-50`}
-              >
-                Next
-              </button>
-            </div>
-          )}
         </div>
-
-        {/* Add Note Modal */}
-        <Modal
-          isOpen={isAddNoteModalOpen}
-          onClose={handleCloseAddNoteModal}
-          onSubmit={handleNoteSubmit}
-          title="Add Note to Payment Record"
-          submitLabel="Save Note"
-          cancelLabel="Cancel"
-        >
-          <textarea
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            className={`w-full p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] text-sm ${
-              theme === 'dark'
-                ? 'bg-gray-700 text-gray-100 border-gray-600'
-                : 'bg-white text-gray-900 border-gray-300'
-            }`}
-            placeholder="Enter your note here..."
-            disabled={actionLoading}
-          />
-          {noteError && <p className="text-red-500 mt-2 text-sm">{noteError}</p>}
-          {noteSuccess && <p className="text-green-500 mt-2 text-sm">{noteSuccess}</p>}
-        </Modal>
-
-        {/* View Notes Modal */}
-        <Modal
-          isOpen={isViewNotesModalOpen}
-          onClose={handleCloseViewNotesModal}
-          title="Payment Record Notes"
-          showActions={true}
-          cancelLabel="Close"
-        >
-          {selectedLeadNotes.length > 0 ? (
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-              {selectedLeadNotes.map((note, index) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-lg border ${
-                    theme === 'dark'
-                      ? 'bg-gray-700 border-gray-600'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
-                >
-                  <p className="text-sm leading-relaxed">{note.text}</p>
-                  <p className={`text-xs mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {new Date(note.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className={`text-center py-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              No notes have been added yet.
-            </p>
-          )}
-        </Modal>
-      </div>
+      )}
     </div>
   );
 };

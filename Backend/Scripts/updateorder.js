@@ -1,9 +1,8 @@
-// scripts/migrate-verify-refund-status.js
-// Run this ONCE after adding "Refund" to the Order.status enum
-// It verifies existing orders and ensures no invalid statuses exist
+// scripts/verify-refund-statuses.js
+// Run once after adding "Refund" and "Refund Completed" to Order.status enum
 
 import mongoose from "mongoose";
-import { Order } from "../models/order.js"; // Adjust path to your Order model
+import { Order } from "../models/order.js"; // adjust path
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -23,78 +22,74 @@ const VALID_STATUSES = [
   "Litigation",
   "Replacement Cancelled",
   "Resolved",
-  "Refund"              // ← the new one
+  "Refund",
+  "Refund Completed"           // ← both new ones
 ];
 
 mongoose
   .connect(
     process.env.MONGO_URI ||
-    "mongodb+srv://sachinpradeepan27:crmtest12345@crmtest.tdj6iar.mongodb.net/?retryWrites=true&w=majority&appName=crmtest",
-    {
-      // No need for deprecated options
-    }
+    "mongodb+srv://sachinpradeepan27:crmtest12345@crmtest.tdj6iar.mongodb.net/?retryWrites=true&w=majority&appName=crmtest"
   )
   .then(async () => {
     console.log("✅ Connected to MongoDB");
 
     try {
-      console.log("🔍 Verifying order statuses after adding 'Refund'...");
+      console.log("🔍 Verifying order statuses after adding Refund & Refund Completed...");
 
-      // 1. Count total orders
-      const totalOrders = await Order.countDocuments();
-      console.log(`Total orders in collection: ${totalOrders}`);
+      // 1. Total orders
+      const total = await Order.countDocuments();
+      console.log(`Total orders: ${total}`);
 
-      // 2. Find orders with invalid (non-enum) statuses
-      const invalidOrders = await Order.find({
+      // 2. Invalid statuses?
+      const invalid = await Order.find({
         status: { $nin: VALID_STATUSES }
       }).select("order_id status");
 
-      if (invalidOrders.length > 0) {
-        console.warn(`⚠️ Found ${invalidOrders.length} orders with INVALID status:`);
-        invalidOrders.forEach(o => {
-          console.log(`- Order ${o.order_id || o._id}: status = "${o.status}"`);
+      if (invalid.length > 0) {
+        console.warn(`⚠️ ${invalid.length} orders have INVALID status:`);
+        invalid.forEach(o => {
+          console.log(`- Order ${o.order_id || o._id}: "${o.status}"`);
         });
-        console.log("You may want to manually fix these before proceeding.");
+        console.log("→ Fix these manually before using new statuses.");
       } else {
-        console.log("✅ All orders have valid statuses (including the new 'Refund').");
+        console.log("✅ All orders have valid statuses.");
       }
 
-      // 3. Count orders in each status (for overview)
-      console.log("\n📊 Status distribution:");
-      const statusCounts = await Order.aggregate([
+      // 3. Status distribution
+      console.log("\n📊 Current status breakdown:");
+      const counts = await Order.aggregate([
         { $group: { _id: "$status", count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]);
 
-      statusCounts.forEach(s => {
-        console.log(`- ${s._id || "No status"}: ${s.count} orders`);
+      counts.forEach(c => {
+        console.log(`- ${c._id || "(missing)"}: ${c.count} orders`);
       });
 
-      // 4. Count and sample orders already in "Refund" (if any)
+      // 4. Refund & Refund Completed overview
       const refundCount = await Order.countDocuments({ status: "Refund" });
-      console.log(`\nOrders already in "Refund": ${refundCount}`);
+      const completedCount = await Order.countDocuments({ status: "Refund Completed" });
+
+      console.log(`\nRefund status summary:`);
+      console.log(`→ In "Refund": ${refundCount} orders`);
+      console.log(`→ In "Refund Completed": ${completedCount} orders`);
 
       if (refundCount > 0) {
         const samples = await Order.find({ status: "Refund" })
           .select("order_id clientName status")
-          .limit(5);
+          .limit(3);
         console.log("Sample Refund orders:");
-        samples.forEach(o => {
-          console.log(`- ${o.order_id || o._id}: ${o.clientName || "N/A"}`);
-        });
-      } else {
-        console.log("No orders are in 'Refund' status yet.");
+        samples.forEach(o => console.log(`  - ${o.order_id}: ${o.clientName || "N/A"}`));
       }
 
-      console.log("\nMigration/verification completed ✅");
-      console.log("You can now safely use the 'Refund' status in your application.");
+      console.log("\nVerification complete ✅");
+      console.log("You can now safely use Refund & Refund Completed statuses.");
     } catch (err) {
       console.error("❌ Script failed:", err);
     } finally {
       await mongoose.disconnect();
-      console.log("Disconnected from MongoDB");
+      console.log("Disconnected.");
     }
   })
-  .catch(err => {
-    console.error("❌ Failed to connect to MongoDB:", err);
-  });
+  .catch(err => console.error("❌ Connection failed:", err));

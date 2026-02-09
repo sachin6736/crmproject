@@ -2668,27 +2668,22 @@ export const addNoteToPaidVendor = async (req, res) => {
   try {
     const { vendorId } = req.params;
     const { note } = req.body;
-
     // Validate note
     if (!note || typeof note !== 'string' || note.trim() === '') {
       return res.status(400).json({ message: 'Note is required and must be a non-empty string' });
     }
-
     // Find paid vendor
     const paidVendor = await CanceledVendor.findById(vendorId);
     if (!paidVendor) {
       return res.status(404).json({ message: 'Paid vendor not found' });
     }
-
     // Add note to vendor
     paidVendor.vendor.notes = paidVendor.vendor.notes || [];
     paidVendor.vendor.notes.push({
       text: note.trim(),
       createdAt: new Date(),
     });
-
     await paidVendor.save();
-
     res.status(201).json({ message: 'Note added successfully', paidVendor });
   } catch (error) {
     console.error('Error adding note to paid vendor:', error);

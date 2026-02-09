@@ -731,3 +731,95 @@ export const markAsRefund = async (req, res) => {
     });
   }
 };
+
+export const markRefundCompleted = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "Access denied: User not authenticated" });
+    }
+
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "Refund") {
+      return res.status(400).json({ message: "Can only mark Refund Completed from Refund status" });
+    }
+
+    // Update status
+    order.status = "Refund Completed";
+
+    // Add note to litigationNotes
+    const userName = req.user?.name || "Unknown User";
+    const noteText = `Refund marked as Completed by ${userName} on ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`;
+
+    const litigation = await Litigation.findOne({ orderId });
+    if (litigation) {
+      litigation.litigationNotes = litigation.litigationNotes || [];
+      litigation.litigationNotes.push({
+        text: noteText,
+        createdBy: req.user?._id || null,
+        createdByName: userName,
+        createdAt: new Date(),
+      });
+      await litigation.save();
+    }
+
+    await order.save();
+
+    return res.status(200).json({
+      message: "Refund marked as Completed successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Error marking refund as completed:", error);
+    return res.status(500).json({
+      message: "Failed to mark refund as completed",
+      error: error.message,
+    });
+  }
+};
+export const getRefundOrders = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search || '';
+    const status = req.query.status; // new
+
+    const query = {};
+    if (status && ['Refund', 'Refund Completed'].includes(status)) {
+      query.status = status;
+    } else {
+      query.status = { $in: ['Refund', 'Refund Completed'] };
+    }
+
+    if (search) {
+      query.$or = [
+        { order_id: { $regex: search, $options: 'i' } },
+        { clientName: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const orders = await Order.find(query)
+      .select('order_id clientName phone email amount createdAt status notes')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Order.countDocuments(query);
+
+    res.status(200).json({
+      orders,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch refund orders', error: error.message });
+  }
+};

@@ -335,6 +335,14 @@ function Home() {
         setShowSidebar(false);
       },
     },
+    {
+      label: 'Refund Orders',
+      icon: <DollarSign className='h-6 w-6 text-white dark:text-gray-300 md:h-6 md:w-6' />,
+      onClick: () => {
+        navigate('/home/refund-orders');
+        setShowSidebar(false);
+      },
+    },
   ];
 
   if (loading) {
