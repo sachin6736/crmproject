@@ -259,20 +259,20 @@ function Home() {
       },
     },
     {
-      label: 'Customer Payment History',
-      icon: <DollarSign className="h-6 w-6" />,
-      path: '/home/customer-payments',
-      onClick: () => {
-        navigate('/home/customer-payments');
-        setShowSidebar(false);
-      },
-    },
-    {
       label: 'View Orders',
       icon: <PenTool className="h-6 w-6" />,
       path: '/home/orders',
       onClick: () => {
         navigate('/home/orders');
+        setShowSidebar(false);
+      },
+    },
+    {
+      label: 'Customer Payment History',
+      icon: <DollarSign className="h-6 w-6" />,
+      path: '/home/customer-payments',
+      onClick: () => {
+        navigate('/home/customer-payments');
         setShowSidebar(false);
       },
     },

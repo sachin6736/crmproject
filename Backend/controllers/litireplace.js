@@ -188,15 +188,28 @@ export const updateOrderStatus = async (req, res) => {
       await newOrder.save();
       replacementCreated = true;
 
-      // Optional note on original order
+      // Note on original order (optional – you can keep or remove)
       order.notes = order.notes || [];
       order.notes.push({
         text: `Replacement order created: ${newOrder.order_id}`,
         createdAt: new Date(),
       });
+
+      // IMPORTANT: Add note to Litigation.litigationNotes
+      const litigation = await Litigation.findOne({ orderId: order._id });
+      if (litigation) {
+        litigation.litigationNotes = litigation.litigationNotes || [];
+        litigation.litigationNotes.push({
+          text: `Replacement order created: ${newOrder.order_id}`,
+          createdBy: req.user._id,
+          createdByName: req.user.name || "System",
+          createdAt: new Date(),
+        });
+        await litigation.save();
+      }
     }
 
-    // Only update status if we're creating a new replacement or it's not Replacement
+    // Update status
     if (replacementCreated || status !== "Replacement") {
       order.status = status;
       await order.save();

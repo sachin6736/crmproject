@@ -31,7 +31,7 @@ const LitigationDetails = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReplacementDropdownOpen, setIsReplacementDropdownOpen] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
-const [refundConfirmAction, setRefundConfirmAction] = useState(null);
+  const [refundConfirmAction, setRefundConfirmAction] = useState(null);
 
   // Modal for Resolve confirmation
   const [showResolveConfirm, setShowResolveConfirm] = useState(false);
@@ -132,6 +132,10 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
       }
 
       toast.success("RMA form sent successfully");
+
+      // Re-fetch to show new note immediately
+      await fetchOrderAndLitigation();
+
     } catch (error) {
       toast.error(error.message || "Failed to send RMA form");
     } finally {
@@ -160,7 +164,20 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
         toast.info(`Replacement already exists: ${data.replacementOrder?.order_id || "N/A"}`);
       } else {
         toast.success("Order status updated to Replacement");
-        // Force re-fetch fresh data to avoid stale state
+
+        // Optimistic note addition (shows immediately)
+        const optimisticNote = {
+          text: `Replacement order created: ${data.replacementOrder?.order_id || "N/A"}`,
+          createdByName: "You", // or fetch real user name if available
+          createdAt: new Date().toISOString(),
+        };
+
+        setLitigationData((prev) => ({
+          ...prev,
+          litigationNotes: [...(prev?.litigationNotes || []), optimisticNote],
+        }));
+
+        // Re-fetch full fresh data
         await fetchOrderAndLitigation();
       }
 
@@ -183,6 +200,8 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
     litigationData.problemDescription?.trim() ||
     litigationData.resolutionNotes?.trim()
   );
+
+  const isReplacementStatus = order?.status === "Replacement";
 
   const formatAddress = (address, city, state, zip) => {
     if (!address && !city && !state && !zip) return "N/A";
@@ -312,7 +331,7 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
       <LoadingOverlay isLoading={isLoading || actionLoading} />
       <div className={`${isLoading || actionLoading ? "blur-[1px]" : ""}`}>
         {order && (
-          <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 flex">
+          <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 flex flex-col md:flex-row gap-6">
             <div className="flex-1">
               <div className="mb-6">
                 <h1 className="text-2xl sm:text-3xl font-bold">Order {order.order_id || "N/A"}</h1>
@@ -638,11 +657,14 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
             </div>
 
             {/* Sidebar Actions */}
-            <div className="ml-6 flex flex-col space-y-2">
+            <div className="w-full md:w-64 flex flex-col space-y-3 md:sticky md:top-6 self-start">
+              {/* Litigation Button - ALWAYS ENABLED */}
               <button
                 onClick={openForm}
-                className="flex items-center px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={actionLoading}
+                className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-700 disabled:opacity-50 ${
+                  actionLoading ? "cursor-not-allowed bg-purple-400" : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
+                }`}
               >
                 Litigation
               </button>
@@ -656,24 +678,30 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
                   }
                   handleSendRMA();
                 }}
-                className={`flex items-center px-4 py-2 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
-                  hasMeaningfulLitigation
-                    ? "bg-blue-600 dark:bg-blue-500"
-                    : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                disabled={actionLoading || !hasMeaningfulLitigation || isReplacementStatus}
+                title={
+                  isReplacementStatus
+                    ? "Action blocked: Order is in Replacement status"
+                    : !hasMeaningfulLitigation
+                    ? "Litigation form must have at least one field filled"
+                    : ""
+                }
+                className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isReplacementStatus || !hasMeaningfulLitigation
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-700"
                 }`}
-                disabled={actionLoading || !hasMeaningfulLitigation}
-                title={!hasMeaningfulLitigation ? "Litigation form must have at least one field filled" : ""}
               >
                 Send RMA Form
               </button>
 
               {/* Replacement */}
-              {hasMeaningfulLitigation ? (
+              {hasMeaningfulLitigation && !isReplacementStatus ? (
                 <div className="relative">
                   <button
                     onClick={() => !actionLoading && setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
-                    className="flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={actionLoading}
+                    className="flex items-center justify-center w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 focus:ring-green-300 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Replacement
                   </button>
@@ -681,15 +709,14 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
                     <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10 w-32">
                       <button
                         onClick={handleReplacement}
-                        className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                         disabled={actionLoading}
+                        className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
                       >
                         Yes
                       </button>
                       <button
                         onClick={() => !actionLoading && setIsReplacementDropdownOpen(false)}
                         className="block w-full px-4 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        disabled={actionLoading}
                       >
                         No
                       </button>
@@ -698,10 +725,9 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
                 </div>
               ) : (
                 <button
-                  onClick={() => toast.warn("Please fill at least one field in the Litigation form first")}
-                  className="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-gray-200 rounded-lg cursor-not-allowed text-sm font-medium"
                   disabled
-                  title="Litigation form must have at least one field filled"
+                  title={isReplacementStatus ? "Action blocked: Order is in Replacement status" : "Please fill at least one field in the Litigation form first"}
+                  className="flex items-center justify-center px-4 py-2.5 bg-gray-500 text-gray-300 rounded-lg cursor-not-allowed text-sm font-medium"
                 >
                   Replacement
                 </button>
@@ -709,87 +735,86 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
 
               {/* Resolve */}
               <button
+                onClick={handleResolveClick}
+                disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation" || isReplacementStatus}
+                title={
+                  isReplacementStatus
+                    ? "Action blocked: Order is in Replacement status"
+                    : !hasMeaningfulLitigation
+                    ? "Litigation form must have at least one field filled"
+                    : order?.status !== "Litigation"
+                    ? "Only available when order is in Litigation"
+                    : ""
+                }
+                className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  hasMeaningfulLitigation && order?.status === "Litigation" && !isReplacementStatus
+                    ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-300 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-700"
+                    : "bg-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Resolve
+              </button>
+
+              {/* Refund */}
+              <button
                 onClick={() => {
                   if (!hasMeaningfulLitigation) {
                     toast.warn("Please fill at least one field in the Litigation form first");
                     return;
                   }
                   if (order?.status !== "Litigation") {
-                    toast.warn("This order is no longer in Litigation status. Cannot resolve now.");
+                    toast.warn("Can only mark Refund from Litigation status");
                     return;
                   }
-                  handleResolveClick();
+                  if (isReplacementStatus) {
+                    toast.warn("Action blocked: Order is in Replacement status");
+                    return;
+                  }
+
+                  setRefundConfirmAction(() => async () => {
+                    setActionLoading(true);
+                    try {
+                      const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/refund/${orderId}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                      });
+
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || "Failed to mark as Refund");
+                      }
+
+                      const data = await response.json();
+                      setOrder(data.order);
+                      toast.success("Order marked as Refund successfully");
+                    } catch (error) {
+                      toast.error(error.message || "Failed to mark as Refund");
+                    } finally {
+                      setActionLoading(false);
+                    }
+                  });
+
+                  setShowRefundConfirm(true);
                 }}
-                className={`flex items-center px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-4 transition-all duration-200 text-sm font-medium ${
-                  hasMeaningfulLitigation && order?.status === "Litigation"
-                    ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-300 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-700"
-                    : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70"
-                }`}
-                disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation"}
+                disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation" || isReplacementStatus}
                 title={
-                  !hasMeaningfulLitigation
+                  isReplacementStatus
+                    ? "Action blocked: Order is in Replacement status"
+                    : !hasMeaningfulLitigation
                     ? "Litigation form must have at least one field filled"
                     : order?.status !== "Litigation"
-                    ? "Only available when order is in Litigation"
+                    ? "Can only mark Refund from Litigation status"
                     : ""
                 }
+                className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  hasMeaningfulLitigation && order?.status === "Litigation" && !isReplacementStatus
+                    ? "bg-red-600 hover:bg-red-700 focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-700"
+                    : "bg-gray-500 cursor-not-allowed"
+                }`}
               >
-                Resolve
+                Refund
               </button>
-              <button
-  onClick={() => {
-    if (!hasMeaningfulLitigation) {
-      toast.warn("Please fill at least one field in the Litigation form first");
-      return;
-    }
-    if (order?.status !== "Litigation") {
-      toast.warn("Can only mark Refund from Litigation status");
-      return;
-    }
-
-    // Show confirmation modal
-    setRefundConfirmAction(() => async () => {
-      setActionLoading(true);
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/refund/${orderId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to mark as Refund");
-        }
-
-        const data = await response.json();
-        setOrder(data.order);
-        toast.success("Order marked as Refund successfully");
-      } catch (error) {
-        toast.error(error.message || "Failed to mark as Refund");
-      } finally {
-        setActionLoading(false);
-      }
-    });
-
-    setShowRefundConfirm(true);
-  }}
-  className={`flex items-center px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-4 transition-all duration-200 text-sm font-medium ${
-    hasMeaningfulLitigation && order?.status === "Litigation"
-      ? "bg-red-600 hover:bg-red-700 focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-700"
-      : "bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70"
-  }`}
-  disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation"}
-  title={
-    !hasMeaningfulLitigation
-      ? "Litigation form must have at least one field filled"
-      : order?.status !== "Litigation"
-      ? "Only available from Litigation status"
-      : ""
-  }
->
-  Refund
-</button>
             </div>
           </div>
         )}
@@ -944,26 +969,24 @@ const [refundConfirmAction, setRefundConfirmAction] = useState(null);
           className: "bg-green-600 hover:bg-green-700 focus:ring-green-500 dark:bg-green-500 dark:hover:bg-green-600",
           disabled: actionLoading,
         }}
-        cancelButtonProps={{
+        cancelButtonProps={{ disabled: actionLoading }}
+      />
+
+      {/* Confirmation Modal for Refund */}
+      <ConfirmationModal
+        isOpen={showRefundConfirm}
+        onClose={() => setShowRefundConfirm(false)}
+        onConfirm={refundConfirmAction}
+        title="Confirm Refund"
+        message="Are you sure you want to mark this order as Refund? This action cannot be undone."
+        confirmText="Yes, Refund"
+        cancelText="Cancel"
+        confirmButtonProps={{
+          className: "bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600",
           disabled: actionLoading,
         }}
+        cancelButtonProps={{ disabled: actionLoading }}
       />
-      <ConfirmationModal
-  isOpen={showRefundConfirm}
-  onClose={() => setShowRefundConfirm(false)}
-  onConfirm={refundConfirmAction}
-  title="Confirm Refund"
-  message="Are you sure you want to mark this order as Refund? This action cannot be undone."
-  confirmText="Yes, Refund"
-  cancelText="Cancel"
-  confirmButtonProps={{
-    className: "bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600",
-    disabled: actionLoading,
-  }}
-  cancelButtonProps={{
-    disabled: actionLoading,
-  }}
-/>
     </div>
   );
 };
