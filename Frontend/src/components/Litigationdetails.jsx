@@ -17,10 +17,12 @@ const LitigationDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
+
   const [order, setOrder] = useState(null);
   const [litigationData, setLitigationData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+
   const [openSections, setOpenSections] = useState({
     vendorNotes: false,
     procurementNotes: false,
@@ -28,12 +30,13 @@ const LitigationDetails = () => {
     litigationHistory: false,
     litigationNotes: false,
   });
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReplacementDropdownOpen, setIsReplacementDropdownOpen] = useState(false);
+
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
   const [refundConfirmAction, setRefundConfirmAction] = useState(null);
 
-  // Modal for Resolve confirmation
   const [showResolveConfirm, setShowResolveConfirm] = useState(false);
   const [resolveConfirmAction, setResolveConfirmAction] = useState(null);
 
@@ -75,17 +78,17 @@ const LitigationDetails = () => {
         credentials: "include",
       });
       if (litigationResponse.ok) {
-        const litigationData = await litigationResponse.json();
-        setLitigationData(litigationData);
+        const litigation = await litigationResponse.json();
+        setLitigationData(litigation);
         setFormData({
-          deliveryDate: litigationData.deliveryDate ? litigationData.deliveryDate.split('T')[0] : '',
-          installationDate: litigationData.installationDate ? litigationData.installationDate.split('T')[0] : '',
-          problemOccurredDate: litigationData.problemOccurredDate ? litigationData.problemOccurredDate.split('T')[0] : '',
-          problemInformedDate: litigationData.problemInformedDate ? litigationData.problemInformedDate.split('T')[0] : '',
-          receivedPictures: litigationData.receivedPictures || false,
-          receivedDiagnosticReport: litigationData.receivedDiagnosticReport || false,
-          problemDescription: litigationData.problemDescription || '',
-          resolutionNotes: litigationData.resolutionNotes || '',
+          deliveryDate: litigation.deliveryDate ? litigation.deliveryDate.split('T')[0] : '',
+          installationDate: litigation.installationDate ? litigation.installationDate.split('T')[0] : '',
+          problemOccurredDate: litigation.problemOccurredDate ? litigation.problemOccurredDate.split('T')[0] : '',
+          problemInformedDate: litigation.problemInformedDate ? litigation.problemInformedDate.split('T')[0] : '',
+          receivedPictures: litigation.receivedPictures || false,
+          receivedDiagnosticReport: litigation.receivedDiagnosticReport || false,
+          problemDescription: litigation.problemDescription || '',
+          resolutionNotes: litigation.resolutionNotes || '',
         });
       } else {
         setLitigationData(null);
@@ -104,17 +107,87 @@ const LitigationDetails = () => {
 
   const openForm = () => {
     if (actionLoading) return;
-    setFormData({
-      deliveryDate: litigationData?.deliveryDate ? litigationData.deliveryDate.split('T')[0] : '',
-      installationDate: litigationData?.installationDate ? litigationData.installationDate.split('T')[0] : '',
-      problemOccurredDate: litigationData?.problemOccurredDate ? litigationData.problemOccurredDate.split('T')[0] : '',
-      problemInformedDate: litigationData?.problemInformedDate ? litigationData.problemInformedDate.split('T')[0] : '',
-      receivedPictures: litigationData?.receivedPictures || false,
-      receivedDiagnosticReport: litigationData?.receivedDiagnosticReport || false,
-      problemDescription: litigationData?.problemDescription || '',
-      resolutionNotes: litigationData?.resolutionNotes || '',
-    });
     setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    if (actionLoading) return;
+    setIsFormOpen(false);
+  };
+
+  // Frontend validation: check required fields
+  const validateLitigationForm = () => {
+    const required = [
+      { value: formData.deliveryDate?.trim(), label: "Delivery Date" },
+      { value: formData.installationDate?.trim(), label: "Installation Date" },
+      { value: formData.problemOccurredDate?.trim(), label: "Problem Occurred Date" },
+      { value: formData.problemInformedDate?.trim(), label: "Problem Informed Date" },
+      { value: formData.problemDescription?.trim(), label: "What's the Problem" },
+    ];
+
+    const missing = required.filter(field => !field.value);
+
+    if (missing.length > 0) {
+      const missingLabels = missing.map(f => f.label).join(", ");
+      toast.error(`Please fill all required fields: ${missingLabels}`);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate before sending request
+    if (!validateLitigationForm()) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/update-litigation/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update litigation details");
+      }
+
+      const updated = await response.json();
+      setLitigationData(updated.litigation);
+      
+      // Update form with fresh data
+      setFormData({
+        deliveryDate: updated.litigation.deliveryDate ? updated.litigation.deliveryDate.split('T')[0] : '',
+        installationDate: updated.litigation.installationDate ? updated.litigation.installationDate.split('T')[0] : '',
+        problemOccurredDate: updated.litigation.problemOccurredDate ? updated.litigation.problemOccurredDate.split('T')[0] : '',
+        problemInformedDate: updated.litigation.problemInformedDate ? updated.litigation.problemInformedDate.split('T')[0] : '',
+        receivedPictures: updated.litigation.receivedPictures || false,
+        receivedDiagnosticReport: updated.litigation.receivedDiagnosticReport || false,
+        problemDescription: updated.litigation.problemDescription || '',
+        resolutionNotes: updated.litigation.resolutionNotes || '',
+      });
+
+      toast.success("Litigation details updated successfully");
+      setIsFormOpen(false);
+    } catch (error) {
+      toast.error(error.message || "Failed to update litigation details");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSendRMA = async () => {
@@ -132,10 +205,7 @@ const LitigationDetails = () => {
       }
 
       toast.success("RMA form sent successfully");
-
-      // Re-fetch to show new note immediately
       await fetchOrderAndLitigation();
-
     } catch (error) {
       toast.error(error.message || "Failed to send RMA form");
     } finally {
@@ -164,20 +234,6 @@ const LitigationDetails = () => {
         toast.info(`Replacement already exists: ${data.replacementOrder?.order_id || "N/A"}`);
       } else {
         toast.success("Order status updated to Replacement");
-
-        // Optimistic note addition (shows immediately)
-        const optimisticNote = {
-          text: `Replacement order created: ${data.replacementOrder?.order_id || "N/A"}`,
-          createdByName: "You", // or fetch real user name if available
-          createdAt: new Date().toISOString(),
-        };
-
-        setLitigationData((prev) => ({
-          ...prev,
-          litigationNotes: [...(prev?.litigationNotes || []), optimisticNote],
-        }));
-
-        // Re-fetch full fresh data
         await fetchOrderAndLitigation();
       }
 
@@ -189,7 +245,6 @@ const LitigationDetails = () => {
     }
   };
 
-  // Stricter check: litigation exists AND has meaningful data
   const hasMeaningfulLitigation = litigationData && (
     litigationData.deliveryDate ||
     litigationData.installationDate ||
@@ -220,72 +275,6 @@ const LitigationDetails = () => {
     }));
   };
 
-  const handleFormChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-
-    // Block submit if form is completely empty/default
-    const isFormEmpty =
-      !formData.deliveryDate &&
-      !formData.installationDate &&
-      !formData.problemOccurredDate &&
-      !formData.problemInformedDate &&
-      !formData.receivedPictures &&
-      !formData.receivedDiagnosticReport &&
-      !formData.problemDescription?.trim() &&
-      !formData.resolutionNotes?.trim();
-
-    if (isFormEmpty) {
-      toast.warn("Cannot save empty litigation form. Please fill at least one field.");
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/update-litigation/${orderId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update litigation details");
-      }
-      const updatedLitigation = await response.json();
-      setLitigationData(updatedLitigation.litigation);
-      setFormData({
-        deliveryDate: updatedLitigation.litigation.deliveryDate ? updatedLitigation.litigation.deliveryDate.split('T')[0] : '',
-        installationDate: updatedLitigation.litigation.installationDate ? updatedLitigation.litigation.installationDate.split('T')[0] : '',
-        problemOccurredDate: updatedLitigation.litigation.problemOccurredDate ? updatedLitigation.litigation.problemOccurredDate.split('T')[0] : '',
-        problemInformedDate: updatedLitigation.litigation.problemInformedDate ? updatedLitigation.litigation.problemInformedDate.split('T')[0] : '',
-        receivedPictures: updatedLitigation.litigation.receivedPictures || false,
-        receivedDiagnosticReport: updatedLitigation.litigation.receivedDiagnosticReport || false,
-        problemDescription: updatedLitigation.litigation.problemDescription || '',
-        resolutionNotes: updatedLitigation.litigation.resolutionNotes || '',
-      });
-      toast.success("Litigation details updated successfully");
-      setIsFormOpen(false);
-    } catch (error) {
-      toast.error(error.message || "Failed to update litigation details");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const closeForm = () => {
-    if (actionLoading) return;
-    setIsFormOpen(false);
-  };
-
-  // Handle Resolve with Confirmation Modal
   const handleResolveClick = () => {
     if (actionLoading) return;
 
@@ -658,7 +647,6 @@ const LitigationDetails = () => {
 
             {/* Sidebar Actions */}
             <div className="w-full md:w-64 flex flex-col space-y-3 md:sticky md:top-6 self-start">
-              {/* Litigation Button - ALWAYS ENABLED */}
               <button
                 onClick={openForm}
                 disabled={actionLoading}
@@ -669,7 +657,6 @@ const LitigationDetails = () => {
                 Litigation
               </button>
 
-              {/* Send RMA Form */}
               <button
                 onClick={() => {
                   if (!hasMeaningfulLitigation) {
@@ -695,7 +682,6 @@ const LitigationDetails = () => {
                 Send RMA Form
               </button>
 
-              {/* Replacement */}
               {hasMeaningfulLitigation && !isReplacementStatus ? (
                 <div className="relative">
                   <button
@@ -733,7 +719,6 @@ const LitigationDetails = () => {
                 </button>
               )}
 
-              {/* Resolve */}
               <button
                 onClick={handleResolveClick}
                 disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation" || isReplacementStatus}
@@ -755,7 +740,6 @@ const LitigationDetails = () => {
                 Resolve
               </button>
 
-              {/* Refund */}
               <button
                 onClick={() => {
                   if (!hasMeaningfulLitigation) {
@@ -840,115 +824,138 @@ const LitigationDetails = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+
+            <form onSubmit={handleFormSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Delivery Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Delivery Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   name="deliveryDate"
                   value={formData.deliveryDate}
                   onChange={handleFormChange}
-                  className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                  className="block w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-colors"
                   disabled={actionLoading}
+                  required
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Installation Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Installation Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   name="installationDate"
                   value={formData.installationDate}
                   onChange={handleFormChange}
-                  className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                  className="block w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-colors"
                   disabled={actionLoading}
+                  required
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Problem Occurred Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Problem Occurred Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   name="problemOccurredDate"
                   value={formData.problemOccurredDate}
                   onChange={handleFormChange}
-                  className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                  className="block w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-colors"
                   disabled={actionLoading}
+                  required
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Problem Informed Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Problem Informed Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   name="problemInformedDate"
                   value={formData.problemInformedDate}
                   onChange={handleFormChange}
-                  className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                  className="block w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-colors"
                   disabled={actionLoading}
+                  required
                 />
               </div>
+
               <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  What's the Problem <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="problemDescription"
+                  value={formData.problemDescription}
+                  onChange={handleFormChange}
+                  className="block w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 min-h-[100px] transition-colors"
+                  rows="4"
+                  disabled={actionLoading}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+                <label className="flex items-center text-sm text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     name="receivedPictures"
                     checked={formData.receivedPictures}
                     onChange={handleFormChange}
-                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:opacity-50"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 mr-2"
                     disabled={actionLoading}
                   />
                   Received Pictures of Defective Part
                 </label>
-              </div>
-              <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+
+                <label className="flex items-center text-sm text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     name="receivedDiagnosticReport"
                     checked={formData.receivedDiagnosticReport}
                     onChange={handleFormChange}
-                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:opacity-50"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 mr-2"
                     disabled={actionLoading}
                   />
                   Received Diagnostic Report
                 </label>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">What's the Problem</label>
-                <textarea
-                  name="problemDescription"
-                  value={formData.problemDescription}
-                  onChange={handleFormChange}
-                  className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
-                  rows="4"
-                  disabled={actionLoading}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Resolution Notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Resolution Notes (optional)
+                </label>
                 <textarea
                   name="resolutionNotes"
                   value={formData.resolutionNotes}
                   onChange={handleFormChange}
-                  className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                  className="block w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 min-h-[100px] transition-colors"
                   rows="4"
                   disabled={actionLoading}
                 />
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-all text-sm font-medium"
+                  className="px-6 py-2.5 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-all text-sm font-medium"
                   disabled={actionLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
                   disabled={actionLoading}
                 >
-                  {actionLoading ? "Saving..." : "Save"}
+                  {actionLoading ? "Saving..." : "Save Litigation Details"}
                 </button>
               </div>
             </form>
@@ -956,7 +963,7 @@ const LitigationDetails = () => {
         </div>
       )}
 
-      {/* Confirmation Modal for Resolve */}
+      {/* Resolve Confirmation */}
       <ConfirmationModal
         isOpen={showResolveConfirm}
         onClose={() => setShowResolveConfirm(false)}
@@ -972,7 +979,7 @@ const LitigationDetails = () => {
         cancelButtonProps={{ disabled: actionLoading }}
       />
 
-      {/* Confirmation Modal for Refund */}
+      {/* Refund Confirmation */}
       <ConfirmationModal
         isOpen={showRefundConfirm}
         onClose={() => setShowRefundConfirm(false)}
