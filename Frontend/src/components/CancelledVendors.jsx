@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from '../context/ThemeContext';
 import LoadingOverlay from './LoadingOverlay';
-import ConfirmationModal from './ConfirmationModal'; // assuming you have this from leads page
+import ConfirmationModal from './ConfirmationModal';
 
 const CancelledVendors = () => {
   const { theme } = useTheme();
@@ -185,6 +185,12 @@ const CancelledVendors = () => {
     }
   };
 
+  // Navigate to general order details page
+  const handleOrderClick = (orderId) => {
+    if (actionLoading || user?.role === 'viewer' || !orderId) return;
+    navigate(`/home/order/details/${orderId}`);
+  };
+
   const isViewer = user?.role === 'viewer';
 
   return (
@@ -195,7 +201,7 @@ const CancelledVendors = () => {
         {/* Filters */}
         <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-auto rounded-md">
-            {/* Optional: can add buttons here later like in leads */}
+            {/* Optional buttons */}
           </div>
 
           <div className="flex items-center space-x-4">
@@ -247,7 +253,23 @@ const CancelledVendors = () => {
                     key={vendorData._id}
                     className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendorData.orderId?.order_id || 'N/A'}</td>
+                    {/* Order ID - clickable to /home/order/details/:id */}
+                    <td
+                      className={`px-3 md:px-4 py-2 whitespace-nowrap ${
+                        isViewer
+                          ? 'text-gray-900 dark:text-gray-100'
+                          : 'text-blue-600 dark:text-blue-400 hover:underline cursor-pointer'
+                      }`}
+                      onClick={() =>
+                        !isViewer &&
+                        !actionLoading &&
+                        vendorData.orderId?._id &&
+                        handleOrderClick(vendorData.orderId._id)
+                      }
+                    >
+                      {vendorData.orderId?.order_id || 'N/A'}
+                    </td>
+
                     <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendorData.vendor?.businessName || 'N/A'}</td>
                     <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendorData.vendor?.phoneNumber || 'N/A'}</td>
                     <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendorData.vendor?.email || 'N/A'}</td>
@@ -275,7 +297,7 @@ const CancelledVendors = () => {
                       )}
                     </td>
                     <td
-                      className="px-3 md:px-4 py-2 cursor-pointer hover:underline"
+                      className="px-3 md:px-4 py-2 cursor-pointer hover:underline text-blue-600 dark:text-blue-400"
                       onClick={() => vendorData.vendor?.notes?.length > 0 && handleViewNotes(vendorData._id, vendorData.vendor.notes)}
                     >
                       {vendorData.vendor?.notes?.length || 0}
@@ -308,7 +330,7 @@ const CancelledVendors = () => {
           </table>
         </div>
 
-        {/* Pagination – matched to leads page */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center mt-6 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 py-3 rounded-md">
             <button

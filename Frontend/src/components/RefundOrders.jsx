@@ -1,4 +1,3 @@
-// src/components/RefundOrders.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -6,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from '../context/ThemeContext';
 import LoadingOverlay from './LoadingOverlay';
 import ConfirmationModal from './ConfirmationModal';
+import { ChevronDown, ChevronUp, X } from "lucide-react";
 
 const RefundOrders = () => {
   const { theme } = useTheme();
@@ -19,12 +19,12 @@ const RefundOrders = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 10; // match leads page
+  const itemsPerPage = 10;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'Refund', 'Refund Completed'
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  // Confirmation modal state (same pattern as leads)
+  // Confirmation modal
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
@@ -32,24 +32,25 @@ const RefundOrders = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmOverrideClass, setConfirmOverrideClass] = useState('');
 
-  // Note modal (kept simple modal – can later extract if needed)
+  // Add Note modal
   const [showAddNoteModal, setShowAddNoteModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [noteError, setNoteError] = useState(null);
 
+  // NEW: View Notes modal
+  const [showViewNotesModal, setShowViewNotesModal] = useState(false);
+  const [selectedNotesOrder, setSelectedNotesOrder] = useState(null);
+
   const abortControllerRef = useRef(null);
 
-  // Status badge colors (aligned with leads page style)
   const statusStyles = {
     Refund: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
     'Refund Completed': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
     default: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
   };
 
-  // ────────────────────────────────────────────────
-  //  Fetch user (same as leads)
-  // ────────────────────────────────────────────────
+  // Fetch user
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -72,9 +73,7 @@ const RefundOrders = () => {
     fetchUser();
   }, [navigate]);
 
-  // ────────────────────────────────────────────────
-  //  Fetch refund orders
-  // ────────────────────────────────────────────────
+  // Fetch refund orders
   useEffect(() => {
     if (!user) return;
 
@@ -114,9 +113,6 @@ const RefundOrders = () => {
     return () => abortControllerRef.current?.abort();
   }, [user, currentPage, searchQuery, statusFilter]);
 
-  // ────────────────────────────────────────────────
-  //  Handlers
-  // ────────────────────────────────────────────────
   const handleMarkRefundCompleted = (orderId) => {
     setConfirmTitle('Confirm Refund Completed');
     setConfirmMessage('Are you sure you want to mark this refund as completed?');
@@ -196,6 +192,12 @@ const RefundOrders = () => {
     }
   };
 
+  // NEW: Open view notes modal
+  const handleViewNotes = (order) => {
+    setSelectedNotesOrder(order);
+    setShowViewNotesModal(true);
+  };
+
   const isViewer = user?.role === 'viewer';
 
   return (
@@ -206,7 +208,7 @@ const RefundOrders = () => {
         {/* Filters & Header */}
         <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-auto rounded-md">
-            {/* You can add "New Refund" or other actions here later if needed */}
+            {/* Future actions can go here */}
           </div>
 
           <div className="flex items-center space-x-4 flex-wrap gap-y-3">
@@ -242,7 +244,7 @@ const RefundOrders = () => {
           </div>
         </div>
 
-        {/* Table Card */}
+        {/* Table */}
         <div className="mt-4 bg-white dark:bg-gray-800 rounded-md shadow-md overflow-x-auto flex-grow relative">
           <table className="w-full text-left text-sm md:text-base">
             <thead className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -283,9 +285,10 @@ const RefundOrders = () => {
                         {order.status || 'Unknown'}
                       </span>
                     </td>
+                    {/* Clickable notes count → opens modal */}
                     <td
-                      className="px-3 md:px-4 py-2 cursor-pointer hover:underline"
-                      onClick={() => order.notes?.length > 0 && toast.info(`Notes: ${order.notes.length}`)}
+                      className="px-3 md:px-4 py-2 cursor-pointer hover:underline text-blue-600 dark:text-blue-400"
+                      onClick={() => order.notes?.length > 0 && handleViewNotes(order)}
                     >
                       {order.notes?.length || 0}
                     </td>
@@ -326,7 +329,7 @@ const RefundOrders = () => {
           </table>
         </div>
 
-        {/* Pagination – exact same style as leads */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center mt-6 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 py-3 rounded-md">
             <button
@@ -366,7 +369,7 @@ const RefundOrders = () => {
         )}
       </div>
 
-      {/* Confirmation Modal – reused from leads page */}
+      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
@@ -382,7 +385,7 @@ const RefundOrders = () => {
         cancelButtonProps={{ disabled: actionLoading }}
       />
 
-      {/* Add Note Modal – kept simple, but styled similarly */}
+      {/* Add Note Modal */}
       {showAddNoteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
@@ -413,6 +416,58 @@ const RefundOrders = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
                 Add Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: View Notes Modal */}
+      {showViewNotesModal && selectedNotesOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                Notes for Order {selectedNotesOrder.order_id}
+              </h2>
+              <button
+                onClick={() => setShowViewNotesModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {selectedNotesOrder.notes?.length > 0 ? (
+              <div className="space-y-4">
+                {[...selectedNotesOrder.notes].reverse().map((note, index) => (
+                  <div
+                    key={index}
+                    className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                  >
+                    <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                      {note.text}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {new Date(note.createdAt).toLocaleString('en-IN', {
+                        timeZone: 'Asia/Kolkata',
+                      })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                No notes available for this order
+              </p>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowViewNotesModal(false)}
+                className="px-5 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition"
+              >
+                Close
               </button>
             </div>
           </div>

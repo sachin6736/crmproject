@@ -160,7 +160,7 @@ const CustomerPaymentHistory = () => {
         {/* Filters */}
         <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-auto rounded-md">
-            {/* You can add buttons here later if needed (like in leads page) */}
+            {/* You can add buttons here later if needed */}
           </div>
 
           <div className="flex items-center space-x-4">
@@ -209,7 +209,20 @@ const CustomerPaymentHistory = () => {
                     key={lead._id}
                     className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.clientName || 'N/A'}</td>
+                    {/* Client Name - now clickable to open lead details (non-viewers only) */}
+                    <td
+                      className={`px-3 md:px-4 py-2 whitespace-nowrap ${
+                        isViewer
+                          ? 'text-gray-900 dark:text-gray-100'
+                          : 'text-blue-600 dark:text-blue-400 hover:underline cursor-pointer'
+                      }`}
+                      onClick={() =>
+                        !isViewer && !actionLoading && navigate(`/home/sales/lead/${lead._id}`)
+                      }
+                    >
+                      {lead.clientName || 'N/A'}
+                    </td>
+
                     <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.email || 'N/A'}</td>
                     <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.phoneNumber || 'N/A'}</td>
                     <td className="px-3 md:px-4 py-2 whitespace-nowrap">{lead.partRequested || 'N/A'}</td>
@@ -222,7 +235,7 @@ const CustomerPaymentHistory = () => {
                         : 'N/A'}
                     </td>
                     <td
-                      className="px-3 md:px-4 py-2 cursor-pointer hover:underline"
+                      className="px-3 md:px-4 py-2 cursor-pointer hover:underline text-blue-600 dark:text-blue-400"
                       onClick={() => lead.notes?.length > 0 && handleViewNotes(lead._id, lead.notes)}
                     >
                       {lead.notes?.length || 0}
@@ -255,7 +268,7 @@ const CustomerPaymentHistory = () => {
           </table>
         </div>
 
-        {/* Pagination – matched exactly with leads page */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center mt-6 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 py-3 rounded-md">
             <button
@@ -295,7 +308,7 @@ const CustomerPaymentHistory = () => {
         )}
       </div>
 
-      {/* Add Note Modal – simple inline for now (can extract later) */}
+      {/* Add Note Modal */}
       {showAddNoteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl">
