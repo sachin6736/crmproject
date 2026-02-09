@@ -17,7 +17,7 @@ export const litigation = async (req, res, next) => {
     const searchRegex = new RegExp(searchQuery, "i");
 
     const query = {
-      status: { $in: ["Litigation", "Replacement", "Replacement Cancelled"] },
+      status: { $in: ["Litigation", "Replacement", "Replacement Cancelled" , "Resolved"] },
     };
     if (searchQuery) {
       const isNumericSearch = /^\d+$/.test(searchQuery);
