@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/logo.png';
@@ -22,6 +21,8 @@ import {
   DollarSign,
   BadgeDollarSign,
   CircleDollarSign as CircleDollarSignIcon,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -30,7 +31,7 @@ import io from 'socket.io-client';
 
 function Home() {
   const navigate = useNavigate();
-  const location = useLocation(); // Used to detect current active route
+  const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -38,11 +39,13 @@ function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
+
   const statusDropdownRef = useRef(null);
   const notificationDropdownRef = useRef(null);
   const socketRef = useRef(null);
   const userButtonRef = useRef(null);
   const notificationButtonRef = useRef(null);
+  const sidebarScrollRef = useRef(null); // Ref for the scrollable area
 
   const formatDate = (date) => {
     try {
@@ -229,7 +232,6 @@ function Home() {
     { value: 'LoggedOut', label: 'Logged Out', icon: <LogOut className="w-4 h-4 text-red-500" /> },
   ];
 
-  // Navigation items – now with path for active state detection
   const navItems = [
     {
       label: 'Home',
@@ -257,6 +259,15 @@ function Home() {
       },
     },
     {
+      label: 'Customer Payment History',
+      icon: <DollarSign className="h-6 w-6" />,
+      path: '/home/customer-payments',
+      onClick: () => {
+        navigate('/home/customer-payments');
+        setShowSidebar(false);
+      },
+    },
+    {
       label: 'View Orders',
       icon: <PenTool className="h-6 w-6" />,
       path: '/home/orders',
@@ -271,15 +282,6 @@ function Home() {
       path: '/home/litigation-orders',
       onClick: () => {
         navigate('/home/litigation-orders');
-        setShowSidebar(false);
-      },
-    },
-    {
-      label: 'Customer Payment History',
-      icon: <DollarSign className="h-6 w-6" />,
-      path: '/home/customer-payments',
-      onClick: () => {
-        navigate('/home/customer-payments');
         setShowSidebar(false);
       },
     },
@@ -321,12 +323,24 @@ function Home() {
     },
   ];
 
-  // Helper to determine if a nav item is active
   const isActive = (item) => {
     if (Array.isArray(item.path)) {
       return item.path.some((p) => location.pathname === p || location.pathname.startsWith(p + '/'));
     }
     return location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+  };
+
+  // Scroll functions
+  const scrollUp = () => {
+    if (sidebarScrollRef.current) {
+      sidebarScrollRef.current.scrollBy({ top: -120, behavior: 'smooth' });
+    }
+  };
+
+  const scrollDown = () => {
+    if (sidebarScrollRef.current) {
+      sidebarScrollRef.current.scrollBy({ top: 120, behavior: 'smooth' });
+    }
   };
 
   if (loading) {
@@ -341,44 +355,74 @@ function Home() {
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {/* Desktop Sidebar – vertical icons with active highlight */}
-      <div className="hidden md:flex w-20 h-screen bg-[#002775] dark:bg-gray-800 fixed left-0 top-0 border-r-2 border-r-white dark:border-r-gray-700 flex-col items-center pt-3 space-y-4 overflow-hidden z-20">
-        {navItems.map((item, index) => {
-          const active = isActive(item);
-          return (
-            <div
-              key={index}
-              className={`group flex flex-col items-center space-y-1 cursor-pointer w-full transition-all duration-200 ${
-                active ? 'bg-white/15 dark:bg-gray-700/50' : 'hover:bg-white/10 dark:hover:bg-gray-700/30'
-              }`}
-              onClick={item.onClick}
-            >
-              <div
-                className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 border-2 ${
-                  active
-                    ? 'bg-white dark:bg-gray-200 border-white dark:border-gray-300 scale-110 shadow-lg'
-                    : 'bg-[#002775] dark:bg-gray-800 border-transparent group-hover:border-white/60 dark:group-hover:border-gray-400/60'
-                }`}
-              >
-                <div className={active ? 'text-[#066afe] dark:text-blue-400' : 'text-white dark:text-gray-200'}>
-                  {React.cloneElement(item.icon, {
-                    className: 'h-7 w-7',
-                  })}
+      {/* Desktop Sidebar – now with scroll arrows */}
+      <div className="hidden md:flex w-20 h-screen bg-[#002775] dark:bg-gray-800 fixed left-0 top-0 border-r-2 border-r-white dark:border-r-gray-700 flex-col z-20">
+        {/* Up Arrow */}
+        <button
+          onClick={scrollUp}
+          className="w-full py-3 bg-gradient-to-b from-[#002775]/90 to-transparent hover:from-[#002775]/70 transition-all flex items-center justify-center text-white/50 hover:text-white/90 opacity-70 hover:opacity-100"
+          aria-label="Scroll sidebar up"
+        >
+          <ChevronUp className="w-6 h-6" />
+        </button>
+
+        {/* Scrollable content */}
+        <div
+          ref={sidebarScrollRef}
+          className="flex-1 overflow-y-auto scrollbar-hide hover:scrollbar-show px-1"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(255,255,255,0.2) transparent',
+          }}
+        >
+          <div className="flex flex-col items-center pt-3 pb-6 space-y-5">
+            {navItems.map((item, index) => {
+              const active = isActive(item);
+              return (
+                <div
+                  key={index}
+                  className={`group flex flex-col items-center space-y-1 cursor-pointer w-full transition-all duration-200 ${
+                    active ? 'bg-white/15 dark:bg-gray-700/50' : 'hover:bg-white/10 dark:hover:bg-gray-700/30'
+                  }`}
+                  onClick={item.onClick}
+                >
+                  <div
+                    className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 border-2 ${
+                      active
+                        ? 'bg-white dark:bg-gray-200 border-white dark:border-gray-300 scale-110 shadow-lg'
+                        : 'bg-[#002775] dark:bg-gray-800 border-transparent group-hover:border-white/60 dark:group-hover:border-gray-400/60'
+                    }`}
+                  >
+                    <div className={active ? 'text-[#066afe] dark:text-blue-400' : 'text-white dark:text-gray-200'}>
+                      {React.cloneElement(item.icon, {
+                        className: 'h-7 w-7',
+                      })}
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] font-semibold text-center leading-tight transition-colors ${
+                      active ? 'text-white font-bold' : 'text-white/70 dark:text-gray-300/80 group-hover:text-white'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                 </div>
-              </div>
-              <span
-                className={`text-[10px] font-semibold text-center leading-tight transition-colors ${
-                  active ? 'text-white font-bold' : 'text-white/70 dark:text-gray-300/80 group-hover:text-white'
-                }`}
-              >
-                {item.label}
-              </span>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Down Arrow */}
+        <button
+          onClick={scrollDown}
+          className="w-full py-3 bg-gradient-to-t from-[#002775]/90 to-transparent hover:from-[#002775]/70 transition-all flex items-center justify-center text-white/50 hover:text-white/90 opacity-70 hover:opacity-100"
+          aria-label="Scroll sidebar down"
+        >
+          <ChevronDown className="w-6 h-6" />
+        </button>
       </div>
 
-      {/* Mobile Sidebar (full menu) */}
+      {/* Mobile Sidebar */}
       {showSidebar && (
         <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40">
           <div className="fixed left-0 top-0 bottom-0 w-72 bg-[#002775] dark:bg-gray-900 z-50 flex flex-col pt-16 px-6 space-y-3 overflow-y-auto">
