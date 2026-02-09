@@ -2705,7 +2705,7 @@ const closeProcurementModal = () => {
 <div className="lg:w-80 w-full">
   <div className="sticky top-6 space-y-4">
     {/* Hide all action buttons for these final/closed statuses */}
-    {!["Delivered", "Litigation", "Replacement", "Replacement Cancelled"].includes(order?.status) && (
+    {!["Delivered", "Litigation", "Replacement", "Replacement Cancelled","Resolved","Refund","Refund Completed"].includes(order?.status) && (
       <>
         {["procurement", "admin"].includes(user?.role) && (
           <>
