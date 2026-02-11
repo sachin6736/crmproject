@@ -302,10 +302,6 @@ export const updateLitigation = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    if (order.status !== "Litigation") {
-      return res.status(400).json({ message: "Order is not in Litigation status" });
-    }
-
     const userId = req.user?._id;
     const userName = req.user?.name || "Unknown User";
 
@@ -315,108 +311,108 @@ export const updateLitigation = async (req, res) => {
       return isNaN(d.getTime()) ? null : d;
     };
 
-    const newDeliveryDate         = parseSafeDate(deliveryDate);
-    const newInstallationDate     = parseSafeDate(installationDate);
-    const newProblemOccurredDate  = parseSafeDate(problemOccurredDate);
-    const newProblemInformedDate  = parseSafeDate(problemInformedDate);
-
     let litigation = await Litigation.findOne({ orderId });
 
     const changes = [];
 
+    // ────────────────────────────────────────────────
+    // AUTO-REVERT ONLY WHEN STATUS IS "Resolved"
+    // ────────────────────────────────────────────────
+    let statusReverted = false;
+    if (order.status === "Resolved") {
+      order.status = "Litigation";
+      statusReverted = true;
+
+      order.notes = order.notes || [];
+      order.notes.push({
+        text: `Status automatically reverted to Litigation because litigation form was updated after resolution by ${userName}`,
+        createdAt: new Date(),
+      });
+    }
+    // ────────────────────────────────────────────────
+
+    // Capture previous state BEFORE any changes (for history)
+    const previousState = litigation ? { ...litigation.toObject() } : null;
+
     if (!litigation) {
+      // Create new litigation record
       litigation = new Litigation({
         orderId,
-        deliveryDate:         newDeliveryDate,
-        installationDate:     newInstallationDate,
-        problemOccurredDate:  newProblemOccurredDate,
-        problemInformedDate:  newProblemInformedDate,
-        receivedPictures:     receivedPictures !== undefined ? !!receivedPictures : false,
-        receivedDiagnosticReport: receivedDiagnosticReport !== undefined ? !!receivedDiagnosticReport : false,
-        problemDescription:   problemDescription ?? "",
-        resolutionNotes:      resolutionNotes ?? "",
+        deliveryDate: parseSafeDate(deliveryDate),
+        installationDate: parseSafeDate(installationDate),
+        problemOccurredDate: parseSafeDate(problemOccurredDate),
+        problemInformedDate: parseSafeDate(problemInformedDate),
+        receivedPictures: receivedPictures ?? false,
+        receivedDiagnosticReport: receivedDiagnosticReport ?? false,
+        problemDescription: problemDescription?.trim() ?? "",
+        resolutionNotes: resolutionNotes?.trim() ?? "",
         history: [],
-        litigationNotes: [], // initialize empty
+        litigationNotes: [],
       });
     } else {
-      // Detect changes (your existing logic)
-      const datesDiffer = (a, b) => {
-        const aStr = a ? a.toISOString() : null;
-        const bStr = b ? b.toISOString() : null;
-        return aStr !== bStr;
-      };
+      // Detect changes for history
+      const datesDiffer = (a, b) => (a ? a.toISOString() : null) !== (b ? b.toISOString() : null);
 
-      if (deliveryDate         !== undefined && datesDiffer(newDeliveryDate,         litigation.deliveryDate))         changes.push("deliveryDate");
-      if (installationDate     !== undefined && datesDiffer(newInstallationDate,     litigation.installationDate))     changes.push("installationDate");
-      if (problemOccurredDate  !== undefined && datesDiffer(newProblemOccurredDate,  litigation.problemOccurredDate))  changes.push("problemOccurredDate");
-      if (problemInformedDate  !== undefined && datesDiffer(newProblemInformedDate,  litigation.problemInformedDate))  changes.push("problemInformedDate");
+      if (deliveryDate !== undefined && datesDiffer(parseSafeDate(deliveryDate), litigation.deliveryDate))
+        changes.push("deliveryDate");
+      if (installationDate !== undefined && datesDiffer(parseSafeDate(installationDate), litigation.installationDate))
+        changes.push("installationDate");
+      if (problemOccurredDate !== undefined && datesDiffer(parseSafeDate(problemOccurredDate), litigation.problemOccurredDate))
+        changes.push("problemOccurredDate");
+      if (problemInformedDate !== undefined && datesDiffer(parseSafeDate(problemInformedDate), litigation.problemInformedDate))
+        changes.push("problemInformedDate");
 
-      if (receivedPictures      !== undefined && !!receivedPictures      !== litigation.receivedPictures)      changes.push("receivedPictures");
-      if (receivedDiagnosticReport !== undefined && !!receivedDiagnosticReport !== litigation.receivedDiagnosticReport) changes.push("receivedDiagnosticReport");
+      if (receivedPictures !== undefined && !!receivedPictures !== litigation.receivedPictures)
+        changes.push("receivedPictures");
+      if (receivedDiagnosticReport !== undefined && !!receivedDiagnosticReport !== litigation.receivedDiagnosticReport)
+        changes.push("receivedDiagnosticReport");
 
-      if (problemDescription    !== undefined && problemDescription    !== litigation.problemDescription)    changes.push("problemDescription");
-      if (resolutionNotes       !== undefined && resolutionNotes       !== litigation.resolutionNotes)       changes.push("resolutionNotes");
+      if (problemDescription !== undefined && problemDescription.trim() !== (litigation.problemDescription || "").trim())
+        changes.push("problemDescription");
+      if (resolutionNotes !== undefined && resolutionNotes.trim() !== (litigation.resolutionNotes || "").trim())
+        changes.push("resolutionNotes");
 
-      // Save previous state to history if changed
-      if (changes.length > 0) {
-        const previousState = {
-          deliveryDate:          litigation.deliveryDate,
-          installationDate:      litigation.installationDate,
-          problemOccurredDate:   litigation.problemOccurredDate,
-          problemInformedDate:   litigation.problemInformedDate,
-          receivedPictures:      litigation.receivedPictures,
-          receivedDiagnosticReport: litigation.receivedDiagnosticReport,
-          problemDescription:    litigation.problemDescription,
-          resolutionNotes:       litigation.resolutionNotes,
-          updatedBy:     userId || null,
+      // Save old state to history if anything changed
+      if (changes.length > 0 && previousState) {
+        litigation.history.push({
+          ...previousState,
+          updatedBy: userId || null,
           updatedByName: userName,
-          updatedAt:     new Date(),
-          changeSummary: `Updated: ${changes.join(", ")}`
-        };
-        litigation.history.push(previousState);
+          updatedAt: new Date(),
+          changeSummary: `Updated${statusReverted ? " (status reverted)" : ""}: ${changes.join(", ")}`
+        });
       }
 
-      // Apply new values
-      if (deliveryDate         !== undefined) litigation.deliveryDate         = newDeliveryDate;
-      if (installationDate     !== undefined) litigation.installationDate     = newInstallationDate;
-      if (problemOccurredDate  !== undefined) litigation.problemOccurredDate  = newProblemOccurredDate;
-      if (problemInformedDate  !== undefined) litigation.problemInformedDate  = newProblemInformedDate;
-      if (receivedPictures      !== undefined) litigation.receivedPictures      = !!receivedPictures;
-      if (receivedDiagnosticReport !== undefined) litigation.receivedDiagnosticReport = !!receivedDiagnosticReport;
-      if (problemDescription    !== undefined) litigation.problemDescription    = problemDescription;
-      if (resolutionNotes       !== undefined) litigation.resolutionNotes       = resolutionNotes;
+      // Apply updates
+      litigation.deliveryDate = deliveryDate !== undefined ? parseSafeDate(deliveryDate) : litigation.deliveryDate;
+      litigation.installationDate = installationDate !== undefined ? parseSafeDate(installationDate) : litigation.installationDate;
+      litigation.problemOccurredDate = problemOccurredDate !== undefined ? parseSafeDate(problemOccurredDate) : litigation.problemOccurredDate;
+      litigation.problemInformedDate = problemInformedDate !== undefined ? parseSafeDate(problemInformedDate) : litigation.problemInformedDate;
+      litigation.receivedPictures = receivedPictures !== undefined ? !!receivedPictures : litigation.receivedPictures;
+      litigation.receivedDiagnosticReport = receivedDiagnosticReport !== undefined ? !!receivedDiagnosticReport : litigation.receivedDiagnosticReport;
+      litigation.problemDescription = problemDescription !== undefined ? problemDescription.trim() : litigation.problemDescription;
+      litigation.resolutionNotes = resolutionNotes !== undefined ? resolutionNotes.trim() : litigation.resolutionNotes;
     }
 
-    // ────────────────────────────────────────────────
-    // NEW: ALWAYS add a note to litigationNotes on update
-    // ────────────────────────────────────────────────
+    // Always add a note about the update
     litigation.litigationNotes = litigation.litigationNotes || [];
-
-    const noteText = `Litigation form updated by ${userName} on ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`;
-
     litigation.litigationNotes.push({
-      text: noteText,
+      text: `Litigation form updated by ${userName}${statusReverted ? " — order status reverted to Litigation" : ""}`,
       createdBy: userId || null,
       createdByName: userName,
       createdAt: new Date(),
     });
-    // ────────────────────────────────────────────────
 
     litigation.updatedAt = new Date();
 
+    // Save both documents
     await litigation.save();
-
-    // Optional: also log to order notes (your existing code)
-    if (changes.length > 0) {
-      const orderNote = `Litigation details updated by ${userName} (${changes.join(", ")})`;
-      order.notes = order.notes || [];
-      order.notes.push({ text: orderNote, createdAt: new Date() });
-      await order.save();
-    }
+    await order.save();
 
     return res.status(200).json({
-      message: "Litigation updated successfully",
+      message: "Litigation updated successfully" + (statusReverted ? " — order status reverted to Litigation" : ""),
       litigation,
+      orderStatus: order.status,
     });
   } catch (error) {
     console.error("Error updating litigation:", error);
