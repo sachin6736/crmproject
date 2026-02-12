@@ -24,6 +24,9 @@ const LitigationDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Controls whether Replacement is allowed after re-open from Resolved
+  const [canShowReplacement, setCanShowReplacement] = useState(true);
+
   const [openSections, setOpenSections] = useState({
     vendorNotes: false,
     procurementNotes: false,
@@ -74,6 +77,9 @@ const LitigationDetails = () => {
       }
       const orderData = await orderResponse.json();
       setOrder(orderData);
+
+      // Reset Replacement permission if currently Resolved
+      setCanShowReplacement(orderData.status !== "Resolved");
 
       const litigationResponse = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/litigation/${orderId}`, {
         credentials: "include",
@@ -139,9 +145,7 @@ const LitigationDetails = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateLitigationForm()) {
-      return;
-    }
+    if (!validateLitigationForm()) return;
 
     setActionLoading(true);
     try {
@@ -160,7 +164,6 @@ const LitigationDetails = () => {
       const updated = await response.json();
       setLitigationData(updated.litigation);
 
-      // Update form data
       setFormData({
         deliveryDate: updated.litigation.deliveryDate ? updated.litigation.deliveryDate.split('T')[0] : '',
         installationDate: updated.litigation.installationDate ? updated.litigation.installationDate.split('T')[0] : '',
@@ -172,11 +175,13 @@ const LitigationDetails = () => {
         resolutionNotes: updated.litigation.resolutionNotes || '',
       });
 
-      // Re-fetch full order & litigation to reflect status change
       await fetchOrderAndLitigation();
 
-      // Improved success message
       const wasResolved = order?.status === "Resolved";
+      if (wasResolved) {
+        setCanShowReplacement(true); // Now allow Replacement after successful update
+      }
+
       toast.success(
         wasResolved
           ? "Litigation updated successfully — order status changed back to Litigation"
@@ -265,8 +270,6 @@ const LitigationDetails = () => {
     litigationData.resolutionNotes?.trim()
   );
 
-  const isReplacementStatus = order?.status === "Replacement";
-
   const formatAddress = (address, city, state, zip) => {
     if (!address && !city && !state && !zip) return "N/A";
     return `${address || ""}, ${city || ""}, ${state || ""} ${zip || ""}`.trim();
@@ -340,9 +343,7 @@ const LitigationDetails = () => {
         ) : order ? (
           <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 flex flex-col md:flex-row gap-6">
             <div className="flex-1">
-              {/* ... Left side content (Customer Info, Order Info, Team, Addresses, Part Info, Vendor, Procurement Notes, Order Notes, Litigation History, Litigation Notes) ... */}
-              {/* remains unchanged — keep your existing code here */}
-               <div className="mb-6">
+              <div className="mb-6">
                 <h1 className="text-2xl sm:text-3xl font-bold">Order {order.order_id || "N/A"}</h1>
               </div>
 
@@ -667,18 +668,25 @@ const LitigationDetails = () => {
 
             {/* Sidebar Actions */}
             <div className="w-full md:w-64 flex flex-col space-y-3 md:sticky md:top-6 self-start">
-              {/* Litigation Button – always enabled, text changes ONLY for Resolved */}
+              {/* Litigation Button */}
               <button
                 onClick={openForm}
-                disabled={actionLoading}
-                className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-700 disabled:opacity-50 ${
-                  actionLoading ? "cursor-not-allowed bg-purple-400" : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
+                disabled={actionLoading || order?.status === "Replacement"}
+                title={
+                  order?.status === "Replacement"
+                    ? "Litigation form is blocked while order is in Replacement status"
+                    : ""
+                }
+                className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-700 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  actionLoading || order?.status === "Replacement"
+                    ? "cursor-not-allowed bg-purple-400"
+                    : "bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
                 }`}
               >
-                {order.status === "Resolved" ? "Re-open / Update Litigation" : "Litigation"}
+                {order?.status === "Resolved" ? "Re-open / Update Litigation" : "Litigation"}
               </button>
 
-              {/* Send RMA Form – remains restricted to non-Replacement */}
+              {/* Send RMA Form */}
               <button
                 onClick={() => {
                   if (!hasMeaningfulLitigation) {
@@ -687,16 +695,16 @@ const LitigationDetails = () => {
                   }
                   handleSendRMA();
                 }}
-                disabled={actionLoading || !hasMeaningfulLitigation || order.status === "Replacement"}
+                disabled={actionLoading || !hasMeaningfulLitigation || order?.status === "Replacement"}
                 title={
-                  order.status === "Replacement"
+                  order?.status === "Replacement"
                     ? "Action blocked: Order is in Replacement status"
                     : !hasMeaningfulLitigation
                     ? "Litigation form must have at least one field filled"
                     : ""
                 }
                 className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
-                  order.status === "Replacement" || !hasMeaningfulLitigation
+                  actionLoading || order?.status === "Replacement" || !hasMeaningfulLitigation
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-700"
                 }`}
@@ -704,8 +712,8 @@ const LitigationDetails = () => {
                 Send RMA Form
               </button>
 
-              {/* Replacement – remains restricted */}
-              {hasMeaningfulLitigation && order.status !== "Replacement" ? (
+              {/* Replacement - only active after re-open from Resolved or when already Litigation */}
+              {hasMeaningfulLitigation && order?.status !== "Replacement" && (order?.status !== "Resolved" || canShowReplacement) ? (
                 <div className="relative">
                   <button
                     onClick={() => !actionLoading && setIsReplacementDropdownOpen(!isReplacementDropdownOpen)}
@@ -736,8 +744,10 @@ const LitigationDetails = () => {
                 <button
                   disabled
                   title={
-                    order.status === "Replacement"
+                    order?.status === "Replacement"
                       ? "Action blocked: Order is already in Replacement"
+                      : order?.status === "Resolved" && !canShowReplacement
+                      ? "Please update Litigation first before proceeding to Replacement"
                       : "Please fill at least one field in the Litigation form first"
                   }
                   className="flex items-center justify-center px-4 py-2.5 bg-gray-500 text-gray-300 rounded-lg cursor-not-allowed text-sm font-medium"
@@ -746,21 +756,21 @@ const LitigationDetails = () => {
                 </button>
               )}
 
-              {/* Resolve – only when Litigation */}
+              {/* Resolve */}
               <button
                 onClick={handleResolveClick}
-                disabled={actionLoading || !hasMeaningfulLitigation || order.status !== "Litigation"}
+                disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation"}
                 title={
-                  order.status === "Replacement"
+                  order?.status === "Replacement"
                     ? "Action blocked: Order is in Replacement status"
                     : !hasMeaningfulLitigation
                     ? "Litigation form must have at least one field filled"
-                    : order.status !== "Litigation"
+                    : order?.status !== "Litigation"
                     ? "Only available when order is in Litigation"
                     : ""
                 }
                 className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  hasMeaningfulLitigation && order.status === "Litigation"
+                  hasMeaningfulLitigation && order?.status === "Litigation"
                     ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-300 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-700"
                     : "bg-gray-500 cursor-not-allowed"
                 }`}
@@ -768,14 +778,14 @@ const LitigationDetails = () => {
                 Resolve
               </button>
 
-              {/* Refund – only when Litigation */}
+              {/* Refund */}
               <button
                 onClick={() => {
                   if (!hasMeaningfulLitigation) {
                     toast.warn("Please fill at least one field in the Litigation form first");
                     return;
                   }
-                  if (order.status !== "Litigation") {
+                  if (order?.status !== "Litigation") {
                     toast.warn("Can only mark Refund from Litigation status");
                     return;
                   }
@@ -806,18 +816,18 @@ const LitigationDetails = () => {
 
                   setShowRefundConfirm(true);
                 }}
-                disabled={actionLoading || !hasMeaningfulLitigation || order.status !== "Litigation"}
+                disabled={actionLoading || !hasMeaningfulLitigation || order?.status !== "Litigation"}
                 title={
-                  order.status === "Replacement"
+                  order?.status === "Replacement"
                     ? "Action blocked: Order is in Replacement status"
                     : !hasMeaningfulLitigation
                     ? "Litigation form must have at least one field filled"
-                    : order.status !== "Litigation"
+                    : order?.status !== "Litigation"
                     ? "Can only mark Refund from Litigation status"
                     : ""
                 }
                 className={`flex items-center justify-center px-4 py-2.5 text-white rounded-lg transition-all text-sm font-medium focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  hasMeaningfulLitigation && order.status === "Litigation"
+                  hasMeaningfulLitigation && order?.status === "Litigation"
                     ? "bg-red-600 hover:bg-red-700 focus:ring-red-300 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-700"
                     : "bg-gray-500 cursor-not-allowed"
                 }`}
@@ -849,7 +859,6 @@ const LitigationDetails = () => {
             </div>
 
             <form onSubmit={handleFormSubmit} className="space-y-5">
-              {/* Form fields remain the same */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Delivery Date <span className="text-red-500">*</span>
@@ -865,7 +874,6 @@ const LitigationDetails = () => {
                 />
               </div>
 
-              {/* ... (keep all other form fields as they were) ... */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Installation Date <span className="text-red-500">*</span>
