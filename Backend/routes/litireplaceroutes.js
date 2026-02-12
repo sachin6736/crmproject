@@ -1,6 +1,6 @@
 import express from "express";
 import { protect } from "../middleware/authmiddleware.js";
-import { litigation, updateOrderStatus,createLitigation, updateLitigation, getLitigation,sendRMAForm,addProcurement, updateProcurement ,resolveLitigation, markAsRefund, markRefundCompleted, getRefundOrders} from "../controllers/litireplace.js";
+import { litigation, updateOrderStatus,createLitigation, updateLitigation, getLitigation,sendRMAForm,addProcurement, updateProcurement ,resolveLitigation, markAsRefund, markRefundCompleted, getRefundOrders,addLitigationNote} from "../controllers/litireplace.js";
 
 const router = express.Router();
 
@@ -15,5 +15,6 @@ router.post('/add-procurement/:id', addProcurement);
 router.patch('/update-procurement/:id', updateProcurement);
 router.patch("/resolve-litigation/:orderId", protect ,resolveLitigation);
 router.patch("/refund/:orderId",protect, markAsRefund);
-router.patch("/refund-completed/:orderId",protect, markRefundCompleted)
+router.patch("/refund-completed/:orderId",protect, markRefundCompleted);
+router.post("/litigation/:orderId/note",protect,addLitigationNote);
 export default router;

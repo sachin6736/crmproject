@@ -27,6 +27,9 @@ const LitigationDetails = () => {
   // Controls whether Replacement is allowed after re-open from Resolved
   const [canShowReplacement, setCanShowReplacement] = useState(true);
 
+  // For manually adding litigation notes
+  const [newLitigationNote, setNewLitigationNote] = useState("");
+
   const [openSections, setOpenSections] = useState({
     vendorNotes: false,
     procurementNotes: false,
@@ -179,7 +182,7 @@ const LitigationDetails = () => {
 
       const wasResolved = order?.status === "Resolved";
       if (wasResolved) {
-        setCanShowReplacement(true); // Now allow Replacement after successful update
+        setCanShowReplacement(true);
       }
 
       toast.success(
@@ -202,6 +205,45 @@ const LitigationDetails = () => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  // ────────────────────────────────────────────────
+  // New: Add manual litigation note
+  // ────────────────────────────────────────────────
+  const handleAddLitigationNote = async () => {
+    if (!newLitigationNote.trim()) {
+      toast.warn("Please enter some text for the note");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/litigation/${orderId}/note`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ text: newLitigationNote.trim() }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to add note");
+      }
+
+      // Clear input
+      setNewLitigationNote("");
+
+      // Refresh litigation data (notes will update)
+      await fetchOrderAndLitigation();
+
+      toast.success("Note added successfully");
+    } catch (error) {
+      toast.error(error.message || "Failed to add note");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleSendRMA = async () => {
@@ -620,7 +662,9 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
-              {/* Litigation Notes */}
+              {/* ────────────────────────────────────────────────
+                   Litigation Notes + Add Note Input
+                ──────────────────────────────────────────────── */}
               <div className="mb-8">
                 <button
                   onClick={() => toggleSection("litigationNotes")}
@@ -633,11 +677,31 @@ const LitigationDetails = () => {
 
                 <div
                   className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${
-                    openSections.litigationNotes ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                    openSections.litigationNotes ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
+                  {/* Add Note Input */}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-t-lg border border-b-0 border-gray-200 dark:border-gray-700 flex gap-3 items-center">
+                    <input
+                      type="text"
+                      value={newLitigationNote}
+                      onChange={(e) => setNewLitigationNote(e.target.value)}
+                      placeholder="Type a new litigation note..."
+                      className="flex-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-colors"
+                      disabled={actionLoading}
+                    />
+                    <button
+                      onClick={handleAddLitigationNote}
+                      disabled={actionLoading || !newLitigationNote.trim()}
+                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
+                    >
+                      {actionLoading ? "Adding..." : "Add Note"}
+                    </button>
+                  </div>
+
+                  {/* Notes List */}
                   {litigationData?.litigationNotes?.length > 0 ? (
-                    <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto space-y-4">
+                    <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-b-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto space-y-4">
                       {[...litigationData.litigationNotes].reverse().map((note, index) => (
                         <div
                           key={index}
@@ -712,7 +776,7 @@ const LitigationDetails = () => {
                 Send RMA Form
               </button>
 
-              {/* Replacement - only active after re-open from Resolved or when already Litigation */}
+              {/* Replacement */}
               {hasMeaningfulLitigation && order?.status !== "Replacement" && (order?.status !== "Resolved" || canShowReplacement) ? (
                 <div className="relative">
                   <button

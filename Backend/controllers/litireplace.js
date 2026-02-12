@@ -832,3 +832,58 @@ export const getRefundOrders = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch refund orders', error: error.message });
   }
 };
+
+// controllers/litReplaceController.js
+
+export const addLitigationNote = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { text } = req.body;
+
+    if (!text?.trim()) {
+      return res.status(400).json({ message: "Note text is required" });
+    }
+
+    const litigation = await Litigation.findOne({ orderId });
+
+    if (!litigation) {
+      return res.status(404).json({ message: "Litigation record not found for this order" });
+    }
+
+    const userId = req.user?._id;
+    const userName = req.user?.name || "Unknown User";
+
+    litigation.litigationNotes.push({
+      text: text.trim(),
+      createdBy: userId,
+      createdByName: userName,
+      createdAt: new Date(),
+    });
+
+    litigation.updatedAt = new Date();
+
+    await litigation.save();
+
+    // Optional: also log to order notes
+    const order = await Order.findById(orderId);
+    if (order) {
+      order.notes = order.notes || [];
+      order.notes.push({
+        text: `Litigation note added: "${text.trim()}" by ${userName}`,
+        createdAt: new Date(),
+      });
+      await order.save();
+    }
+
+    res.status(200).json({
+      message: "Note added successfully",
+      litigationNotes: litigation.litigationNotes,
+    });
+  } catch (error) {
+    console.error("Error adding litigation note:", error);
+    res.status(500).json({
+      message: "Failed to add note",
+      error: error.message,
+    });
+  }
+};
