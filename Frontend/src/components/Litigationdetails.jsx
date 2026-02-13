@@ -363,6 +363,7 @@ const LitigationDetails = () => {
         toast.error(error.message || "Failed to resolve order");
       } finally {
         setActionLoading(false);
+        setShowResolveConfirm(false);
       }
     });
 
@@ -875,6 +876,7 @@ const LitigationDetails = () => {
                       toast.error(error.message || "Failed to mark as Refund");
                     } finally {
                       setActionLoading(false);
+                      setShowRefundConfirm(false);
                     }
                   });
 
