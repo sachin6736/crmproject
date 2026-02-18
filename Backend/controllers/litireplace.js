@@ -1,7 +1,7 @@
 import { Order } from "../models/order.js";
 import Litigation from "../models/Litigation.js";
 import sendEmail from "../sendEmail.js";
-
+import ReplacementOrder from "../models/ReplacementOrder.js";
 // Get litigation orders
 export const litigation = async (req, res, next) => {
   try {
@@ -883,6 +883,111 @@ export const addLitigationNote = async (req, res) => {
     console.error("Error adding litigation note:", error);
     res.status(500).json({
       message: "Failed to add note",
+      error: error.message,
+    });
+  }
+};
+
+export const createReplacementOrder = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { orderId } = req.params;
+
+    // 1. Find original order
+    const originalOrder = await Order.findById(orderId)
+      .populate('leadId');
+
+    if (!originalOrder) {
+      return res.status(404).json({ message: "Original order not found" });
+    }
+
+    if (originalOrder.status !== "Replacement") {
+      return res.status(400).json({
+        message: "Can only create replacement record when status is 'Replacement'",
+      });
+    }
+
+    // 2. Check if already exists
+    const existing = await ReplacementOrder.findOne({ originalOrderId: orderId });
+    if (existing) {
+      return res.status(200).json({
+        message: "Replacement record already exists",
+        replacement: existing,
+        alreadyExists: true,
+      });
+    }
+
+    // 3. Generate unique replacementId manually
+    let replacementId = `REP-${originalOrder.order_id || 'NO-ID'}`;
+    let suffix = 1;
+
+    while (await ReplacementOrder.findOne({ replacementId })) {
+      replacementId = `REP-${originalOrder.order_id || 'NO-ID'}-${suffix}`;
+      suffix++;
+    }
+
+    // 4. Create the document with replacementId already set
+    const replacement = new ReplacementOrder({
+      originalOrderId: originalOrder._id,
+
+      customer: {
+        name: originalOrder.clientName || originalOrder.leadId?.clientName || "Unknown",
+        phone: originalOrder.phone || originalOrder.leadId?.phoneNumber || "Unknown",
+        email: originalOrder.email || originalOrder.leadId?.email || "Unknown",
+      },
+
+      partDetails: {
+        partRequested: originalOrder.leadId?.partRequested || "Unknown",
+        make: originalOrder.make || "Unknown",
+        model: originalOrder.model || "Unknown",
+        year: originalOrder.year || "Unknown",
+      },
+
+      replacementId: replacementId,          // ← Set it here manually
+
+      createdBy: req.user._id,
+    });
+
+    await replacement.save();
+
+    // 5. Optional notes
+    originalOrder.notes = originalOrder.notes || [];
+    originalOrder.notes.push({
+      text: `Replacement tracking record created: ${replacement.replacementId}`,
+      createdAt: new Date(),
+    });
+    await originalOrder.save();
+
+    const litigation = await Litigation.findOne({ orderId: originalOrder._id });
+    if (litigation) {
+      litigation.litigationNotes = litigation.litigationNotes || [];
+      litigation.litigationNotes.push({
+        text: `Replacement tracking record created: ${replacement.replacementId}`,
+        createdBy: req.user._id,
+        createdByName: req.user.name || "System",
+        createdAt: new Date(),
+      });
+      await litigation.save();
+    }
+
+    // 6. Success response
+    return res.status(201).json({
+      message: "Replacement tracking record created successfully",
+      replacement: {
+        replacementId: replacement.replacementId,
+        originalOrderId: replacement.originalOrderId,
+        customer: replacement.customer,
+        partDetails: replacement.partDetails,
+        createdAt: replacement.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating replacement record:", error);
+    return res.status(500).json({
+      message: "Failed to create replacement record",
       error: error.message,
     });
   }

@@ -25,6 +25,8 @@ import PaidVendors from './components/PaidVendors';
 import PaidVendorshistory from './components/PaidVendorsHistory';
 import CustomerPaymentHistory from './components/CustomerPaymentHistory';
 import RefundOrders from './components/RefundOrders';
+import ReplacementOrders from './components/ReplacementOrders';
+import ReplacementOrderDetails from './components/ReplacementOrderDetails'
 
 function App() {
   const { theme } = useTheme();
@@ -52,6 +54,8 @@ function App() {
           <Route path='order/:id' element={<OrderForm />} />
           <Route path='orders' element={<OrdersHistory />} />
           <Route path='litigation-orders' element={<ProtectedRoute><LitigationOrders /></ProtectedRoute>} />
+          <Route path='replacements' element={<ReplacementOrders />} />
+          <Route path="replacements/:id" element={<ReplacementOrderDetails />} />
           <Route path='cancelledvendors' element={<CancelledVendor />} />
           <Route path="customer-payments" element={<CustomerPaymentHistory />} />
           <Route path='paidvendors' element={<PaidVendors />} />

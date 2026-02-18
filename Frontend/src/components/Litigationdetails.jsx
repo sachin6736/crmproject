@@ -24,10 +24,8 @@ const LitigationDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Controls whether Replacement is allowed after re-open from Resolved
   const [canShowReplacement, setCanShowReplacement] = useState(true);
 
-  // For manually adding litigation notes
   const [newLitigationNote, setNewLitigationNote] = useState("");
 
   const [openSections, setOpenSections] = useState({
@@ -81,7 +79,6 @@ const LitigationDetails = () => {
       const orderData = await orderResponse.json();
       setOrder(orderData);
 
-      // Reset Replacement permission if currently Resolved
       setCanShowReplacement(orderData.status !== "Resolved");
 
       const litigationResponse = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/litigation/${orderId}`, {
@@ -207,9 +204,6 @@ const LitigationDetails = () => {
     }));
   };
 
-  // ────────────────────────────────────────────────
-  // New: Add manual litigation note
-  // ────────────────────────────────────────────────
   const handleAddLitigationNote = async () => {
     if (!newLitigationNote.trim()) {
       toast.warn("Please enter some text for the note");
@@ -220,9 +214,7 @@ const LitigationDetails = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/litigation/${orderId}/note`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ text: newLitigationNote.trim() }),
       });
@@ -232,12 +224,8 @@ const LitigationDetails = () => {
         throw new Error(errorData.message || "Failed to add note");
       }
 
-      // Clear input
       setNewLitigationNote("");
-
-      // Refresh litigation data (notes will update)
       await fetchOrderAndLitigation();
-
       toast.success("Note added successfully");
     } catch (error) {
       toast.error(error.message || "Failed to add note");
@@ -301,6 +289,47 @@ const LitigationDetails = () => {
     }
   };
 
+  // Create Replacement Order – direct action (no confirmation modal)
+  const handleCreateReplacement = async () => {
+    if (actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/LiteReplace/create-replacement/${orderId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create replacement record");
+      }
+
+      // Handle both cases from backend
+      if (data.alreadyExists) {
+        toast.info(
+          `Replacement order already created!\nTracking ID: ${data.replacement?.replacementId || "N/A"}`
+        );
+      } else {
+        toast.success(
+          `Replacement tracking record created!\nTracking ID: ${data.replacement?.replacementId || "N/A"}`
+        );
+        // Refresh only on successful new creation
+        await fetchOrderAndLitigation();
+      }
+    } catch (error) {
+      console.error("Replacement creation failed:", error);
+      toast.error(error.message || "Failed to create replacement record");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const hasMeaningfulLitigation = litigationData && (
     litigationData.deliveryDate ||
     litigationData.installationDate ||
@@ -342,7 +371,7 @@ const LitigationDetails = () => {
       return;
     }
 
-    setResolveConfirmAction(() => async () => {
+    setResolveConfirmAction(async () => {
       setActionLoading(true);
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/resolve-litigation/${orderId}`, {
@@ -363,7 +392,6 @@ const LitigationDetails = () => {
         toast.error(error.message || "Failed to resolve order");
       } finally {
         setActionLoading(false);
-        setShowResolveConfirm(false);
       }
     });
 
@@ -663,9 +691,7 @@ const LitigationDetails = () => {
                 </div>
               </div>
 
-              {/* ────────────────────────────────────────────────
-                   Litigation Notes + Add Note Input
-                ──────────────────────────────────────────────── */}
+              {/* Litigation Notes + Add Note Input */}
               <div className="mb-8">
                 <button
                   onClick={() => toggleSection("litigationNotes")}
@@ -681,7 +707,6 @@ const LitigationDetails = () => {
                     openSections.litigationNotes ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
-                  {/* Add Note Input */}
                   <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-t-lg border border-b-0 border-gray-200 dark:border-gray-700 flex gap-3 items-center">
                     <input
                       type="text"
@@ -700,7 +725,6 @@ const LitigationDetails = () => {
                     </button>
                   </div>
 
-                  {/* Notes List */}
                   {litigationData?.litigationNotes?.length > 0 ? (
                     <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-b-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto space-y-4">
                       {[...litigationData.litigationNotes].reverse().map((note, index) => (
@@ -777,7 +801,7 @@ const LitigationDetails = () => {
                 Send RMA Form
               </button>
 
-              {/* Replacement */}
+              {/* Replacement status change dropdown */}
               {hasMeaningfulLitigation && order?.status !== "Replacement" && (order?.status !== "Resolved" || canShowReplacement) ? (
                 <div className="relative">
                   <button
@@ -821,6 +845,19 @@ const LitigationDetails = () => {
                 </button>
               )}
 
+              {/* Create Replacement Order – direct action, no modal */}
+              {order?.status === "Replacement" && (
+                <button
+                  onClick={handleCreateReplacement}
+                  disabled={actionLoading}
+                  className={`flex items-center justify-center px-4 py-2.5 w-full text-white rounded-lg transition-all text-sm font-medium focus:ring-4 focus:ring-green-300 dark:focus:ring-green-700 disabled:opacity-50 ${
+                    actionLoading ? "cursor-not-allowed bg-green-400" : "bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                  }`}
+                >
+                  {actionLoading ? "Creating..." : "Create Replacement Order"}
+                </button>
+              )}
+
               {/* Resolve */}
               <button
                 onClick={handleResolveClick}
@@ -855,7 +892,7 @@ const LitigationDetails = () => {
                     return;
                   }
 
-                  setRefundConfirmAction(() => async () => {
+                  setRefundConfirmAction(async () => {
                     setActionLoading(true);
                     try {
                       const response = await fetch(`${import.meta.env.VITE_API_URL}/LiteReplace/refund/${orderId}`, {
@@ -876,7 +913,6 @@ const LitigationDetails = () => {
                       toast.error(error.message || "Failed to mark as Refund");
                     } finally {
                       setActionLoading(false);
-                      setShowRefundConfirm(false);
                     }
                   });
 

@@ -268,6 +268,15 @@ function Home() {
       },
     },
     {
+  label: 'Replacements',
+  icon: <BadgeDollarSign className="h-6 w-6" />, // or any icon you prefer
+  path: '/home/replacements',
+  onClick: () => {
+    navigate('/home/replacements');
+    setShowSidebar(false);
+  },
+},
+    {
       label: 'Customer Payment History',
       icon: <DollarSign className="h-6 w-6" />,
       path: '/home/customer-payments',

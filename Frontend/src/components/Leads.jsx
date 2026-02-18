@@ -590,7 +590,7 @@ const LeadTableHeader = () => {
         secondaryButtonProps={{
           disabled: actionLoading,
           className: `${secondaryOverrideClass} ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`,
-        }}
+        }}useRef
       />
     </div>
   );
