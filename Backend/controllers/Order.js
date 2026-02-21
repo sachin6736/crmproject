@@ -654,7 +654,18 @@ export const addVendorToOrder = async (req, res) => {
     }
 
     // ────────────────────────────────────────────────
-    // NEW: Block adding vendor if order is already shipped or later
+    // NEW: Block adding vendor if customer payment is not confirmed
+    if (!order.customerPaymentDetails?.isConfirmed) {
+      return res.status(403).json({
+        message: "Cannot add or associate vendor before confirming customer payment.",
+        currentStatus: order.status,
+        paymentConfirmed: false
+      });
+    }
+    // ────────────────────────────────────────────────
+
+    // ────────────────────────────────────────────────
+    // Block adding vendor if order is already shipped or later
     const blockedStatuses = [
       "Ship Out",
       "Intransit",
@@ -723,10 +734,16 @@ export const addVendorToOrder = async (req, res) => {
 
     await order.save();
 
-    res.status(200).json({ message: 'Vendor added to order successfully', order });
+    res.status(200).json({ 
+      message: 'Vendor added to order successfully', 
+      order 
+    });
   } catch (error) {
     console.error('Error adding vendor to order:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 };
 
