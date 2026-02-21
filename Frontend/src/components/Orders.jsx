@@ -47,9 +47,6 @@ const OrderForm = () => {
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmText, setConfirmText] = useState("Confirm");
 
-  // NEW: Store lead data (including paymentDetails)
-  const [leadData, setLeadData] = useState(null);
-
   useEffect(() => {
     const checkOrderAndFetchLead = async () => {
       setIsLoading(true);
@@ -90,7 +87,7 @@ const OrderForm = () => {
           return;
         }
 
-        // 2. If no order → fetch lead data (including paymentDetails)
+        // 2. If no order → fetch lead data (basic fields only)
         const leadResponse = await fetch(
           `${import.meta.env.VITE_API_URL}/Lead/getleadbyid/${id}`,
           { credentials: "include" }
@@ -101,7 +98,6 @@ const OrderForm = () => {
         }
 
         const lead = await leadResponse.json();
-        setLeadData(lead); // ← store full lead (with paymentDetails)
 
         setFormData({
           make: lead.make || "",
@@ -133,8 +129,14 @@ const OrderForm = () => {
       }
     };
 
-    checkOrderAndFetchLead();
-  }, [id]);
+    if (id) {
+      checkOrderAndFetchLead();
+    } else {
+      toast.error("Invalid lead ID");
+      navigate("/home");
+      setIsLoading(false);
+    }
+  }, [id, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -229,21 +231,9 @@ const OrderForm = () => {
     return true;
   };
 
-  // NEW: Check if payment is confirmed before proceeding
-  const checkPaymentBeforeSubmit = (isUpdate = false) => {
-    if (!leadData?.paymentDetails?.confirmed) {
-      toast.error("Please confirm payment before creating/updating the order.");
-      return false;
-    }
-    return true;
-  };
-
   const showSubmitConfirmation = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    // Check payment confirmation
-    if (!checkPaymentBeforeSubmit(false)) return;
 
     setConfirmTitle("Confirm Order Submission");
     setConfirmMessage("Are you sure you want to submit this order?");
@@ -258,9 +248,6 @@ const OrderForm = () => {
   const showUpdateConfirmation = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    // Check payment confirmation
-    if (!checkPaymentBeforeSubmit(true)) return;
 
     setConfirmTitle("Confirm Order Update");
     setConfirmMessage("Are you sure you want to update this order?");
@@ -705,8 +692,8 @@ const OrderForm = () => {
                   value={formData.city}
                   onChange={handleChange}
                   required
-                  className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none disabled:opacity-50"
                   disabled={isLoading || actionLoading}
+                  className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none disabled:opacity-50"
                 />
                 <input
                   name="state"
@@ -714,8 +701,8 @@ const OrderForm = () => {
                   value={formData.state}
                   onChange={handleChange}
                   required
-                  className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none disabled:opacity-50"
                   disabled={isLoading || actionLoading}
+                  className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none disabled:opacity-50"
                 />
                 <input
                   name="zip"
@@ -723,8 +710,8 @@ const OrderForm = () => {
                   value={formData.zip}
                   onChange={handleChange}
                   required
-                  className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none disabled:opacity-50"
                   disabled={isLoading || actionLoading}
+                  className="border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 focus:border-blue-400 dark:focus:border-blue-500 focus:outline-none disabled:opacity-50"
                 />
               </div>
             </section>
