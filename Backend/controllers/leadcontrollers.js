@@ -434,12 +434,7 @@ export const createnotes = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { text } = req.body;
-
-    // Log user details for debugging
-    console.log('req.user:', req.user);
     const name = req.user?.name;
-    console.log('name:', name);
-
     // Validate text
     if (!text || typeof text !== 'string' || text.trim() === '') {
       return res.status(400).json({ message: 'Text is required and must be a non-empty string' });

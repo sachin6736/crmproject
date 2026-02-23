@@ -280,21 +280,21 @@ export const createOrder = async (req, res) => {
     await procurementRoundRobinState.save();
     console.log("Updated Procurement RoundRobinState:", procurementRoundRobinState);
 
-    const emailContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
-        <h2 style="color: #333;">New Order Created</h2>
-        <p><strong>Client Name:</strong> ${clientName}</p>
-        <p><strong>Amount:</strong> ${formattedAmount}</p>
-        <p><strong>Assigned to Customer Relations:</strong> ${customerRelationsPerson.name}</p>
-        <p><strong>Assigned to Procurement:</strong> ${procurementPerson.name}</p>
-        <p><strong>Make:</strong> ${make}</p>
-        <p><strong>Model:</strong> ${model}</p> 
-        <p><strong>Year:</strong> ${year}</p>
-        <hr>
-        <p style="color: gray;">This is an automated email from your CRM system.</p>
-      </div>
-    `;
-    await sendEmail(ADMIN_EMAIL, "New Order Created", emailContent);
+    // const emailContent = `
+    //   <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
+    //     <h2 style="color: #333;">New Order Created</h2>
+    //     <p><strong>Client Name:</strong> ${clientName}</p>
+    //     <p><strong>Amount:</strong> ${formattedAmount}</p>
+    //     <p><strong>Assigned to Customer Relations:</strong> ${customerRelationsPerson.name}</p>
+    //     <p><strong>Assigned to Procurement:</strong> ${procurementPerson.name}</p>
+    //     <p><strong>Make:</strong> ${make}</p>
+    //     <p><strong>Model:</strong> ${model}</p> 
+    //     <p><strong>Year:</strong> ${year}</p>
+    //     <hr>
+    //     <p style="color: gray;">This is an automated email from your CRM system.</p>
+    //   </div>
+    // `;
+    // await sendEmail(ADMIN_EMAIL, "New Order Created", emailContent);
 
     res.status(201).json({ message: "Order created successfully and notifications sent" });
   } catch (error) {
@@ -466,10 +466,14 @@ export const getProcurementOrders = async (req, res) => {
     const userId = req.user.id;
     console.log("id", userId);
     const { page = 1, limit = 10, search = '', status = '' } = req.query;
-    
-    // Remove the procurementPerson filter to fetch all orders
-    const query = {};
 
+    // Base query
+    const query = {
+      // Only show orders where customer has confirmed payment
+      "customerPaymentDetails.isConfirmed": true
+    };
+
+    // Add search conditions (if any)
     if (search) {
       const isNumericSearch = !isNaN(search) && search.trim() !== '';
       query.$or = [
@@ -481,10 +485,12 @@ export const getProcurementOrders = async (req, res) => {
       ];
     }
 
+    // Add status filter (if provided)
     if (status) {
       query.status = status;
     }
 
+    // Fetch orders with the filters
     const orders = await Order.find(query)
       .populate('leadId', 'make model year partRequested clientName email totalCost')
       .populate('customerRelationsPerson', 'name email')
@@ -492,10 +498,10 @@ export const getProcurementOrders = async (req, res) => {
       .populate('salesPerson', 'name email')
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .sort({ createdAt: -1 }) // Sort by creation date, newest first
+      .sort({ createdAt: -1 }) // newest first
       .lean();
 
-    // Add isOwnOrder flag to each order
+    // Add isOwnOrder flag for UI highlighting
     const ordersWithFlag = orders.map(order => ({
       ...order,
       isOwnOrder: order.procurementPerson?._id?.toString() === userId.toString(),
@@ -648,7 +654,18 @@ export const addVendorToOrder = async (req, res) => {
     }
 
     // ────────────────────────────────────────────────
-    // NEW: Block adding vendor if order is already shipped or later
+    // NEW: Block adding vendor if customer payment is not confirmed
+    if (!order.customerPaymentDetails?.isConfirmed) {
+      return res.status(403).json({
+        message: "Cannot add or associate vendor before confirming customer payment.",
+        currentStatus: order.status,
+        paymentConfirmed: false
+      });
+    }
+    // ────────────────────────────────────────────────
+
+    // ────────────────────────────────────────────────
+    // Block adding vendor if order is already shipped or later
     const blockedStatuses = [
       "Ship Out",
       "Intransit",
@@ -717,10 +734,16 @@ export const addVendorToOrder = async (req, res) => {
 
     await order.save();
 
-    res.status(200).json({ message: 'Vendor added to order successfully', order });
+    res.status(200).json({ 
+      message: 'Vendor added to order successfully', 
+      order 
+    });
   } catch (error) {
     console.error('Error adding vendor to order:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 };
 
@@ -2740,6 +2763,78 @@ export const getPaidVendorHistory = async (req, res) => {
   } catch (error) {
     console.error("Error fetching paid vendor history:", error);
     res.status(500).json({ message: "Failed to fetch paid vendor history" });
+  }
+};
+
+
+// UpdateCustomerPaymentStatus
+
+export const updateCustomerPaymentStatus = async (req, res) => {
+  try {
+    // ────────────────────────────────────────────────
+    // Only admins can change customer payment status
+    // ────────────────────────────────────────────────
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Access denied: Only administrators can update customer payment status",
+      });
+    }
+
+    const { id } = req.params; // order ID
+    const { isConfirmed } = req.body;
+
+    // Validate input
+    if (typeof isConfirmed !== "boolean") {
+      return res.status(400).json({
+        message: "isConfirmed must be a boolean (true for Paid, false for Pending)",
+      });
+    }
+
+    // Find the order
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Optional: prevent changing if already in final states (you can remove if not needed)
+    const finalStatuses = ["Delivered", "Refund Completed", "Resolved"];
+    if (finalStatuses.includes(order.status) && isConfirmed !== order.customerPaymentDetails?.isConfirmed) {
+      return res.status(403).json({
+        message: `Cannot change payment status for orders in final status: ${order.status}`,
+      });
+    }
+
+    // Update payment details
+    order.customerPaymentDetails = {
+      ...order.customerPaymentDetails || {}, // preserve existing if partial
+      isConfirmed,
+      confirmedAt: isConfirmed ? new Date() : null,
+      confirmedBy: isConfirmed ? req.user._id : null,
+      amountConfirmed: isConfirmed ? order.amount : 0, // optional: auto-set to order amount
+      notes: isConfirmed
+        ? `${order.customerPaymentDetails?.notes || ""}\nConfirmed on ${new Date().toISOString()} by ${req.user.name || req.user.email}`
+        : order.customerPaymentDetails?.notes || "",
+    };
+
+    await order.save();
+
+    // Re-fetch with populated fields (optional but useful for frontend)
+    const updatedOrder = await Order.findById(id)
+      .populate("leadId", "clientName totalCost")
+      .populate("customerRelationsPerson", "name")
+      .populate("procurementPerson", "name")
+      .populate("salesPerson", "name");
+
+    res.status(200).json({
+      message: `Customer payment status updated to ${isConfirmed ? "Paid" : "Pending"}`,
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error("Error updating customer payment status:", error);
+    res.status(500).json({
+      message: "Server error while updating customer payment status",
+      error: error.message,
+    });
   }
 };
 

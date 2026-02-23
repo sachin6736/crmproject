@@ -139,6 +139,35 @@ const orderSchema = new mongoose.Schema({
     required: true,
     min: 0.01,
   },
+  // ────────────────────────────────────────────────
+  //          NEW: Customer Payment Details
+  // ────────────────────────────────────────────────
+  customerPaymentDetails: {
+    isConfirmed: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
+    confirmedAt: {
+      type: Date,
+      default: null,
+    },
+    confirmedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    amountConfirmed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    notes: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+  },
   status: {
     type: String,
     enum: [

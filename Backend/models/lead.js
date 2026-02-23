@@ -43,29 +43,6 @@ const leadSchema = new mongoose.Schema({
     },
   ],
 
-  // ────────────────────────────────────────────────
-  //           Recommended Payment Details
-  // ────────────────────────────────────────────────
-  paymentDetails: {
-    confirmed: {
-      type: Boolean,
-      default: false,
-    },
-    paymentDate: {
-      type: Date,
-      default: null,
-    },
-    amount: {
-      type: Number,
-      default: 0,
-      min: [0, "Payment amount cannot be negative"],
-    },
-    // Optional but very useful fields (you can add later if needed)
-    // method: { type: String, enum: ["Credit Card", "Bank Transfer", "Cash", "Other"] },
-    // transactionId: { type: String, trim: true },
-    // notes: { type: String },
-  },
-
   partCost: { type: Number, default: 0 },
   shippingCost: { type: Number, default: 0 },
   grossProfit: { type: Number, default: 0 },

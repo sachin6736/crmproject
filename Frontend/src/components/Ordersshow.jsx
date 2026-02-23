@@ -6,6 +6,7 @@ import { exportToExcel } from "./utilities/exportToExcel";
 import { useTheme } from "../context/ThemeContext";
 import debounce from "lodash/debounce";
 import LoadingOverlay from "./LoadingOverlay";
+import ConfirmationModal from "./ConfirmationModal";
 
 const OrdersHistory = () => {
   const navigate = useNavigate();
@@ -20,6 +21,11 @@ const OrdersHistory = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("Confirm");
   const itemsPerPage = 10;
 
   const statusTextColors = {
@@ -35,6 +41,11 @@ const OrdersHistory = () => {
     Delivered: "text-green-700 dark:text-green-500",
     Replacement: "text-pink-600 dark:text-pink-400",
     default: "text-gray-600 dark:text-gray-400",
+  };
+
+  const paymentStatusColors = {
+    Pending: "text-yellow-600 dark:text-yellow-400",
+    Paid: "text-green-600 dark:text-green-400 font-semibold",
   };
 
   const debouncedSearch = useCallback(
@@ -133,7 +144,6 @@ const OrdersHistory = () => {
     []
   );
 
-  // Trigger fetchOrders when dependencies change
   useEffect(() => {
     if (user) {
       fetchOrders(user, searchQuery, statusFilter, currentPage);
@@ -141,7 +151,6 @@ const OrdersHistory = () => {
     return () => fetchOrders.cancel();
   }, [user, searchQuery, statusFilter, currentPage, fetchOrders]);
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     debouncedSearch(e.target.value);
   };
@@ -164,6 +173,7 @@ const OrdersHistory = () => {
       PartRequested: order.leadId?.partRequested || "N/A",
       TotalCost: order.leadId?.totalCost ? `$${order.leadId.totalCost}` : "N/A",
       Status: order.status || "N/A",
+      CustomerPayment: order.customerPaymentDetails?.isConfirmed ? "Paid" : "Pending",
       ...(user?.role === "admin" && {
         AssignedCustomerRelation: order.customerRelationsPerson?.name || "N/A",
         AssignedProcurement: order.procurementPerson?.name || "N/A",
@@ -190,8 +200,66 @@ const OrdersHistory = () => {
     setShowStatusDropdown(false);
   };
 
-  // Check if user is a viewer
+  // Change Customer Payment Status (Admin only)
+  const handlePaymentStatusChange = (orderId, newStatus) => {
+    const isConfirmed = newStatus === "Paid";
+
+    setConfirmTitle("Confirm Payment Status Change");
+    setConfirmMessage(
+      `Are you sure you want to mark this order as "${newStatus}"? This cannot be undone easily.`
+    );
+    setConfirmText("Yes, Mark as " + newStatus);
+    setConfirmAction(() => async () => {
+      setActionLoading(true);
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/Order/${orderId}/customer-payment-status`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ isConfirmed }),
+          }
+        );
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.message || "Failed to update payment status");
+        }
+
+        const updatedOrder = await response.json();
+
+        // Update local state (temporary — page will reload anyway)
+        setOrders((prevOrders) =>
+          prevOrders.map((o) =>
+            o._id === orderId
+              ? { ...o, customerPaymentDetails: updatedOrder.customerPaymentDetails }
+              : o
+          )
+        );
+
+        toast.success(`Order marked as ${newStatus}`);
+
+        // Auto-refresh the page after a short delay to show fresh data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200); // 1.2 seconds — enough time to see the toast
+
+      } catch (error) {
+        console.error("Error updating payment status:", error);
+        toast.error(error.message || "Failed to update payment status");
+      } finally {
+        setActionLoading(false);
+        setShowConfirmModal(false);
+      }
+    });
+
+    setShowConfirmModal(true);
+  };
+
+  // Check roles
   const isViewer = user?.role === "viewer";
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="p-4 sm:p-6 min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
@@ -246,7 +314,7 @@ const OrdersHistory = () => {
                 />
               </svg>
             </div>
-            {user?.role === "admin" && (
+            {isAdmin && (
               <button
                 onClick={handleExportToExcel}
                 className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 transition-all duration-200 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm font-medium"
@@ -271,8 +339,9 @@ const OrdersHistory = () => {
                   "Part Requested",
                   "Total Cost",
                   "Status",
-                  ...(user?.role === "admin" ? ["Assigned Customer Relation", "Assigned Procurement"] : []),
-                ].filter((header) => 
+                  "Customer Payment Status",
+                  ...(isAdmin ? ["Assigned Customer Relation", "Assigned Procurement"] : []),
+                ].filter((header) =>
                   !(isViewer && (header === "Assigned Customer Relation" || header === "Assigned Procurement"))
                 ).map((header, i) => (
                   <th
@@ -286,73 +355,104 @@ const OrdersHistory = () => {
             </thead>
             <tbody>
               {orders.length > 0 ? (
-                orders.map((order, index) => (
-                  <tr
-                    key={order._id || index}
-                    className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
-                      order.status === "Replacement"
-                        ? "bg-red-100 dark:bg-red-900/30"
-                        : (user?.role === "customer_relations" || user?.role === "procurement")
-                        ? order.isOwnOrder
-                          ? "bg-green-100 dark:bg-green-900/20"
-                          : "bg-red-100 dark:bg-red-900/20"
-                        : ""
-                    }`}
-                  >
-                    <td
-                      className="px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                      onClick={() => !actionLoading && handleOrderClick(order._id)}
+                orders.map((order, index) => {
+                  const isPaid = order.customerPaymentDetails?.isConfirmed === true;
+
+                  return (
+                    <tr
+                      key={order._id || index}
+                      className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 ${
+                        order.status === "Replacement"
+                          ? "bg-red-100 dark:bg-red-900/30"
+                          : (user?.role === "customer_relations" || user?.role === "procurement")
+                          ? order.isOwnOrder
+                            ? "bg-green-100 dark:bg-green-900/20"
+                            : "bg-red-100 dark:bg-red-900/20"
+                          : ""
+                      }`}
                     >
-                      {order.order_id || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {order.clientName || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {order.phone || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {order.email || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {order.createdAt
-                        ? new Date(order.createdAt).toLocaleString()
-                        : "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {order.leadId?.partRequested || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {order.leadId?.totalCost
-                        ? `$${order.leadId.totalCost.toFixed(2)}`
-                        : "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`font-semibold ${
-                          statusTextColors[order.status] ||
-                          statusTextColors.default
-                        }`}
+                      <td
+                        className="px-4 py-3 whitespace-nowrap text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        onClick={() => !actionLoading && handleOrderClick(order._id)}
                       >
-                        {order.status || "Unknown"}
-                      </span>
-                    </td>
-                    {user?.role === "admin" && (
-                      <>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.customerRelationsPerson?.name || "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                          {order.procurementPerson?.name || "N/A"}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))
+                        {order.order_id || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {order.clientName || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {order.phone || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {order.email || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleString()
+                          : "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {order.leadId?.partRequested || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {order.leadId?.totalCost
+                          ? `$${order.leadId.totalCost.toFixed(2)}`
+                          : "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className={`font-semibold ${
+                            statusTextColors[order.status] || statusTextColors.default
+                          }`}
+                        >
+                          {order.status || "Unknown"}
+                        </span>
+                      </td>
+
+                      {/* Customer Payment Status Column */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isAdmin && !isPaid ? (
+                          <select
+                            value="Pending"
+                            onChange={(e) => !actionLoading && handlePaymentStatusChange(order._id, e.target.value)}
+                            className={`px-3 py-1 rounded text-sm font-medium border cursor-pointer ${
+                              isPaid
+                                ? "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700"
+                                : "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-800/60"
+                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50`}
+                            disabled={actionLoading}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Paid">Mark as Paid</option>
+                          </select>
+                        ) : (
+                          <span
+                            className={`font-semibold ${
+                              paymentStatusColors[isPaid ? "Paid" : "Pending"]
+                            }`}
+                          >
+                            {isPaid ? "Paid" : "Pending"}
+                          </span>
+                        )}
+                      </td>
+
+                      {isAdmin && (
+                        <>
+                          <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                            {order.customerRelationsPerson?.name || "N/A"}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                            {order.procurementPerson?.name || "N/A"}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td
-                    colSpan={isViewer ? 8 : user?.role === "admin" ? 10 : 8}
+                    colSpan={isViewer ? 9 : isAdmin ? 11 : 9}
                     className="text-center py-6 text-gray-600 dark:text-gray-400"
                   >
                     No orders found
@@ -398,6 +498,21 @@ const OrdersHistory = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmAction}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText="Cancel"
+        confirmButtonProps={{
+          disabled: actionLoading,
+          className: actionLoading ? "opacity-50 cursor-not-allowed" : "",
+        }}
+      />
     </div>
   );
 };
