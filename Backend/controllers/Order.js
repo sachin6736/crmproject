@@ -280,21 +280,21 @@ export const createOrder = async (req, res) => {
     await procurementRoundRobinState.save();
     console.log("Updated Procurement RoundRobinState:", procurementRoundRobinState);
 
-    // const emailContent = `
-    //   <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
-    //     <h2 style="color: #333;">New Order Created</h2>
-    //     <p><strong>Client Name:</strong> ${clientName}</p>
-    //     <p><strong>Amount:</strong> ${formattedAmount}</p>
-    //     <p><strong>Assigned to Customer Relations:</strong> ${customerRelationsPerson.name}</p>
-    //     <p><strong>Assigned to Procurement:</strong> ${procurementPerson.name}</p>
-    //     <p><strong>Make:</strong> ${make}</p>
-    //     <p><strong>Model:</strong> ${model}</p>
-    //     <p><strong>Year:</strong> ${year}</p>
-    //     <hr>
-    //     <p style="color: gray;">This is an automated email from your CRM system.</p>
-    //   </div>
-    // `;
-    // await sendEmail(ADMIN_EMAIL, "New Order Created", emailContent);
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd;">
+        <h2 style="color: #333;">New Order Created</h2>
+        <p><strong>Client Name:</strong> ${clientName}</p>
+        <p><strong>Amount:</strong> ${formattedAmount}</p>
+        <p><strong>Assigned to Customer Relations:</strong> ${customerRelationsPerson.name}</p>
+        <p><strong>Assigned to Procurement:</strong> ${procurementPerson.name}</p>
+        <p><strong>Make:</strong> ${make}</p>
+        <p><strong>Model:</strong> ${model}</p> 
+        <p><strong>Year:</strong> ${year}</p>
+        <hr>
+        <p style="color: gray;">This is an automated email from your CRM system.</p>
+      </div>
+    `;
+    await sendEmail(ADMIN_EMAIL, "New Order Created", emailContent);
 
     res.status(201).json({ message: "Order created successfully and notifications sent" });
   } catch (error) {
