@@ -29,6 +29,7 @@ app.use(cors({
     const allowedOrigins = [
       FRONTEND_URL,
       'https://crmproject-tau.vercel.app',
+      'https://www.autopartscrm.xyz',
       'http://localhost:5173' // Add local development origin
     ];
     if (!origin || allowedOrigins.includes(origin)) {

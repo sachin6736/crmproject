@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails,cancelVendor, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent,markShipmentDelivered,getAllCancelledVendors,addNoteToCancelledVendor,setOrderToLitigation,updateCancelledVendorPaymentStatus,getAllPaidVendors,addNoteToPaidVendor,getPaidVendorHistory,updateCustomerPaymentStatus } from "../controllers/Order.js";
+import { createOrder, getAllOrders, getMyOrders,getCustomerOrders,sendShipmentDetails,cancelVendor, orderbyid, checkOrderByLeadId , addVendorToOrder, addNoteToOrder,sendPurchaseorder , getProcurementOrders,addProcurementNote,updateOrderDetails,updateShipmentDetails,previewPurchaseOrder, createVendorSimple , getVendorSimpleList, updateVendorDetails, updateVendorPOStatus,confirmVendorPayment,markPicturesReceived,markPicturesSent,markShipmentDelivered,getAllCancelledVendors,addNoteToCancelledVendor,setOrderToLitigation,updateCancelledVendorPaymentStatus,getAllPaidVendors,addNoteToPaidVendor,getPaidVendorHistory,updateCustomerPaymentStatus , getPaidCanceledVendorHistory} from "../controllers/Order.js";
 import { protect } from "../middleware/authmiddleware.js";
 
 const router = express.Router();
@@ -39,6 +39,7 @@ router.get('/paidvendorlist', protect, getAllPaidVendors);
 router.post('/paidvendor/:vendorId/notes', protect, addNoteToPaidVendor);
 // routes/orderRoutes.js
 router.get('/paidvendorhistory', protect, getPaidVendorHistory);
+router.get('/paid-canceled-vendor-history',protect, getPaidCanceledVendorHistory);
 
 router.patch('/:id/customer-payment-status',protect,updateCustomerPaymentStatus);
 

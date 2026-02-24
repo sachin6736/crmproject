@@ -2838,3 +2838,72 @@ export const updateCustomerPaymentStatus = async (req, res) => {
   }
 };
 
+export const getPaidCanceledVendorHistory = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '' } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Base query: only paid cancelled vendors
+    let query = {
+      paymentStatus: 'paid',
+    };
+
+    // Search logic (you can improve this depending on your needs)
+    if (search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+
+      query.$or = [
+        { 'vendor.businessName': searchRegex },
+        { 'vendor.phoneNumber': searchRegex },
+        { 'vendor.email': searchRegex },
+        { 'vendor.agentName': searchRegex },
+        // optional: search inside notes
+        { 'vendor.notes.text': searchRegex },
+      ];
+    }
+
+    // Fetch paid cancelled vendors, newest first
+    const paidCanceledVendors = await CanceledVendor.find(query)
+      .sort({ paidAt: -1 })           // most recently paid first
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    const total = await CanceledVendor.countDocuments(query);
+    const totalPages = Math.ceil(total / limitNum);
+
+    // Format response to match what your PaidVendors.jsx already expects
+    const formatted = paidCanceledVendors.map((doc) => ({
+      _id: doc._id,
+      orderId: {
+        order_id: doc.orderId?.order_id || 'N/A', // if populated or you have it
+        // you can add more order fields if you populate them
+      },
+      vendor: {
+        businessName: doc.vendor.businessName,
+        phoneNumber: doc.vendor.phoneNumber,
+        email: doc.vendor.email,
+        agentName: doc.vendor.agentName,
+        totalCost: doc.vendor.totalCost,
+        notes: doc.vendor.notes || [],
+      },
+      paidAt: doc.paidAt,
+      // optional: include cancellation info if useful
+      cancellationReason: doc.cancellationReason || '',
+      canceledAt: doc.canceledAt,
+    }));
+
+    res.status(200).json({
+      paidVendors: formatted,
+      totalPages,
+      currentPage: pageNum,
+      totalVendors: total,
+    });
+  } catch (error) {
+    console.error('Error fetching paid cancelled vendor history:', error);
+    res.status(500).json({ message: 'Failed to fetch paid cancelled vendors' });
+  }
+};
