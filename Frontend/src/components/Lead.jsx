@@ -321,38 +321,52 @@ const Lead = () => {
   };
 
   const handleSaveNotes = async () => {
-    if (!newNote.trim()) {
-      toast.warning("Please enter a note");
+  if (!newNote.trim()) {
+    toast.warning("Please enter a note");
+    return;
+  }
+
+  const noteTextToSend = newNote.trim(); // what user actually typed
+
+  setActionLoading(true);
+
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/Lead/updateNotes/${id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text: noteTextToSend }),
+      }
+    );
+
+    if (!response.ok) {
+      toast.error("Failed to add note");
       return;
     }
 
-    setActionLoading(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/Lead/updateNotes/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ text: newNote }),
-        }
-      );
+    // ────────────────────────────────────────────────
+    //  Most important part: use the updated lead from server
+    // ────────────────────────────────────────────────
+    const result = await response.json();
+    const updatedLead = result.lead;           // ← your controller returns { lead: updatedLead }
 
-      if (response.ok) {
-        toast.success("Note added successfully");
-        setNotes([...notes, { text: newNote, createdAt: new Date() }]);
-        setNewNote("");
-        setIsEditing(false);
-      } else {
-        toast.error("Failed to add note");
-      }
-    } catch (error) {
-      toast.error("Error updating notes");
-      console.error("Error updating notes:", error);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+    // Update local state with server truth
+    setSingleLead(updatedLead);
+    setNotes(updatedLead.notes || []);         // ← this brings the name too!
+
+    toast.success("Note added successfully");
+    setNewNote("");
+    setIsEditing(false);
+
+  } catch (error) {
+    toast.error("Error updating notes");
+    console.error("Error updating notes:", error);
+  } finally {
+    setActionLoading(false);
+  }
+};
 
   const handleDateClick = async (date) => {
     if (actionLoading) return;

@@ -52,7 +52,7 @@ const PaidVendors = () => {
     fetchUser();
   }, [navigate]);
 
-  // Fetch paid vendors
+  // Fetch paid vendors (from cancelled + paid)
   useEffect(() => {
     if (!user) return;
 
@@ -61,7 +61,7 @@ const PaidVendors = () => {
 
     const fetchData = async () => {
       try {
-        const url = `${import.meta.env.VITE_API_URL}/Order/paidvendorhistory?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`;
+        const url = `${import.meta.env.VITE_API_URL}/Order/paid-canceled-vendor-history?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`;
 
         const res = await fetch(url, {
           credentials: 'include',
@@ -129,7 +129,6 @@ const PaidVendors = () => {
             <thead className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
               <tr>
                 {[
-                  'Order ID',
                   'Business Name',
                   'Phone',
                   'Email',
@@ -156,13 +155,18 @@ const PaidVendors = () => {
                       key={vendor._id}
                       className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendor.orderId?.order_id || 'N/A'}</td>
                       <td className="px-3 md:px-4 py-2 whitespace-nowrap font-medium">
                         {vendor.vendor?.businessName || 'N/A'}
                       </td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendor.vendor?.phoneNumber || 'N/A'}</td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendor.vendor?.email || 'N/A'}</td>
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{vendor.vendor?.agentName || 'N/A'}</td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                        {vendor.vendor?.phoneNumber || 'N/A'}
+                      </td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                        {vendor.vendor?.email || 'N/A'}
+                      </td>
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">
+                        {vendor.vendor?.agentName || 'N/A'}
+                      </td>
                       <td className="px-3 md:px-4 py-2 whitespace-nowrap font-medium">
                         ${vendor.vendor?.totalCost?.toFixed(2) || '0.00'}
                       </td>
@@ -173,14 +177,14 @@ const PaidVendors = () => {
                         className="px-3 md:px-4 py-2 cursor-pointer hover:underline"
                         onClick={() => notes.length > 0 && handleViewNotes(notes)}
                       >
-                        {notes.length > 0 ? notes.length : '0'}
+                        {notes.length}
                       </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-6 text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="text-center py-6 text-gray-500 dark:text-gray-400">
                     No paid vendors found
                   </td>
                 </tr>
@@ -189,7 +193,7 @@ const PaidVendors = () => {
           </table>
         </div>
 
-        {/* Pagination – same as leads page */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center mt-6 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 py-3 rounded-md">
             <button

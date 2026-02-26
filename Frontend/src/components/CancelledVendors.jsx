@@ -161,6 +161,7 @@ const CancelledVendors = () => {
 
       if (!res.ok) throw new Error('Failed to add note');
 
+      // Optimistic update (like in your code)
       setVendors(prev =>
         prev.map(v =>
           v._id === selectedVendorId
@@ -185,7 +186,6 @@ const CancelledVendors = () => {
     }
   };
 
-  // Navigate to general order details page
   const handleOrderClick = (orderId) => {
     if (actionLoading || user?.role === 'viewer' || !orderId) return;
     navigate(`/home/order/details/${orderId}`);
@@ -195,13 +195,14 @@ const CancelledVendors = () => {
 
   return (
     <div className="p-4 md:p-6 min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
+      {/* Loading Overlay - same as LitigationOrders */}
       <LoadingOverlay isLoading={loadingUser || loadingVendors || actionLoading} />
 
       <div className={`${loadingUser || loadingVendors || actionLoading ? 'blur-[1px]' : ''}`}>
         {/* Filters */}
         <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div className="flex flex-wrap justify-start space-x-2 bg-white dark:bg-gray-800 shadow-md p-2 w-full md:w-auto rounded-md">
-            {/* Optional buttons */}
+            {/* Optional buttons can go here later */}
           </div>
 
           <div className="flex items-center space-x-4">
@@ -214,7 +215,7 @@ const CancelledVendors = () => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              disabled={actionLoading || isViewer}
+              disabled={actionLoading || isViewer || loadingVendors}
             />
           </div>
         </div>
@@ -247,13 +248,19 @@ const CancelledVendors = () => {
               </tr>
             </thead>
             <tbody>
-              {vendors.length > 0 ? (
+              {loadingVendors ? (
+                // Optional: you can show a loading row instead of nothing, but LoadingOverlay already covers it
+                <tr>
+                  <td colSpan={!isViewer ? 11 : 10} className="text-center py-6 text-gray-500 dark:text-gray-400">
+                    Loading cancelled vendors...
+                  </td>
+                </tr>
+              ) : vendors.length > 0 ? (
                 vendors.map((vendorData) => (
                   <tr
                     key={vendorData._id}
                     className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    {/* Order ID - clickable to /home/order/details/:id */}
                     <td
                       className={`px-3 md:px-4 py-2 whitespace-nowrap ${
                         isViewer
@@ -289,7 +296,7 @@ const CancelledVendors = () => {
                           value={vendorData.paymentStatus || 'pending'}
                           onChange={(e) => !actionLoading && handlePaymentStatusChange(vendorData._id, e.target.value)}
                           className="border px-3 py-1.5 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                          disabled={actionLoading}
+                          disabled={actionLoading || loadingVendors}
                         >
                           <option value="pending">Pending</option>
                           <option value="paid">Paid</option>
@@ -307,7 +314,7 @@ const CancelledVendors = () => {
                       <td className="px-3 md:px-4 py-2 whitespace-nowrap">
                         <button
                           onClick={() => handleAddNote(vendorData._id)}
-                          disabled={actionLoading}
+                          disabled={actionLoading || loadingVendors}
                           className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm disabled:opacity-50 transition"
                         >
                           Add Note
@@ -335,7 +342,7 @@ const CancelledVendors = () => {
           <div className="flex justify-center items-center mt-6 space-x-2 bg-[#cbd5e1] dark:bg-gray-800 py-3 rounded-md">
             <button
               onClick={() => !actionLoading && setCurrentPage(p => Math.max(p - 1, 1))}
-              disabled={currentPage === 1 || actionLoading || isViewer}
+              disabled={currentPage === 1 || actionLoading || isViewer || loadingVendors}
               className="px-4 py-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Prev
@@ -346,13 +353,13 @@ const CancelledVendors = () => {
               return (
                 <button
                   key={pageNum}
-                  onClick={() => !actionLoading && !isViewer && setCurrentPage(pageNum)}
+                  onClick={() => !actionLoading && !isViewer && !loadingVendors && setCurrentPage(pageNum)}
                   className={`px-4 py-2 border rounded min-w-[40px] text-center ${
                     currentPage === pageNum
                       ? 'bg-blue-500 dark:bg-blue-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  disabled={actionLoading || isViewer}
+                  disabled={actionLoading || isViewer || loadingVendors}
                 >
                   {pageNum}
                 </button>
@@ -361,7 +368,7 @@ const CancelledVendors = () => {
 
             <button
               onClick={() => !actionLoading && setCurrentPage(p => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages || actionLoading || isViewer}
+              disabled={currentPage === totalPages || actionLoading || isViewer || loadingVendors}
               className="px-4 py-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
@@ -399,7 +406,7 @@ const CancelledVendors = () => {
                 disabled={actionLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                Save Note
+                {actionLoading ? 'Saving...' : 'Save Note'}
               </button>
             </div>
           </div>
