@@ -2838,3 +2838,131 @@ export const updateCustomerPaymentStatus = async (req, res) => {
   }
 };
 
+// controllers/getConfirmedPaymentCustomers
+
+export const getConfirmedPaymentCustomers = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search?.trim() || "";
+
+    const pipeline = [
+      // 1. Join orders to leads
+      {
+        $lookup: {
+          from: "orders",
+          localField: "_id",
+          foreignField: "leadId",
+          as: "orders",
+        },
+      },
+
+      // 2. Only keep leads that have at least one confirmed payment
+      {
+        $match: {
+          "orders.customerPaymentDetails.isConfirmed": true,
+        },
+      },
+
+      // 3. Optional search (case-insensitive)
+      ...(search
+        ? [
+            {
+              $match: {
+                $or: [
+                  { clientName: { $regex: search, $options: "i" } },
+                  { email: { $regex: search, $options: "i" } },
+                  { phone: { $regex: search, $options: "i" } }, // ← fixed: phone, not phoneNumber
+                ],
+              },
+            },
+          ]
+        : []),
+
+      // 4. Add computed fields (most recent confirmation, total confirmed amount, etc.)
+      {
+        $addFields: {
+          latestConfirmedAt: {
+            $max: "$orders.customerPaymentDetails.confirmedAt",
+          },
+          totalConfirmedAmount: {
+            $sum: {
+              $map: {
+                input: "$orders",
+                as: "order",
+                in: {
+                  $cond: [
+                    { $eq: ["$$order.customerPaymentDetails.isConfirmed", true] },
+                    "$$order.customerPaymentDetails.amountConfirmed",
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+          // Optional: count of confirmed payments
+          confirmedCount: {
+            $size: {
+              $filter: {
+                input: "$orders",
+                as: "o",
+                cond: { $eq: ["$$o.customerPaymentDetails.isConfirmed", true] },
+              },
+            },
+          },
+        },
+      },
+
+      // 5. Project only what frontend actually needs
+      // → IMPORTANT: keep the orders array so frontend can show details
+      {
+  $project: {
+    _id: 1,
+    clientName: 1,
+    email: 1,
+    make: 1,
+    model: 1,
+    year: 1,
+    notes: 1,
+    createdAt: 1,
+    orders: 1,
+    latestConfirmedAt: 1,
+    totalConfirmedAmount: 1,
+    confirmedCount: 1,
+
+    phone: "$phoneNumber",     // ← this line makes lead.phone work in frontend
+  },
+},
+
+      // 6. Sort by most recent payment first
+      {
+        $sort: { latestConfirmedAt: -1 },
+      },
+
+      // 7. Pagination
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+    ];
+
+    // Get results
+    const leads = await Lead.aggregate(pipeline);
+
+    // Get total count for pagination
+    const countPipeline = [...pipeline.slice(0, -2), { $count: "total" }];
+    const countResult = await Lead.aggregate(countPipeline);
+    const total = countResult.length > 0 ? countResult[0].total : 0;
+
+    res.status(200).json({
+      confirmedCustomers: leads,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error("Error in getConfirmedPaymentCustomers:", error);
+    res.status(500).json({
+      message: "Server error while fetching confirmed payment customers",
+      error: error.message,
+    });
+  }
+};
